@@ -6,12 +6,15 @@
 
 (define (randint low high)
   (+ low (sample-integer (- high low))))
+
 (define (consec-2 xs)
-  (letrec ([loop (lambda (acc xs)
-                   (cond [(null? (cdr xs)) (reverse acc)]
-                         [else
-                           (loop (cons (list (car xs) (cadr xs)) acc) (cdr xs))]))])
+  (letrec 
+    ([loop (lambda (acc xs)
+             (cond [(null? (cdr xs)) (reverse acc)]
+                   [else
+                     (loop (cons (list (car xs) (cadr xs)) acc) (cdr xs))]))])
     (loop '() xs)))
+
 (for-each display 
           (mh-query 100 100
                     (define x

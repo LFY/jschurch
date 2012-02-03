@@ -207,31 +207,31 @@
     (define factor-should-update? sixth)
 
     (define (church-make-factor address store factor-function)
-      (lambda (address store . args)
-        (define new-val '())
-        (update-addbox (store->factors store)
-                       address
-                       (lambda (factor-instance)
-                         (let* ([sandbox-store (cons (make-addbox) (cdr store))]
-                                ;; [should-update? (if (eq? trienone factor-instance) #t (not (equal? (factor-args factor-instance) args)))]
-                                [should-update? #t];;(if (eq? trienone factor-instance) #t (not (equal? (factor-args factor-instance) args)))]
-                                ;; [void (begin (display "should-update:") (display should-update?))]
-                                [val (church-apply address sandbox-store factor-function args)]
-                                ;; [val (cond
-                                       ;; [(eq? trienone factor-instance) (factor-function address sandbox-store args)]
-                                       ;; [(not (equal? (factor-args factor-instance) args)) (factor-function address sandbox-store args)]
-                                       ;; [else (factor-value factor-instance)])]
-                                [last-tick (if (eq? trienone factor-instance) #f
-                                             (car (factor-ticks factor-instance)))]
-                                [new-factor-instance
-                                  (make-factor-instance
-                                    address args val factor-function
-                                    (cons (store->tick store) last-tick)
-                                    should-update?)])
-                           (set! new-val val)
-                           (set-store-score! store (+ (store->score store) val))
-                           new-factor-instance)))
-        new-val))
+      (let* ()
+        (lambda (address store . args)
+          (define new-val '())
+          (update-addbox (store->factors store)
+                         address
+                         (lambda (factor-instance)
+                           (let* ([sandbox-store (cons (make-addbox) (cdr store))]
+                                  [should-update? #t];;(if (eq? trienone factor-instance) #t (not (equal? (factor-args factor-instance) args)))]
+                                  ;; [void (begin (display "should-update:") (display should-update?))]
+                                  [val (church-apply address sandbox-store factor-function args)]
+                                  ;; [val (cond
+                                  ;; [(eq? trienone factor-instance) (factor-function address sandbox-store args)]
+                                  ;; [(not (equal? (factor-args factor-instance) args)) (factor-function address sandbox-store args)]
+                                  ;; [else (factor-value factor-instance)])]
+                                  [last-tick (if (eq? trienone factor-instance) #f
+                                               (car (factor-ticks factor-instance)))]
+                                  [new-factor-instance
+                                    (make-factor-instance
+                                      address args val factor-function
+                                      (cons (store->tick store) last-tick)
+                                      should-update?)])
+                             (set! new-val val)
+                             (set-store-score! store (+ (store->score store) val))
+                             new-factor-instance)))
+          new-val)))
 
     ;;note: this assumes that the fns (sample, incr-stats, decr-stats, etc) are church procedures.
     ;;FIXME: what should happen with the store when the sampler is a church random fn? should not accumulate stats/score since these are 'marginalized'.
@@ -392,7 +392,7 @@
              ;; (void (begin (display "cdbwfwscore: ") (display cd-bw/fw) (display "factorbwfwscore: ") (display factor-bw/fw)))
              (proposal-state (make-mcmc-state interv-store value (mcmc-state->address state))))
         ;;(list proposal-state (+ cd-bw/fw factor-bw/fw))))
-        (list proposal-state (+ cd-bw/fw 0))))
+        (list proposal-state cd-bw/fw)))
 
     ;;we need to pull out the subset of new-state xrp-draws that were touched on this pass,
     ;;at the same time we want to accumulate the bw score of these deleted xrp-draws and the fw score of any new ones.

@@ -1,0 +1,18 @@
+;; Built-in factors
+
+(define my-pi 3.141592653589793238)
+
+(define (gauss-log-pdf mean var smp)
+  (let ([diff (- smp mean)])
+    (- 
+      (- (/ (* diff diff) (* 2.0 var)))
+      (* 0.5 (+ (log 2) (log my-pi) (log var)))
+      )))
+
+(define (norm-gauss-log-pdf mean var smp)
+  (- (gauss-log-pdf mean var smp) (gauss-log-pdf mean var mean)))
+
+(define softeq
+  (make-factor
+    (lambda (x y) (norm-gauss-log-pdf x 0.1 y))))
+

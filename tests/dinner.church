@@ -9,27 +9,6 @@
 (define table-size first)
 (define table-num-plates second)
 
-(define (consec-2 xs)
-  (letrec ([loop (lambda (acc xs)
-                   (cond [(null? (cdr xs)) (reverse acc)]
-                         [else
-                           (loop (cons (list (car xs) (cadr xs)) acc) (cdr xs))]))])
-    (loop '() xs)))
-
-(define my-pi 3.414592653589793238)
-
-(define (gauss-log-pdf mean var smp)
-  (let ([diff (- smp mean)])
-    (- 
-      (- (/ (* diff diff) (* 2.0 var)))
-      (* 0.5 (+ (log 2) (log my-pi) (log var)))
-      )))
-
-(define (norm-gauss-log-pdf mean var smp)
-  (- (gauss-log-pdf mean var smp) (gauss-log-pdf mean var mean)))
-
-(define (softeq x y) (norm-gauss-log-pdf x 0.1 y))
-
 (define (plate-area plate)
   (* my-pi (* (plate-size plate) (plate-size plate))))
 
@@ -103,20 +82,17 @@
          [plate-size (uniform 0.1 2.0)])
     (make-plate (list posx posy) plate-size table)))
 
-(define (concatenate xss)
-  (fold (lambda (x xs)
-          (append x xs)) '() xss))
 (define (tables-and-plates)
   (let* ([table (sample-table)]
          [plates (map (lambda (i) (sample-plate table)) (iota (table-num-plates table)))]
          [occupy-area (softeq 0.7 (/ (total-area plates) (table-area table)))]
          [inside (map (lambda (p) (softeq 0.0 (area-outside-table p))) plates)]
          [non-overlap (map (lambda (pq) (softeq 0.0 (overlap-area (first pq) (second pq)))) (pairs plates))])
-    (list (apply + (list occupy-area (apply + inside) (apply + non-overlap)) table plates))))
+    (list (apply + (list occupy-area (apply + inside) (apply + non-overlap))) table plates)))
 
 (for-each display
           (mh-query 100 100
                     (define asn (tables-and-plates))
-                    (car asn)
+                    (list 'score (car asn) 'num-plates (table-num-plates (cadr asn)))
                     true))
 
