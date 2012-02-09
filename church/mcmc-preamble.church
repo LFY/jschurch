@@ -41,7 +41,10 @@
 
 (define (basic-proposal-distribution state normal-form-proc)
   (selective-proposal-distribution state normal-form-proc (lambda (xrp-draw) true)))
-  
+ 
+(define (non-structural-proposal-distribution state normal-form-proc)
+  (selective-proposal-distribution state normal-form-proc (lambda (xrp-draw) (not (xrp-draw-structural? xrp-draw)))))
+
 ;;FIXME!! this works badly... need constraint prop to do this right.
 (define (rejection-initializer normal-form-proc)
   (let loop ()
@@ -131,6 +134,14 @@
   (repeat-kernel steps (make-mh-kernel (lambda (state) (basic-proposal-distribution state nfqp))
                                        mcmc-state->score)))
 
+;; non-structural kernel
+(define (non-structural-kernel steps nfqp)
+  (repeat-kernel 
+    steps 
+    (make-mh-kernel 
+      (lambda (state) (non-structural-proposal-distribution state nfqp))
+      mcmc-state->score)))
+
 (define inference-timing #f)
 
 ;;;standard queries
@@ -146,6 +157,11 @@
 (define (mh-query samples lag normal-form-proc)
   (repeated-mcmc-query-core (lambda () (rejection-initializer normal-form-proc))
                             (basic-repeat-kernel lag normal-form-proc)
+                            samples))
+
+(define (non-structural-mh-query samples lag normal-form-proc)
+  (repeated-mcmc-query-core (lambda () (rejection-initializer normal-form-proc))
+                            (non-structural-kernel lag normal-form-proc)
                             samples))
 
 (define (mh-query/annealed-init temps samples lag rej-steps temps->nfqp)

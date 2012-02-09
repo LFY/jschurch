@@ -327,6 +327,7 @@
 
   ;;syntacic sugar query forms:
  (register-query-sugar 'mh-query)
+ (register-query-sugar 'non-structural-mh-query)
  (register-query-sugar 'rejection-query)
  (register-query-sugar 'enumeration-query)
  (register-query-sugar 'gradient-ascent)

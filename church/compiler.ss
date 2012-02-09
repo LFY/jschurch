@@ -35,12 +35,13 @@
 
  ;;list of the primitive routines (defined in header) that need access to address and store.
  (define *threaded-primitives*
-   '(apply force reset-store-xrp-draws make-xrp make-factor make-initial-mcmc-state make-initial-enumeration-state))
+   '(apply force reset-store-xrp-draws make-xrp make-structural-xrp make-factor make-initial-mcmc-state make-initial-enumeration-state))
 
  (define (compile top-list external-defs . lazy)
    (let* ((church-sexpr  `(begin
                             (load "standard-preamble.church")
                             (load "xrp-preamble.church")
+                            (load "xrp-preamble-structural.church")
                             (load "factor-preamble.church")
                             (load "mcmc-preamble.church")
                             ,@top-list))
