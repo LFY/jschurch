@@ -37,11 +37,13 @@
  (define *threaded-primitives*
    '(apply force reset-store-xrp-draws make-xrp make-structural-xrp make-factor make-initial-mcmc-state make-initial-enumeration-state))
 
- (define (compile top-list external-defs . lazy)
+(define (compile top-list external-defs . lazy)
    (let* ((church-sexpr  `(begin
                             (load "standard-preamble.church")
-                            (load "xrp-preamble.church")
-                            (load "xrp-preamble-structural.church")
+                            (load "xrp-preamble-generic.church")
+                            ;; (don't load "xrp-preamble.church")
+                            ;; (don't load "xrp-preamble-structural.church")
+
                             (load "factor-preamble.church")
                             (load "mcmc-preamble.church")
                             ,@top-list))
@@ -52,10 +54,10 @@
           (primitive? (let ((primitive-symbols (delete-duplicates (free-variables ds-sexpr '()))))
                         (lambda (sym) (and (not (memq sym *threaded-primitives*))
                                            (memq sym primitive-symbols)))))
-          (scexpr (addressing* ds-sexpr primitive?)))
+          (scexpr (addressing+provenance+structural-deps* ds-sexpr primitive?)))
+          ;;(scexpr (addressing* ds-sexpr primitive?)))
      `( ,@(generate-header (delete-duplicates (free-variables scexpr '())) external-defs (eq? #t lazy))
         (define (church-main address store) ,scexpr))))
-
  ;;syntax:
  (define (mem? sexpr) (tagged-list? sexpr 'mem))
  (define (lambda? exp) (tagged-list? exp 'lambda))
@@ -67,11 +69,17 @@
  (define (if? exp) (tagged-list? exp 'if))
  (define (application? exp) (pair? exp))
  (define (letrec? exp) (tagged-list? exp 'letrec))
+ (define (XRP? exp) (tagged-list? exp 'XRP))
+ (define (factor? exp) (tagged-list? exp 'make-factor))
+ (define (counterfactual-update? exp) (tagged-list? exp 'counterfactual-update))
 
  ;;this transformation makes addresses (that parallel the dynamic call stack) be computed by the program.
  ;; each procedure gains address and store arguments. (the store is used to pass context information down to the random choices.)
  ;;this transform also does a church-rename to all symbols in the program (which adds church- prefix), to avoid collision with the target language.
  ;;note that mem is transformed away by re-using creation-site addresses (at the expense of re-running the mem'd computation).
+ 
+ ;; to add provenance tracking, we would consider something like a hash table of addresses to lists of addresses that denote immediate dependencies. Or, perhaps the addressing scheme itself leads to a dependence analysis.
+ 
  (define (addressing* sexpr primitive?)
    (define (addressing sexpr)
      (cond
@@ -88,8 +96,7 @@
                       address
                       store
                       ,(addressing (second sexpr))))
-      ;;both operator and operands are transformed; extra args (address and store) are passed into operator.
-      ;;  unless the operator is primitive, at application the address is extended with a unique (to the source position) symbol.
+
       ((application? sexpr)
        (if (and (symbol? (first sexpr)) (primitive? (first sexpr)))
            `(,(first sexpr) ,@(map addressing (rest sexpr)))
@@ -106,6 +113,86 @@
       ;;sel-evaluating forms are left alone (assume target language has same primitive types).
       (else sexpr) ))
    (addressing sexpr))
+
+(define (get-opt-param params)
+  (cond [(list? params) '()]
+        [(symbol? params) params]
+        [(pair? params) (cdr (last-pair params))]
+        [else '()]))
+
+(define (contains? i l)
+  (if (null? l) #f
+    (or (equal? (first l) i) 
+        (contains? i (rest l)))))
+
+(define lifted-constant-symbols
+  (list 'true 'false))
+
+(define lifted-primitive-header-functions
+  (list 'and 'or))
+
+(define (addressing+provenance+structural-deps* sexpr primitive?)
+  (define (addr-prov sexpr re-init)
+    (let* ([re-addr-prov (lambda (e) (addr-prov e re-init))])
+      (cond
+        ;;[(and (not (null? re-init)) (symbol? sexpr) (equal? (church-rename sexpr) (car re-init))) `(prov-init ,(church-rename sexpr))]
+        [(and (not (null? re-init)) (symbol? sexpr) (contains? (church-rename sexpr) re-init)) 
+         `(extract-opt-arg ,(church-rename sexpr))]
+        [(begin? sexpr) 
+         `(begin 
+            ,@(map re-addr-prov (rest sexpr)))]
+        [(quoted? sexpr) `(prov-init ,sexpr)]
+        [(if? sexpr) 
+         `(if+prov store ,@(list (re-addr-prov (second sexpr))
+                                 `(lambda () ,(re-addr-prov (third sexpr)))
+                                 `(lambda () ,(re-addr-prov (fourth sexpr)))))]
+        [(letrec? sexpr) 
+         (let* ([bindings (second sexpr)]
+                [names (map first bindings)]
+                [re-init-collided-names (lset-intersection equal? names re-init)]
+                [new-re-init (filter (lambda (n) (not (contains? n re-init-collided-names))) re-init)])
+           `(letrec 
+              ,(map (lambda (binding) 
+                      (list (church-rename (first binding)) (re-addr-prov (second binding)))) 
+                    bindings)
+              ,(addr-prov (third sexpr) new-re-init)))]
+        [(lambda? sexpr) 
+         (let* ([new-params (church-rename-parameters (lambda-parameters sexpr))]
+                [new-re-init (get-opt-param new-params)])
+           `(prov-init (lambda 
+                         ,(cons 'address (cons 'store new-params)) 
+                         ,(addr-prov (lambda-body sexpr) (lset-union equal? re-init (list new-re-init))))))]
+        [(mem? sexpr) 
+         `((lambda (mem-address store proc)
+             (lambda (address store . args) (church-apply (cons args mem-address) store proc args)))
+           address
+           store
+           ,(re-addr-prov (second sexpr)))]
+        [(XRP? sexpr)
+         `(church-apply (cons ',(next-addr) address) store church-make-xrp-with-provenance (list ,@(map re-addr-prov (rest sexpr))))]
+        [(factor? sexpr)
+         `(church-apply (cons ',(next-addr) address) store church-make-factor-with-provenance (list ,@(map re-addr-prov (rest sexpr))))]
+        [(counterfactual-update? sexpr)
+         `(church-apply (cons ',(next-addr) address) store counterfactual-update+provenance (list ,@(map re-addr-prov (rest sexpr))))]
+        [(application? sexpr)
+         (cond [(and (symbol? (first sexpr)) (primitive? (first sexpr)))
+                (if (contains? (first sexpr) lifted-primitive-header-functions)
+                  `(apply-prim+prov+addressing address store ,(church-rename (first sexpr)) (arglist ,@(map re-addr-prov (rest sexpr))))
+                  `(apply-prim+prov ,(first sexpr) (arglist ,@(map re-addr-prov (rest sexpr)))))]
+               [(equal? 'apply (first sexpr))
+                `(lifted-apply
+                   (cons ',(next-addr) address) store
+                   ,(re-addr-prov (second sexpr))
+                   ,@(map re-addr-prov (rest (rest sexpr))))]
+               [else
+                 `(apply-fn+prov (cons ',(next-addr) address) store ,(re-addr-prov (first sexpr)) 
+                                 (arglist ,@(map re-addr-prov (rest sexpr))))])]
+        [(and (symbol? sexpr) (contains? sexpr lifted-constant-symbols)) `(prov-init ,(church-rename sexpr))]
+        [(symbol? sexpr) (church-rename sexpr)]
+        [(number? sexpr) `(prov-init ,sexpr)]
+        [else `(prov-init ,sexpr)] )))
+  `(list 'result-value+provenance: ,(addr-prov sexpr '())
+         (list 'structural-addresses: (store->structural-addrs store))))
 
  (define symbol-index 0)
  (define (next-addr)
