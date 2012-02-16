@@ -37,6 +37,18 @@
  (define *threaded-primitives*
    '(apply force reset-store-xrp-draws make-xrp make-structural-xrp make-factor make-initial-mcmc-state make-initial-enumeration-state))
 
+;; list of the primitive routines that not only need access to address and store, but the provenance information as well.
+;; the syntactic transformation will add +provenance onto the end, much like how appending church- to the front will make them use the header.ss definitions.
+
+(define *threaded-addressing+provenance-primitives*
+  '(make-initial-mcmc-state
+     mcmc-state->xrp-draws
+     mcmc-state->score
+     mcmc-state->query-value
+     counterfactual-update
+     make-xrp
+     make-factor))
+
 (define (compile top-list external-defs . lazy)
    (let* ((church-sexpr  `(begin
                             (load "standard-preamble.church")
@@ -168,6 +180,11 @@
            address
            store
            ,(re-addr-prov (second sexpr)))]
+        [(and (list? sexpr) (not (null? sexpr)) (contains? (car expr) *threaded-addressing+provenance-primitives*))
+         `(apply-fn+prov (cons ',(next-addr) address) store 
+                         ,(re-addr-prov (provenance-rename (first sexpr)))
+                         (arglist
+                           ,@(map re-addr-prov (rest sexpr))))]
         [(XRP? sexpr)
          `(church-apply (cons ',(next-addr) address) store church-make-xrp-with-provenance (list ,@(map re-addr-prov (rest sexpr))))]
         [(factor? sexpr)
@@ -201,6 +218,9 @@
 
  (define (church-rename variable)
    (string->symbol (string-append "church-" (symbol->string variable))))
+
+(define (provenance-rename variable)
+  (string->symbol (string-append (symbol->string variable) "+provenance")))
 
  (define (church-rename-parameters parameters)
    (cond ((pair? parameters)
