@@ -6,7 +6,7 @@
 
 (define (make-stateless-xrp xrp-name sampler scorer . proposal-support)
   (begin
-  (XRP xrp-name
+  (make-xrp xrp-name
        (lambda (stats hyperparams args) ;;sample
          (let* ((value (apply sampler args))
                 ;;[db (begin (display "val-from-sampler:") (display value))]
@@ -150,7 +150,7 @@
 
 (define (permute lst) (map (lambda (ind) (list-ref lst ind)) (random-permutation (length lst))))
 
-(define (make-dirichlet-discrete hyp) (XRP 'dirichlet-discrete 
+(define (make-dirichlet-discrete hyp) (make-xrp 'dirichlet-discrete 
                                                 (lambda (stats hyperparams args) ;;sampler
                                                   (let* ((counts (map + stats hyperparams))
                                                          (total-counts (apply + counts))
@@ -187,7 +187,7 @@
 
 (define (make-symmetric-dirichlet-discrete N hyp) (make-dirichlet-discrete (make-list N hyp)))
 
-(define (make-CRP alpha . opt) (XRP 'CRP
+(define (make-CRP alpha . opt) (make-xrp 'CRP
                                    (lambda (stats hyperparam args) ;;sampler
                                      (let* ((count-map stats)
                                             (counts (pair hyperparam (map rest count-map)))

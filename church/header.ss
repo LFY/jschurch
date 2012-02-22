@@ -293,10 +293,13 @@
 
     (define (church-reset-store-xrp-draws address store)
       (set-store-xrp-draws! store (make-addbox)))
+    (define church-reset-store-xrp-draws+provenance church-reset-store-xrp-draws)
     (define (church-reset-store-factors address store)
       (set-store-factors! store (make-addbox)))
+    (define church-reset-store-factors+provenance church-reset-store-factors)
     (define (church-reset-store-structural-addrs address store)
       (set-store-structural-addrs! store '()))
+    (define church-reset-store-structural-addrs church-reset-store-structural-addrs+provenance)
 
     ;;;non-functional trie
     ;;provides: make-empty-trie, copy-trie, trie-insert, trie-lookup, trie-update, trie->values, alist->trie
@@ -787,8 +790,10 @@
                             (store->structural-addrs store)
                             )))
     (church-apply (mcmc-state->address state) store (cdr (second state)) '())))
+
     ;;this captures the current store/address and packages up an initial mcmc-state.
     ;;should copy here? not needed currently, since counterfactual-update coppies and is only thing aplied to states....
+    
     (define (church-make-initial-mcmc-state address store)
       (make-mcmc-state store 'init-val address))
 
