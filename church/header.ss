@@ -400,7 +400,8 @@
                         (lambda (factor-instance)
                           (let* ([sandbox-store (cons (make-addbox) (cdr store))]
                                  [should-update? #t];;(if (eq? trienone factor-instance) #t (not (equal? (factor-args factor-instance) args)))]
-                                 [void (begin (display-debug "should-update:") (display-debug should-update?))]
+                                 [void (begin (display-debug "should-update:") 
+                                              (display-debug should-update?))]
                                  [val (church-apply address sandbox-store factor-function args)]
                                  ;; [val (cond
                                  ;; [(eq? trienone factor-instance) (factor-function address sandbox-store args)]
