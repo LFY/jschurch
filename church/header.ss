@@ -62,6 +62,8 @@
          `(apply (church-force address store proc) address store (church-force address store args))
          ))
 
+    ;; `(apply proc (cons address (cons store args)))
+
     ;; ;;requires compile, eval, and environment to be available from underlying scheme....
     ;; (define (church-eval addr store sexpr)
     ;;   ;(display (compile sexpr '()) ))
@@ -216,8 +218,8 @@
           (update-addbox (store->factors store)
                          address
                          (lambda (factor-instance)
-                           (let* ([sandbox-store (cons (make-addbox) (cdr store))]
-                                  [should-update? #t];;(if (eq? trienone factor-instance) #t (not (equal? (factor-args factor-instance) args)))]
+                           (let* ([sandbox-store (cons (make-addbox) (cdr store))] ;; replace xrp-draws with an empty addbox
+                                  [should-update? #t] ;; right now, scores of all factors are recaluated;;(if (eq? trienone factor-instance) #t (not (equal? (factor-args factor-instance) args)))]
                                   ;; [void (begin (display "should-update:") (display should-update?))]
                                   [val (church-apply address sandbox-store factor-function args)]
                                   ;; [val (cond
@@ -234,7 +236,11 @@
                              (set! new-val val)
                              (set-store-score! store (+ (store->score store) val))
                              new-factor-instance)))
-          new-val)))
+            (begin
+              (display address)
+              new-val
+            )
+          )))
 
     ;;note: this assumes that the fns (sample, incr-stats, decr-stats, etc) are church procedures.
     ;;FIXME: what should happen with the store when the sampler is a church random fn? should not accumulate stats/score since these are 'marginalized'.
@@ -351,6 +357,10 @@
 
           ;;the xrp itself: we update the xrp-draw at call address and return the new value.
           (lambda (address store . args)
+    ;;delete old factor-instances
+    ;;set store of f-plus, f-minus and f-common
+    ;;delete old factor-instances
+    ;;set store of f-plus, f-minus and f-common
             (define new-val '())
             (update-addbox (store->xrp-draws store)
                            address
@@ -462,10 +472,12 @@
                                        ))
              ;;application of the nfqp happens with interv-store, which is a copy so won't mutate original state.
              ;;after application the store must be captured and put into the mcmc-state.
+             (dummyprint (display 'update))
              (value (church-apply (mcmc-state->address state) interv-store nfqp '()))
              (cd-bw/fw (if (store->enumeration-flag interv-store)
                          0
                          (clean-store interv-store))) ;;FIXME!! need to clean out unused xrp-stats?
+             (dummyprint2 (f-plus-minus-common interv-store))
              (factor-score-current 
                (if (store->enumeration-flag interv-store)
                              0
@@ -473,7 +485,8 @@
              ;; (void (begin (display "cdbwfwscore: ") (display cd-bw/fw) (display "factorbwfwscore: ") (display factor-bw/fw)))
              (proposal-state (make-mcmc-state interv-store value (mcmc-state->address state))))
         ;;(list proposal-state (+ cd-bw/fw factor-bw/fw))))
-        (list proposal-state cd-bw/fw)))
+        (list proposal-state cd-bw/fw))
+        )
 
     ;;we need to pull out the subset of new-state xrp-draws that were touched on this pass,
     ;;at the same time we want to accumulate the bw score of these deleted xrp-draws and the fw score of any new ones.
@@ -488,7 +501,7 @@
                (begin 
                  (set-store-xrp-draws! store (alist->addbox (map (lambda (d) (cons (xrp-draw-address d) d)) used-draws)))
                  bw/fw)]
-              [else (if (= (first (xrp-draw-ticks (car draws))) (store->tick store))
+              [else (if (= (first (xrp-draw-ticks (car draws))) (store->tick store)) ;; this is a newly updated xrp-draw
                       (if (eq? #f (cdr (xrp-draw-ticks (car draws))))
                         ;;this was a new xrp-draw, accumulate fw prob:
                         (loop (cdr draws) (cons (car draws) used-draws) (- bw/fw
@@ -514,6 +527,47 @@
                                                                                )) 
                       ;;this factor was not used in last update, drop it: 
                       (loop (cdr factors) used-factors bw/fw))])))
+
+
+    ;;LARJMCMC utility functions
+    (define (state-has-structural-change state)
+      #f
+      )
+
+    ;;delete old factor-instances
+    ;;set store of f-plus, f-minus and f-common
+    (define (f-plus-minus-common store)
+        (let ((result
+            (let loop ((factors (addbox->values (store->factors store)))
+                        (f-plus '())
+                        (f-minus '())
+                        (f-common '()))
+                 (if (null? factors)
+                     (list f-plus f-minus f-common)
+                     (if (= (first (factor-ticks (car factors))) (store->tick store))
+                         ( if (eq? #f (cdr (factor-ticks (car factors))))
+                              (loop (cdr factors) (cons (car factors) f-plus) f-minus f-common)
+                              (loop (cdr factors) f-plus f-minus (cons (car factors) f-common))
+                         )
+                         (loop (cdr factors) f-plus (cons (car factors) f-minus) f-common))))))
+
+        (begin
+            (display 'f-plus)
+            (display (length (first result)))
+            (display (first result))
+            (display 'f-minus)
+            (display (length (second result)))
+            (display (second result))
+            (display 'f-common)
+            (display (length (third result)))
+            (display (third result))
+            result
+        )
+        ))
+
+
     ) )
 
 ; )
+
+
