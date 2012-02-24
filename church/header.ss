@@ -96,7 +96,7 @@
     ;;;
     ;;stuff for xrps (and dealing with stores):
     (define (make-store xrp-draws xrp-stats score tick enumeration-flag factors) (list xrp-draws xrp-stats score tick enumeration-flag factors))
-    (define (make-empty-store) (make-store (make-addbox) (make-addbox) 0.0 0 #f (make-addbox)))
+    (define (make-empty-store) (make-store (make-addbox) (make-addbox) 0.0 0 #f (make-addbox) '()))
     (define store->xrp-draws first)
     (define set-store-xrp-draws! set-car!)
     (define (set-store-factors! store new-factors)
@@ -482,6 +482,8 @@
                (if (store->enumeration-flag interv-store)
                              0
                              (clean-store-factors interv-store)))
+             ;;YT FIXME: put f-plus, f-minus and f-common in store. We should add a field to the store
+
              ;; (void (begin (display "cdbwfwscore: ") (display cd-bw/fw) (display "factorbwfwscore: ") (display factor-bw/fw)))
              (proposal-state (make-mcmc-state interv-store value (mcmc-state->address state))))
         ;;(list proposal-state (+ cd-bw/fw factor-bw/fw))))
