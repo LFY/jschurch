@@ -93,24 +93,32 @@
                                                (church-force address store ((cadr val) address store))
                                                val))
 
+
+    ;; save element in list at index i
+    (define (set-in-list! tolist new-elem index)
+        (define (loop curr n)
+            (if (= n index)
+                (set-car! curr new-elem)
+                (loop (cdr curr) (+ n 1))))
+        (loop tolist 0))
+
     ;;;
     ;;stuff for xrps (and dealing with stores):
-    (define (make-store xrp-draws xrp-stats score tick enumeration-flag factors) (list xrp-draws xrp-stats score tick enumeration-flag factors))
-    (define (make-empty-store) (make-store (make-addbox) (make-addbox) 0.0 0 #f (make-addbox) '()))
+    (define (make-store xrp-draws xrp-stats score tick enumeration-flag factors diff-factors) (list xrp-draws xrp-stats score tick enumeration-flag factors diff-factors))
+    (define (make-empty-store) (make-store (make-addbox) (make-addbox) 0.0 0 #f (make-addbox) '(() () ())))
     (define store->xrp-draws first)
     (define set-store-xrp-draws! set-car!)
     (define (set-store-factors! store new-factors)
-      (define (loop curr n)
-        (if (= n 5)
-          (set-car! curr new-factors)
-          (loop (cdr curr) (+ n 1))))
-      (loop store 0))
+        (set-in-list! store new-factors 5))
+    (define (set-store-diff-factors! store new-diff-factors)
+        (set-in-list! store new-diff-factors 6))
     (define store->xrp-stats second)
     (define store->score third)
     (define (set-store-score! store score) (cons (car store) (cons (cadr store) (set-car! (cddr store) score))))
     (define store->tick fourth)
     (define store->enumeration-flag fifth) ;;FIXME: this is a hacky way to deal with enumeration...
     (define store->factors sixth)
+    (define store->diff-factors seventh)
 
     (define (church-reset-store-xrp-draws address store)
       (set-store-xrp-draws! store (make-addbox)))
@@ -433,7 +441,8 @@
                                 (store->score store)
                                 (store->tick store)
                                 (store->enumeration-flag store)
-                                (copy-addbox (store->factors store)))))
+                                (copy-addbox (store->factors store))
+                                (store->diff-factors store))))
         (church-apply (mcmc-state->address state) store (cdr (second state)) '())))
 
     ;;this captures the current store/address and packages up an initial mcmc-state.
@@ -469,6 +478,7 @@
                                        (+ 1 (store->tick (mcmc-state->store state))) ;;increment the generation counter.
                                        (store->enumeration-flag (mcmc-state->store state))
                                        (copy-addbox (store->factors (mcmc-state->store state)))
+                                       (store->diff-factors (mcmc-state->store state))
                                        ))
              ;;application of the nfqp happens with interv-store, which is a copy so won't mutate original state.
              ;;after application the store must be captured and put into the mcmc-state.
@@ -477,18 +487,59 @@
              (cd-bw/fw (if (store->enumeration-flag interv-store)
                          0
                          (clean-store interv-store))) ;;FIXME!! need to clean out unused xrp-stats?
-             (dummyprint2 (f-plus-minus-common interv-store))
              (factor-score-current 
                (if (store->enumeration-flag interv-store)
                              0
                              (clean-store-factors interv-store)))
-             ;;YT FIXME: put f-plus, f-minus and f-common in store. We should add a field to the store
 
              ;; (void (begin (display "cdbwfwscore: ") (display cd-bw/fw) (display "factorbwfwscore: ") (display factor-bw/fw)))
              (proposal-state (make-mcmc-state interv-store value (mcmc-state->address state))))
         ;;(list proposal-state (+ cd-bw/fw factor-bw/fw))))
         (list proposal-state cd-bw/fw))
         )
+
+    (define (counterfactual-update-larj state nfqp . interventions)
+      (let* ((interv-store (make-store (fold (lambda (interv xrps)
+                                               (update-addbox xrps (xrp-draw-address (first interv))
+                                                              (lambda (xrp-draw)
+                                                                (make-xrp-draw (xrp-draw-address (first interv))
+                                                                               (cdr interv)
+                                                                               (xrp-draw-name (first interv))
+                                                                               (xrp-draw-proposer (first interv))
+                                                                               (xrp-draw-ticks (first interv))
+                                                                               'dummy-score ;;dummy score which will be replace on update.
+                                                                               (xrp-draw-support (first interv))
+                                                                               ))))
+                                             (copy-addbox (store->xrp-draws (mcmc-state->store state)))
+                                             interventions)
+                                       (copy-addbox (store->xrp-stats (mcmc-state->store state)))
+                                       0.0
+                                       (+ 1 (store->tick (mcmc-state->store state))) ;;increment the generation counter.
+                                       (store->enumeration-flag (mcmc-state->store state))
+                                       (copy-addbox (store->factors (mcmc-state->store state)))
+                                       (store->diff-factors (mcmc-state->store state))
+                                       ))
+             ;;application of the nfqp happens with interv-store, which is a copy so won't mutate original state.
+             ;;after application the store must be captured and put into the mcmc-state.
+             (dummyprint (display 'update))
+             (value (church-apply (mcmc-state->address state) interv-store nfqp '()))
+             (cd-bw/fw (if (store->enumeration-flag interv-store)
+                         0
+                         (clean-store interv-store))) ;;FIXME!! need to clean out unused xrp-stats?
+             (new-diff-factors (f-plus-minus-common interv-store))
+             (factor-score-current 
+               (if (store->enumeration-flag interv-store)
+                             0
+                             (clean-store-factors interv-store)))
+             ;;YT FIXME: put f-plus, f-minus and f-common in store. We should add a field to the store
+             (void (set-store-diff-factors! interv-store new-diff-factors))
+
+             ;; (void (begin (display "cdbwfwscore: ") (display cd-bw/fw) (display "factorbwfwscore: ") (display factor-bw/fw)))
+             (proposal-state (make-mcmc-state interv-store value (mcmc-state->address state))))
+        ;;(list proposal-state (+ cd-bw/fw factor-bw/fw))))
+        (list proposal-state cd-bw/fw))
+        )
+
 
     ;;we need to pull out the subset of new-state xrp-draws that were touched on this pass,
     ;;at the same time we want to accumulate the bw score of these deleted xrp-draws and the fw score of any new ones.
@@ -531,10 +582,6 @@
                       (loop (cdr factors) used-factors bw/fw))])))
 
 
-    ;;LARJMCMC utility functions
-    (define (state-has-structural-change state)
-      #f
-      )
 
     ;;delete old factor-instances
     ;;set store of f-plus, f-minus and f-common
@@ -554,15 +601,15 @@
                          (loop (cdr factors) f-plus (cons (car factors) f-minus) f-common))))))
 
         (begin
-            (display 'f-plus)
-            (display (length (first result)))
-            (display (first result))
-            (display 'f-minus)
-            (display (length (second result)))
-            (display (second result))
-            (display 'f-common)
-            (display (length (third result)))
-            (display (third result))
+            ;;(display 'f-plus)
+            ;;(display (length (first result)))
+            ;;(display (first result))
+            ;;(display 'f-minus)
+            ;;(display (length (second result)))
+            ;;(display (second result))
+            ;;(display 'f-common)
+            ;;(display (length (third result)))
+            ;;(display (third result))
             result
         )
         ))
