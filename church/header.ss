@@ -131,7 +131,7 @@
              `(apply (church-force address store proc) address store (church-force address store args))
              ))))
 
-    (define DEBUG #f)
+    (define DEBUG #t)
 
     (define (display-debug x)
       (if DEBUG (display x) '()))
@@ -299,7 +299,7 @@
     (define church-reset-store-factors+provenance church-reset-store-factors)
     (define (church-reset-store-structural-addrs address store)
       (set-store-structural-addrs! store '()))
-    (define church-reset-store-structural-addrs church-reset-store-structural-addrs+provenance)
+    (define church-reset-store-structural-addrs+provenance church-reset-store-structural-addrs)
 
     ;;;non-functional trie
     ;;provides: make-empty-trie, copy-trie, trie-insert, trie-lookup, trie-update, trie->values, alist->trie
@@ -369,6 +369,8 @@
     (define (read-addbox addbox address) (trie-lookup addbox (reverse address)))
     (define (update-addbox addbox address fn) (trie-update addbox (reverse address) fn))
     (define addbox->values trie->values)
+    (define (addbox->values+provenance addbox+)
+      (prov-init (addbox->values (erase addbox+))))
     (define (alist->addbox alist) (alist->trie (map (lambda (b) (cons (reverse (car b)) (cdr b))) alist)))
     (define addbox-empty? trie-empty?)
 
@@ -610,7 +612,7 @@
                                  new-xrp-draw))))
             new-val))))
 
-(define (church-make-xrp-with-provenance 
+(define (church-make-xrp+provenance
           address
           store
           xrp-name+
@@ -725,9 +727,10 @@
                                       (new-xrp-draw (make-xrp-draw address
                                                                    value
                                                                    xrp-name
-                                                                   (lambda (address store state) ;;FIXME: clean up this proposer stuff...
+                                                                   (lambda (address store state+) ;;FIXME: clean up this proposer stuff...
+                                                                     (let* ([state (erase state+)])
                                                                      (let ((store (cons (first (mcmc-state->store state)) (cdr (mcmc-state->store state)))))
-                                                                       (church-apply (mcmc-state->address state) store proposer (list args value))))
+                                                                       (church-apply (mcmc-state->address state) store proposer (list args value)))))
                                                                    (cons (store->tick store) last-tick)
                                                                    incr-score
                                                                    support-vals
@@ -746,11 +749,64 @@
     (define (make-mcmc-state store value address) (list store value address))
     (define mcmc-state->store first)
     (define mcmc-state->address third)
+    (define (mcmc-state->address+provenance state+)
+      (prov-init (mcmc-state->address (erase state+))))
     (define (mcmc-state->xrp-draws state) (store->xrp-draws (mcmc-state->store state)))
+
+    (define (mcmc-state->xrp-draws+provenance state+) 
+      (prov-init (store->xrp-draws (mcmc-state->store (erase state+)))))
+
+    (define (mcmc-state->score+provenance state+-with-val+)
+      (prov-init (let* ([state-with-val+ (erase state+-with-val+)])
+                   (if (not (eq? #t (first (erase (second state-with-val+)))))
+                     minus-infinity
+                     (store->score (mcmc-state->store state-with-val+))))))
+
     (define (mcmc-state->score state)
-      (if (not (eq? #t (first (second state))))
-        minus-infinity ;;enforce conditioner.
-        (store->score (mcmc-state->store state))))
+      (begin 
+        (display '(in mcmc-state->score:))
+        (display state)
+        (display state)
+        (display state)
+        (display state)
+        (display state)
+        (display state)
+        (display state)
+        (display state)
+        (display state)
+        (display state)
+        (display state)
+        (display (first (second state)))
+        (display (first (second state)))
+        (display (first (second state)))
+        (display (first (second state)))
+        (display (first (second state)))
+        (display (first (second state)))
+        (display (first (second state)))
+        (display (first (second state)))
+        (display (first (second state)))
+        (display (first (second state)))
+        (display (first (second state)))
+        (display (first (second state)))
+        (display (store->score (mcmc-state->store state)))
+        (display (store->score (mcmc-state->store state)))
+        (display (store->score (mcmc-state->store state)))
+        (display (store->score (mcmc-state->store state)))
+        (display (store->score (mcmc-state->store state)))
+        (display (store->score (mcmc-state->store state)))
+        (display (store->score (mcmc-state->store state)))
+        (display (store->score (mcmc-state->store state)))
+        (display (store->score (mcmc-state->store state)))
+        (display (store->score (mcmc-state->store state)))
+        (display (store->score (mcmc-state->store state)))
+        (display (store->score (mcmc-state->store state)))
+        (display (store->score (mcmc-state->store state)))
+        (display (store->score (mcmc-state->store state)))
+        (display '(done with mcmc-state->score))
+
+        (if (not (eq? #t (first (second state))))
+          minus-infinity ;;enforce conditioner.
+          (store->score (mcmc-state->store state)))))
 
     ;;compute the gradient of the score of a trace-container wrt any tapified erp values.
     (define (mcmc-state->gradient state)
@@ -776,8 +832,10 @@
                                 (store->enumeration-flag store)
                                 (copy-addbox (store->factors store))
                                 (store->structural-addrs store)
-                                )))
-        (church-apply (mcmc-state->address state) store (cdr (second state)) '())))
+                                ))
+             [answer (church-apply (mcmc-state->address state) store (cdr (second state)) '())])
+        (begin (display (list '(mcmc-state->query-value answer:) answer))
+               answer)))
 
 (define (mcmc-state->query-value+provenance state+)
   (let* ([state (erase state+)]
@@ -799,7 +857,7 @@
       (make-mcmc-state store 'init-val address))
 
     (define (church-make-initial-mcmc-state+provenance address store)
-      (prov-init (make-mcmc-state store 'init-val address)))
+      (prov-init (make-mcmc-state store (prov-init 'init-val) address)))
 
     ;; ;;this is like church-make-initial-mcmc-state, but flags the created state to init new xrp-draws at left-most element of support.
     ;; ;;clears the xrp-draws since it is meant to happen when we begin enumeration (so none of the xrp-draws in store can be relevant).
@@ -824,7 +882,7 @@
                                                                                (xrp-draw-ticks (first interv))
                                                                                'dummy-score ;;dummy score which will be replace on update.
                                                                                (xrp-draw-support (first interv))
-                                                                               ))))
+                                                                               #f))))
                                              (copy-addbox (store->xrp-draws (mcmc-state->store state)))
                                              interventions)
                                        (copy-addbox (store->xrp-stats (mcmc-state->store state)))
@@ -836,7 +894,11 @@
                                        ))
              ;;application of the nfqp happens with interv-store, which is a copy so won't mutate original state.
              ;;after application the store must be captured and put into the mcmc-state.
-             (value (erase (church-apply (mcmc-state->address state) interv-store nfqp '())))
+             (value (church-apply (mcmc-state->address state) interv-store nfqp '()))
+             ;; how do we make value (#t . <procedure>) work w/ provenance tracking?
+             ;; the expr is (cons cond-val (lambda () query-val))
+             ;; the problem is, where is (lambda () query-val) executed.
+             [asdf (begin (display (list '(value in counterfactual-update:) value)))]
              (cd-bw/fw (if (store->enumeration-flag interv-store)
                          0
                          (clean-store interv-store))) ;;FIXME!! need to clean out unused xrp-stats?
@@ -845,9 +907,14 @@
                  0
                  (clean-store-factors interv-store)))
              ;; (void (begin (display "cdbwfwscore: ") (display cd-bw/fw) (display "factorbwfwscore: ") (display factor-bw/fw)))
-             (proposal-state (make-mcmc-state interv-store value (mcmc-state->address state))))
+             (proposal-state (make-mcmc-state interv-store value (mcmc-state->address state)))
+             [answer (prov-init (list proposal-state cd-bw/fw))])
         ;;(list proposal-state (+ cd-bw/fw factor-bw/fw))))
-        (prov-init (list proposal-state cd-bw/fw))))
+        (begin
+          (display '(end of counterfactual update:))
+          (display answer)
+          answer)
+        ))
 
     (define (counterfactual-update state nfqp . interventions)
           (let* ((interv-store (make-store (fold (lambda (interv xrps)

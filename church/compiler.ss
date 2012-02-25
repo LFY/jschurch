@@ -181,22 +181,42 @@
         ;; header.ss functions
         ;; Lifting various header.ss functions
         [(tagged-list? sexpr 'make-xrp) ;; needs address, store, provenance
-         `(church-apply (cons ',(next-addr) address) store ,(church-rename (provenance-rename (first sexpr))) (list ,@(map re-addr-prov (rest sexpr))))]
+         `(church-apply (cons ',(next-addr) address) store 
+                         ,(church-rename (provenance-rename (first sexpr))) 
+                         (arglist ,@(map re-addr-prov (rest sexpr))))]
         [(tagged-list? sexpr 'make-factor) ;; needs address, store, provenance
-         `(church-apply (cons ',(next-addr) address) store ,(church-rename (provenance-rename (first sexpr))) (list ,@(map re-addr-prov (rest sexpr))))]
+         `(church-apply (cons ',(next-addr) address) store 
+                        ,(church-rename (provenance-rename (first sexpr))) 
+                        (arglist ,@(map re-addr-prov (rest sexpr))))]
         [(tagged-list? sexpr 'counterfactual-update) ;; only needs provenance
-         `(,(provenance-rename (first sexpr)) ,@(map re-addr-prov (rest sexpr)))]
+         `(apply ,(provenance-rename (first sexpr)) (arglist ,@(map re-addr-prov (rest sexpr))))]
 
         ;; Lifting MCMC state manipulation
-        [(tagged-list? sexpr 'make-initial-mcmc-state) `(apply-fn+prov (cons ',(next-addr) address) ,(church-rename (provenance-rename (first sexpr))) (arglist ,@(map re-addr-prov (rest sexpr))))]
+        [(tagged-list? sexpr 'make-initial-mcmc-state) 
+         `(church-apply (cons ',(next-addr) address)  ;; if we defined fn usually we don't want to 'erase' it so no apply-fn+prov
+                        store
+                        ,(church-rename (provenance-rename (first sexpr)))
+                        (arglist ,@(map re-addr-prov (rest sexpr))))]
 
-        [(tagged-list? sexpr 'mcmc-state->xrp-draws) `(apply-prim+prov ,(first sexpr) ,@(map re-addr-prov (rest sexpr)))]
-        [(tagged-list? sexpr 'mcmc-state->score) `(apply-prim+prov ,(first sexpr) ,@(map re-addr-prov (rest sexpr)))]
-        [(tagged-list? sexpr 'mcmc-state->query-value) `(apply-prim+prov ,(first sexpr) ,@(map re-addr-prov (rest sexpr)))]
+        [(tagged-list? sexpr 'addbox->values)
+         `(addbox->values+provenance ,@(map re-addr-prov (rest sexpr)))]
+        [(tagged-list? sexpr 'mcmc-state->xrp-draws) 
+         `(mcmc-state->xrp-draws+provenance ,@(map re-addr-prov (rest sexpr)))]
+        [(tagged-list? sexpr 'mcmc-state->address) 
+         `(mcmc-state->address+provenance ,@(map re-addr-prov (rest sexpr)))]
+        [(tagged-list? sexpr 'mcmc-state->score) 
+         `(mcmc-state->score+provenance ,@(map re-addr-prov (rest sexpr)))]
+        [(tagged-list? sexpr 'mcmc-state->query-value) 
+         `(apply-prim+prov ,(first sexpr) ,@(map re-addr-prov (rest sexpr)))]
+        [(tagged-list? sexpr 'xrp-draw-proposer)
+         `(prov-init (xrp-draw-proposer (erase ,(re-addr-prov (second sexpr)))))]
 
-        [(tagged-list? sexpr 'reset-store-xrp-draws) `(church-apply (cons ',(next-addr) address) store church-reset-store-xrp-draws+provenance)]
-        [(tagged-list? sexpr 'reset-store-factors) `(church-apply (cons ',(next-addr) address) store church-reset-store-xrp-draws+provenance)]
-        [(tagged-list? sexpr 'reset-store-structural-addrs) `(church-apply (cons ',(next-addr) address) store church-reset-store-structural-addrs+provenance)]
+        [(tagged-list? sexpr 'reset-store-xrp-draws) 
+         `(church-apply (cons ',(next-addr) address) store church-reset-store-xrp-draws+provenance)]
+        [(tagged-list? sexpr 'reset-store-factors) 
+         `(church-apply (cons ',(next-addr) address) store church-reset-store-xrp-draws+provenance)]
+        [(tagged-list? sexpr 'reset-store-structural-addrs) 
+         `(church-apply (cons ',(next-addr) address) store church-reset-store-structural-addrs+provenance)]
 
         [(application? sexpr)
          (cond [(and (symbol? (first sexpr)) (primitive? (first sexpr)))
