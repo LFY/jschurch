@@ -324,8 +324,6 @@
            (new-p (scorer proposal-state))
            (accept (log-flip* (min 0.0 (+ (- new-p old-p) bw/fw))))
            (dummy (reset-store-xrp-draws))) ;;FIXME!! this is to avoid accumulating xrp-draws...
-      (display 'accept==)
-      (display accept)
       (if accept
           proposal-state
           state))))
@@ -343,8 +341,6 @@
            (new-p (scorer proposal-state))
            (accept (log-flip* (min 0.0 (+ (- new-p old-p) bw/fw))))
            (dummy (reset-store-xrp-draws))) ;;FIXME!! this is to avoid accumulating xrp-draws...
-      (display 'accept==)
-      (display accept)
       (if accept
           proposal-state
           state))))
@@ -361,8 +357,6 @@
            (new-p (scorer proposal-state))
            (accept (log-flip* (min 0.0 (+ (- new-p old-p) bw/fw))))
            (dummy (reset-store-xrp-draws))) ;;FIXME!! this is to avoid accumulating xrp-draws...
-      (display 'accept==)
-      (display accept)
       (if accept
           proposal-state
           state))))
