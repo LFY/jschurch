@@ -136,7 +136,7 @@
              `(apply (church-force address store proc) address store (church-force address store args))
              ))))
 
-    (define DEBUG #t)
+    (define DEBUG #f)
 
     (define (display-debug x)
       (if DEBUG (display x) '()))
@@ -679,8 +679,8 @@
                                (let* (
                                       [void 
                                         (begin
-                                          (display '(in churchmakexrpwithprovenance calling decrstats:))
-                                          (display (list address store old-value (car (read-addbox (store->xrp-stats store) xrp-address)) hyperparams operands)))]
+                                          (display-debug '(in churchmakexrpwithprovenance calling decrstats:))
+                                          (display-debug (list address store old-value (car (read-addbox (store->xrp-stats store) xrp-address)) hyperparams operands)))]
                                       ;; (dec (decr-stats address store old-value (car (read-addbox (store->xrp-stats store) xrp-address)) hyperparams operands))
                                       [dec (erase (decr-stats address store
                                                               (prov-init old-value)
@@ -820,7 +820,7 @@
                                 (store->structural-addrs store)
                                 ))
              [answer (church-apply (mcmc-state->address state) store (cdr (second state)) '())])
-        (begin (display (list '(mcmc-state->query-value answer:) answer))
+        (begin (display-debug (list '(mcmc-state->query-value answer:) answer))
                answer)))
 
 (define (mcmc-state->query-value+provenance state+)
@@ -835,12 +835,12 @@
                             (store->structural-addrs store)
                             ))
     ;; we need to clear the provenance otherwise if statements in mcmc kernels will wrongly mark xrp's as structural
-         [debug (begin (display '(in queryvalue+prov))
-                       (display (store->structural-addrs store)))]
+         [debug (begin (display-debug '(in queryvalue+prov))
+                       (display-debug (store->structural-addrs store)))]
          [answer (clear-prov (church-apply (mcmc-state->address state) store (cdr (erase (second state))) '()))]
          )
     (begin
-      (display (list '(mcmc-state->query-value answer:) answer))
+      (display-debug (list '(mcmc-state->query-value answer:) answer))
       answer)))
 
     ;;this captures the current store/address and packages up an initial mcmc-state.
@@ -891,7 +891,7 @@
              ;; how do we make value (#t . <procedure>) work w/ provenance tracking?
              ;; the expr is (cons cond-val (lambda () query-val))
              ;; the problem is, where is (lambda () query-val) executed.
-             [asdf (begin (display (list '(value in counterfactual-update:) value)))]
+             [asdf (begin (display-debug (list '(value in counterfactual-update:) value)))]
              (cd-bw/fw (if (store->enumeration-flag interv-store)
                          0
                          (clean-store interv-store))) ;;FIXME!! need to clean out unused xrp-stats?
@@ -904,10 +904,10 @@
              [answer (prov-init (list proposal-state cd-bw/fw))])
         ;;(list proposal-state (+ cd-bw/fw factor-bw/fw))))
         (begin
-          (display '(end of counterfactual update:))
-          (display answer)
-          (display '(Structural addresses:))
-          (display (store->structural-addrs interv-store))
+          (display-debug '(end of counterfactual update:))
+          (display-debug answer)
+          (display-debug '(Structural addresses:))
+          (display-debug (store->structural-addrs interv-store))
 
           answer)
         ))

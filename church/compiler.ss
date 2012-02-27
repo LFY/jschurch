@@ -237,8 +237,7 @@
         [(symbol? sexpr) (church-rename sexpr)]
         [(number? sexpr) `(prov-init ,sexpr)]
         [else `(prov-init ,sexpr)] )))
-  `(list 'result-value+provenance: ,(addr-prov sexpr '())
-         (list 'structural-addresses: (store->structural-addrs store))))
+  `(erase ,(addr-prov sexpr '())))
 
  (define symbol-index 0)
  (define (next-addr)

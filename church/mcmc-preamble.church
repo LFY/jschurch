@@ -155,17 +155,10 @@
     (mcmc-loop kernel init-state num-samples '())))
 
 (define (mcmc-loop kernel state samples-left samples)
-  (begin
-    (display '(in mcmc-loop samples left))
-    (display samples-left)
-    (display samples)
   (if (< samples-left 1)
-      (reverse samples)
-      (let* ([q-v (mcmc-state->query-value state)]
-             [debug (begin
-                      (display '(provenance of the q-v))
-                      (display q-v))])
-      (mcmc-loop kernel (kernel state) (- samples-left 1) (pair q-v samples))))))
+    (reverse samples)
+    (let* ([q-v (mcmc-state->query-value state)])
+      (mcmc-loop kernel (kernel state) (- samples-left 1) (pair q-v samples)))))
 
 (define (mh-query samples lag normal-form-proc)
   (repeated-mcmc-query-core (lambda () (rejection-initializer normal-form-proc))
