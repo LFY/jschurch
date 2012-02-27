@@ -16,7 +16,7 @@
     (loop '() xs)))
 
 (for-each display 
-          (larj-mh-query 10 3 10
+          (larj-mh-query 50 10 100
                     (define x
                       (let* ([num-vals (randintS 5 10)]
                              (dummyprint (display num-vals))

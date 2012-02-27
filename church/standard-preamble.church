@@ -330,3 +330,9 @@
 ;;FIXME!! implement no-proposals or singleton constraint detection to deprecate it...
 (define (no-proposals x) (begin (display "warning: no-proposals not implemented.\n")
                                 x))
+
+(define (interp-range min max n) 
+    (if (eq? n 1)
+        max
+        (map (lambda (i) (+ min (* (/ i (- n 1)) (- max min)))) (iota n))
+))
