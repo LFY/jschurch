@@ -207,16 +207,17 @@
         [(tagged-list? sexpr 'mcmc-state->score) 
          `(mcmc-state->score+provenance ,@(map re-addr-prov (rest sexpr)))]
         [(tagged-list? sexpr 'mcmc-state->query-value) 
-         `(apply-prim+prov ,(first sexpr) ,@(map re-addr-prov (rest sexpr)))]
+         `(mcmc-state->query-value+provenance ,@(map re-addr-prov (rest sexpr)))]
+         ;; `(apply-prim+prov ,(first sexpr) ,@(map re-addr-prov (rest sexpr)))]
         [(tagged-list? sexpr 'xrp-draw-proposer)
          `(prov-init (xrp-draw-proposer (erase ,(re-addr-prov (second sexpr)))))]
 
         [(tagged-list? sexpr 'reset-store-xrp-draws) 
-         `(church-apply (cons ',(next-addr) address) store church-reset-store-xrp-draws+provenance)]
+         '(church-reset-store-xrp-draws address store)]
         [(tagged-list? sexpr 'reset-store-factors) 
-         `(church-apply (cons ',(next-addr) address) store church-reset-store-xrp-draws+provenance)]
+         '(church-reset-store-factors address store)]
         [(tagged-list? sexpr 'reset-store-structural-addrs) 
-         `(church-apply (cons ',(next-addr) address) store church-reset-store-structural-addrs+provenance)]
+         '(church-reset-store-structural-addrs+provenance address store)]
 
         [(application? sexpr)
          (cond [(and (symbol? (first sexpr)) (primitive? (first sexpr)))

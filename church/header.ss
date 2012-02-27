@@ -70,10 +70,13 @@
     ;;;
     ;;misc church primitives
     (define (church-apply address store proc args)
+      (begin (display-debug '(in church apply))
+             (display-debug args)
+             (display-debug '(end church apply))
       ,(if *no-forcing*
          `(apply proc address store args)
          `(apply (church-force address store proc) address store (church-force address store args))
-         ))
+         )))
 
      ;; ;;requires compile, eval, and environment to be available from underlying scheme....
     ;; (define (church-eval addr store sexpr)
@@ -209,6 +212,9 @@
     (define (lifted-apply address store proc+ . args+s)
       (let* ([all-vals (extract-vals args+s)]
              [all-provs (extract-provs args+s)]
+             [void (begin
+                     (display-debug '(in lifted apply:))
+                     (display-debug args+s))]
              [split-args+s (if (= (length args+s) 1) 
                              (split-share-prov (car args+s))
                              (append (my-take args+s (- (length args+s) 1))
@@ -292,7 +298,11 @@
     (define store->enumeration-flag fifth) ;;FIXME: this is a hacky way to deal with enumeration...
 
     (define (church-reset-store-xrp-draws address store)
-      (set-store-xrp-draws! store (make-addbox)))
+      (begin
+        (display-debug '(in church reset store xrp draws))
+        (display-debug (list address store))
+        (set-store-xrp-draws! store (make-addbox))))
+
     (define church-reset-store-xrp-draws+provenance church-reset-store-xrp-draws)
     (define (church-reset-store-factors address store)
       (set-store-factors! store (make-addbox)))
@@ -337,6 +347,7 @@
         (if (null? alist)
           trie
           (loop (cdr alist) (trie-insert trie (caar alist) (cdar alist))))))
+
 
     ;;walk trie, making new pairs.
     (define (copy-trie trie)
@@ -662,15 +673,27 @@
 
         (let* ((xrp-address address)
                (proposer (if (null? proposer)
-                           (lambda (address store operands old-value) ;;--> proposed-value forward-log-prob backward-log-prob
-                             (let* ((dec (decr-stats address store old-value (car (read-addbox (store->xrp-stats store) xrp-address)) hyperparams operands))
-                                    (decstats (second dec))
-                                    (decscore (third dec))
-                                    (sandbox-store (cons (make-addbox) (cdr store)));;FIXME: this is a hack to need to isolate random choices in sampler from MH.
-                                    (inc (sample address sandbox-store decstats hyperparams operands))
-                                    (proposal-value (first inc))
-                                    (incscore (third inc)))
-                               (list proposal-value incscore decscore)))
+                           (prov-init
+                             (lambda (address store operands old-value) ;;--> proposed-value forward-log-prob backward-log-prob
+                               (let* (
+                                      [void 
+                                        (begin
+                                          (display '(in churchmakexrpwithprovenance calling decrstats:))
+                                          (display (list address store old-value (car (read-addbox (store->xrp-stats store) xrp-address)) hyperparams operands)))]
+                                      ;; (dec (decr-stats address store old-value (car (read-addbox (store->xrp-stats store) xrp-address)) hyperparams operands))
+                                      [dec (erase (decr-stats address store
+                                                              (prov-init old-value)
+                                                              (prov-init (car (read-addbox (store->xrp-stats store) xrp-address)))
+                                                              (prov-init hyperparams)
+                                                              (prov-init operands)))]
+
+                                      (decstats (second dec))
+                                      (decscore (third dec))
+                                      (sandbox-store (cons (make-addbox) (cdr store)));;FIXME: this is a hack to need to isolate random choices in sampler from MH.
+                                      (inc (erase (sample address sandbox-store (prov-init decstats) (prov-init hyperparams) (prov-init operands))))
+                                      (proposal-value (first inc))
+                                      (incscore (third inc)))
+                                 (prov-init (list proposal-value incscore decscore)))))
                            proposer))) ;;FIXME!! need to isolate provided proposer from MH...
 
         (display-debug "church-make-xrp-with-provenance-actual-xrp:")
@@ -709,7 +732,9 @@
                                       (structural? '())
                                       [db (display-debug "structural:")]
                                       [tmp (if (eq? trienone xrp-draw)
-                                             (begin ;; (display-debug (extract-opt-arg val-provs))
+                                             (begin 
+                                               (display-debug '(in make-xrp+provenance calling sampler))
+                                               (display-debug (list (prov-init stats) hyperparams+ (extract-opt-arg val-provs)))
                                              (erase (apply-fn+prov address sandbox-store sample+ (list (prov-init stats) hyperparams+ (extract-opt-arg val-provs)))))
                                              ;;(sample address sandbox-store stats hyperparams args) 
                                              (erase (apply-fn+prov address sandbox-store incr-stats+ (list (prov-init (xrp-draw-value xrp-draw)) (prov-init stats) hyperparams+ (extract-opt-arg val-provs)))))]
@@ -727,10 +752,11 @@
                                       (new-xrp-draw (make-xrp-draw address
                                                                    value
                                                                    xrp-name
+                                                                   ;; this is weird, since we don't want this to be wrapped, but it does something that needs to be wrapped. someone kill me now.
                                                                    (lambda (address store state+) ;;FIXME: clean up this proposer stuff...
                                                                      (let* ([state (erase state+)])
                                                                      (let ((store (cons (first (mcmc-state->store state)) (cdr (mcmc-state->store state)))))
-                                                                       (church-apply (mcmc-state->address state) store proposer (list args value)))))
+                                                                       (church-apply (mcmc-state->address state) store (erase proposer) (list args value)))))
                                                                    (cons (store->tick store) last-tick)
                                                                    incr-score
                                                                    support-vals
@@ -848,7 +874,7 @@
                             (copy-addbox (store->factors store))
                             (store->structural-addrs store)
                             )))
-    (church-apply (mcmc-state->address state) store (cdr (second state)) '())))
+    (church-apply (mcmc-state->address state) store (cdr (erase (second state))) '())))
 
     ;;this captures the current store/address and packages up an initial mcmc-state.
     ;;should copy here? not needed currently, since counterfactual-update coppies and is only thing aplied to states....

@@ -8,20 +8,25 @@
   (begin
   (make-xrp xrp-name
        (lambda (stats hyperparams args) ;;sample
-         (let* ((value (apply sampler args))
-                ;;[db (begin (display "val-from-sampler:") (display value))]
+         (let* ([db (begin (display "before-val-from-sampler:"))]
+                (value (apply sampler args))
+                [db (begin (display "val-from-sampler:") (display value))]
                 (value (if (and (*with-score-gradient*) (continuous? value)) (tapify (untapify value)) value))
-                ;;[db (begin (display "val-from-sampler-after-branch:") (display value))]
+                [db (begin (display "val-from-sampler-after-branch:") (display value))]
                 )
            (list value stats (scorer args value))))
        (lambda (value stats hyperparams args) ;;incr-stats
          (begin 
-           ;;(display "call-incr-stats:")
+           (display "call-incr-stats:")
+           (display value)
          (let ((value (if (and (*with-score-gradient*) (continuous? value)) (tapify (untapify value)) value)))
            (list value stats (scorer args value)))))
        (lambda (value stats hyperparams args) ;;decr-stats
+         (begin
+           (display "call-decr-stats:")
+           (display value)
          (let ((value (if (and (*with-score-gradient*) (continuous? value)) (tapify (untapify value)) value)))
-           (list value stats (scorer args value))))
+           (list value stats (scorer args value)))))
        'scorer;;FIXME
        '() ;;init-stats
        '() ;;hyperparams
