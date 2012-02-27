@@ -5,63 +5,38 @@
 ;;for constructing 'erp-like' xrps that don't have any hyperparams or stats.
 
 (define (make-stateless-xrp xrp-name sampler scorer . proposal-support)
-  (begin
   (make-xrp xrp-name
-       (lambda (stats hyperparams args) ;;sample
-         (let* ([db (begin (display "before-val-from-sampler:"))]
-                (value (apply sampler args))
-                [db (begin (display "val-from-sampler:") (display value))]
-                (value (if (and (*with-score-gradient*) (continuous? value)) (tapify (untapify value)) value))
-                [db (begin (display "val-from-sampler-after-branch:") (display value))]
-                )
-           (list value stats (scorer args value))))
-       (lambda (value stats hyperparams args) ;;incr-stats
-         (begin 
-           (display "call-incr-stats:")
-           (display value)
-         (let ((value (if (and (*with-score-gradient*) (continuous? value)) (tapify (untapify value)) value)))
-           (list value stats (scorer args value)))))
-       (lambda (value stats hyperparams args) ;;decr-stats
-         (begin
-           (display "call-decr-stats:")
-           (display value)
-         (let ((value (if (and (*with-score-gradient*) (continuous? value)) (tapify (untapify value)) value)))
-           (list value stats (scorer args value)))))
-       'scorer;;FIXME
-       '() ;;init-stats
-       '() ;;hyperparams
-       (if (null? proposal-support) (begin '()) (first proposal-support))
-       (if (null? proposal-support) (begin '()) (if (null? (rest proposal-support))
-                                                                        '()
-                                                                        (let ((pr (second proposal-support))) (lambda (stats hyperparams args) (pr args))))))))
+            (lambda (stats hyperparams args) ;;sample
+              (let* ((value (apply sampler args))
+                     (value (if (and (*with-score-gradient*) (continuous? value)) (tapify (untapify value)) value)))
+                (list value stats (scorer args value))))
+            (lambda (value stats hyperparams args) ;;incr-stats
+              (let ((value (if (and (*with-score-gradient*) (continuous? value)) (tapify (untapify value)) value)))
+                (list value stats (scorer args value))))
+            (lambda (value stats hyperparams args) ;;decr-stats
+              (let ((value (if (and (*with-score-gradient*) (continuous? value)) (tapify (untapify value)) value)))
+                (list value stats (scorer args value))))
+            'scorer;;FIXME
+            '() ;;init-stats
+            '() ;;hyperparams
+            (if (null? proposal-support) '() (first proposal-support))
+            (if (null? proposal-support) '() (if (null? (rest proposal-support))
+                                                 '()
+                                                 (let ((pr (second proposal-support))) (lambda (stats hyperparams args) (pr args)))))))
 
-(define flip (begin
-               ;; (display "define-flip:")
-               (make-stateless-xrp 'flip
-                                   (lambda w  (begin 
-                                                ;; (display "flip-sampler-call:")
-                                                ;; (display w)
-                                                ;; (if (list? w) (display (car w)) (display "NULL-ARGS:"))
-                                                ;; (display "end-flip-sampler-call:")
-                                                (if (null? w)
-                                                  (let ([res (< (random-real) 0.5)])
-                                                    (begin 
-                                                      ;; (display "w-null:")
-                                                      res))
-                                                  (let ([res (< (random-real) (car w))])
-                                                    (begin 
-                                                      ;; (display "w-not-null:")
-                                                      ;; (display w)
-                                                      res)))))
-                                   (lambda (args val)
-                                     (if (null? args)
+(define flip (make-stateless-xrp 'flip
+                                 (lambda w  (if (null? w)
+                                                (< (random-real) 0.5)
+                                                (< (random-real) (car w)) ))
+                                 (lambda (args val)
+                                   (if (null? args)
                                        (- (log 2.0))
                                        (if val
-                                         (log (first args))
-                                         (log (- 1 (first args))) )))
-                                   '() ;proposer
-                                   (lambda (args) (list true false)) ;;FIXME: check if prob is 0 or 1.
-                                   )))
+                                           (log (first args))
+                                           (log (- 1 (first args))) )))
+                                 '() ;proposer
+                                 (lambda (args) (list true false)) ;;FIXME: check if prob is 0 or 1.
+                                 ))
 
 (define log-flip (make-stateless-xrp 'log-flip
                                      (lambda w (if (null? w)
@@ -91,12 +66,7 @@
                                             ))
 
 (define sample-integer (make-stateless-xrp 'sample-integer
-                                           (lambda x (begin 
-                                                         ;; (display "run-random-integer:")
-                                                         ;; (display x)
-                                                         ;; (display (car x))
-                                                         ;; (display "end-run-random-integer:")
-                                                         (random-integer (caar x))))
+                                           random-integer
                                            (lambda (args val)
                                              (let ((n (first args)))
                                                (if (and (integer? val)

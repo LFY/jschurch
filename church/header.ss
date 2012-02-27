@@ -119,6 +119,8 @@
     ;; prov-init/erase are lift/extract
     (define (prov-init sexpr)
       (list sexpr '()))
+    (define (clear-prov v+)
+      (list (car v+) '()))
     (define erase first)
     ;; get the dependencies of a value
     (define prov second)
@@ -139,14 +141,13 @@
     (define (display-debug x)
       (if DEBUG (display x) '()))
 
-    (define (if+prov store condition true-branch false-branch)
+    (define (if+prov loc store condition true-branch false-branch)
       (let* ([res (erase condition)]
              [prov-of-condition (prov condition)])
         (begin
               (display-debug "if:")
+              (display-debug loc)
               (display-debug condition)
-              (display-debug (length condition))
-              (display-debug store)
               (display-debug "endif:") 
           (store-add-structural-dep!
             store
@@ -832,8 +833,15 @@
                             (store->enumeration-flag store)
                             (copy-addbox (store->factors store))
                             (store->structural-addrs store)
-                            )))
-    (church-apply (mcmc-state->address state) store (cdr (erase (second state))) '())))
+                            ))
+    ;; we need to clear the provenance otherwise if statements in mcmc kernels will wrongly mark xrp's as structural
+         [debug (begin (display '(in queryvalue+prov))
+                       (display (store->structural-addrs store)))]
+         [answer (clear-prov (church-apply (mcmc-state->address state) store (cdr (erase (second state))) '()))]
+         )
+    (begin
+      (display (list '(mcmc-state->query-value answer:) answer))
+      answer)))
 
     ;;this captures the current store/address and packages up an initial mcmc-state.
     ;;should copy here? not needed currently, since counterfactual-update coppies and is only thing aplied to states....
@@ -898,6 +906,9 @@
         (begin
           (display '(end of counterfactual update:))
           (display answer)
+          (display '(Structural addresses:))
+          (display (store->structural-addrs interv-store))
+
           answer)
         ))
 

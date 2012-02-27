@@ -20,23 +20,16 @@
   (filter proposable? (addbox->values (mcmc-state->xrp-draws state))))
 
 (define (selective-proposal-distribution state normal-form-proc proposable?)
-  (begin
-    (display '(in selective-proposal-distribution))
-    (display (list state normal-form-proc proposable?))
-    (display '(done with listing the arguments...))
   (if (addbox-empty? (mcmc-state->xrp-draws state))
       (list 0.0 state) ;; if no xrps have been drawn (eg all randomness in q-e) make trivial proposal. (still have to update..??)
       (let ((proposal-xrps (proposable-xrps state proposable?)))
         (if (null? proposal-xrps)
             (list 0.0 state)
             (let* ((chosen-xrp (uniform-draw* proposal-xrps))
-                   [db0 (display '(in selective-proposal-distribution-val-before-prop))]
-                   [db01 (display chosen-xrp)]
                    (ret1 ((xrp-draw-proposer chosen-xrp) state))
                    (proposed-val (first ret1))
                    (proposal-fw-score (second ret1))
                    (proposal-bw-score (third ret1))
-                   [db (display (list '(in selective-proposal-distribution-val) ret1))]
                    (ret2 (counterfactual-update state normal-form-proc (pair chosen-xrp proposed-val)))
                    (proposal-state (first ret2))
                    (cd-bw/fw (second ret2))
@@ -44,7 +37,7 @@
                    (ind-bw (- (log (length (proposable-xrps proposal-state proposable?)))))
                    ;(dummy (for-each display (list "ind-fw " ind-fw "  ind-bw " ind-bw "  cd-bw/fw " cd-bw/fw  " proposal-bw-score  " proposal-bw-score " proposal-fw-score  " proposal-fw-score "\n")))
                    )
-              (list (+ (- proposal-bw-score proposal-fw-score) cd-bw/fw (- ind-bw ind-fw)) proposal-state)))))))
+              (list (+ (- proposal-bw-score proposal-fw-score) cd-bw/fw (- ind-bw ind-fw)) proposal-state))))))
 
 (define (basic-proposal-distribution state normal-form-proc)
   (selective-proposal-distribution state normal-form-proc (lambda (xrp-draw) true)))
@@ -55,78 +48,12 @@
 ;;FIXME!! this works badly... need constraint prop to do this right.
 (define (rejection-initializer normal-form-proc)
   (let loop ()
-    (let* (
-           [db1 (display 'rejection-initializer:)]
-          [res-cu (counterfactual-update (make-initial-mcmc-state) normal-form-proc)]
-          [db11 (display '(result of counterfactual update:))]
-          [db12 (begin
-                  (display res-cu)
-                  (display res-cu)
-                  (display res-cu)
-                  (display res-cu)
-                  (display res-cu)
-                  (display res-cu)
-                  (display res-cu)
-                  (display res-cu)
-                  (display res-cu)
-                  (display res-cu)
-                  (display res-cu)
-                  (display res-cu)
-                  (display res-cu)
-                  (display res-cu))]
-          (rejectioninit-proposal-state (first res-cu))
-          [db2 (begin
-                 (display rejectioninit-proposal-state)
-                 (display rejectioninit-proposal-state)
-                 (display rejectioninit-proposal-state)
-                 (display rejectioninit-proposal-state)
-                 (display rejectioninit-proposal-state)
-                 (display rejectioninit-proposal-state)
-                 (display rejectioninit-proposal-state)
-                 (display rejectioninit-proposal-state)
-                 (display rejectioninit-proposal-state)
-                 (display rejectioninit-proposal-state)
-                 (display rejectioninit-proposal-state)
-                 (display rejectioninit-proposal-state)
-                 )
-               ]
-          [db22 (display '(got iniital mcmc state))]
-
-          [db3 
-            (begin
-              (display (first rejectioninit-proposal-state))
-              (display (first rejectioninit-proposal-state))
-              (display (first rejectioninit-proposal-state))
-              (display (first rejectioninit-proposal-state))
-              (display (first rejectioninit-proposal-state))
-              (display (first rejectioninit-proposal-state))
-              (display (first rejectioninit-proposal-state))
-              (display (first rejectioninit-proposal-state))
-              (display (first rejectioninit-proposal-state))
-              (display (first rejectioninit-proposal-state))
-              (display (first rejectioninit-proposal-state))
-              (display '(not using first anymore))
-              (display (mcmc-state->score rejectioninit-proposal-state))
-              (display (mcmc-state->score rejectioninit-proposal-state))
-              (display (mcmc-state->score rejectioninit-proposal-state))
-              (display (mcmc-state->score rejectioninit-proposal-state))
-              (display (mcmc-state->score rejectioninit-proposal-state))
-              (display (mcmc-state->score rejectioninit-proposal-state))
-              (display (mcmc-state->score rejectioninit-proposal-state))
-              (display (mcmc-state->score rejectioninit-proposal-state))
-              (display (mcmc-state->score rejectioninit-proposal-state))
-              (display (mcmc-state->score rejectioninit-proposal-state))
-              (display (mcmc-state->score rejectioninit-proposal-state))
-              (display (mcmc-state->score rejectioninit-proposal-state))
-              (display (mcmc-state->score rejectioninit-proposal-state))
-              (display (mcmc-state->score rejectioninit-proposal-state))
-              (display (mcmc-state->score rejectioninit-proposal-state))
-              )]
-          [db4 (display '(just showed score of the rejectioninit state))]
-          )
+    (let* ([res-cu (counterfactual-update (make-initial-mcmc-state) normal-form-proc)]
+           (rejectioninit-proposal-state (first res-cu))
+           )
       (if (= minus-infinity (mcmc-state->score rejectioninit-proposal-state))
-          (loop) ;;don't care about bw/fw for init.
-          rejectioninit-proposal-state))))
+        (loop) ;;don't care about bw/fw for init.
+        rejectioninit-proposal-state))))
 
 (define verbose-init #f)
 
@@ -174,14 +101,16 @@
 ;;the scorer takes a state and returns the score.
 (define (make-mh-kernel proposal-distribution scorer)
   (lambda (state)
-    (let* ([db (display 'make-mh-kernel-proposal:)]
+    (let* (
            (ret (proposal-distribution state))
            (bw/fw (first ret))
            (proposal-state (second ret)) 
            (old-p (scorer state))
            (new-p (scorer proposal-state))
            (accept (log-flip* (min 0.0 (+ (- new-p old-p) bw/fw))))
-           (dummy (reset-store-xrp-draws))) ;;FIXME!! this is to avoid accumulating xrp-draws...
+           (dummy (begin
+                    ;;(reset-store-structural-addrs)
+                    (reset-store-xrp-draws)))) ;;FIXME!! this is to avoid accumulating xrp-draws...
       (if accept
           proposal-state
           state))))
@@ -222,20 +151,26 @@
 
 ;;;standard queries
 (define (repeated-mcmc-query-core initializer kernel num-samples)
-  (begin (display 'repeated-mcmc-query-core:)
   (let ([init-state (initializer)])
-    (mcmc-loop kernel init-state num-samples '()))))
+    (mcmc-loop kernel init-state num-samples '())))
 
 (define (mcmc-loop kernel state samples-left samples)
+  (begin
+    (display '(in mcmc-loop samples left))
+    (display samples-left)
+    (display samples)
   (if (< samples-left 1)
       (reverse samples)
-      (mcmc-loop kernel (kernel state) (- samples-left 1) (pair (mcmc-state->query-value state) samples))))
+      (let* ([q-v (mcmc-state->query-value state)]
+             [debug (begin
+                      (display '(provenance of the q-v))
+                      (display q-v))])
+      (mcmc-loop kernel (kernel state) (- samples-left 1) (pair q-v samples))))))
 
 (define (mh-query samples lag normal-form-proc)
-  (begin (display 'mh-query:)
   (repeated-mcmc-query-core (lambda () (rejection-initializer normal-form-proc))
                             (basic-repeat-kernel lag normal-form-proc)
-                            samples)))
+                            samples))
 
 (define (non-structural-mh-query samples lag normal-form-proc)
   (repeated-mcmc-query-core (lambda () (rejection-initializer normal-form-proc))

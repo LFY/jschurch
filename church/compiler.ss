@@ -152,7 +152,7 @@
             ,@(map re-addr-prov (rest sexpr)))]
         [(quoted? sexpr) `(prov-init ,sexpr)]
         [(if? sexpr) 
-         `(if+prov store ,@(list (re-addr-prov (second sexpr))
+         `(if+prov ',(next-addr) store ,@(list (re-addr-prov (second sexpr))
                                  `(lambda () ,(re-addr-prov (third sexpr)))
                                  `(lambda () ,(re-addr-prov (fourth sexpr)))))]
         [(letrec? sexpr) 
