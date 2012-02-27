@@ -243,10 +243,7 @@
                            (set! new-val val)
                            (set-store-score! store (+ (store->score store) val))
                            new-factor-instance)))
-        (begin
-          (display address)
           new-val
-          )
         ))
 
     ;;note: this assumes that the fns (sample, incr-stats, decr-stats, etc) are church procedures.
@@ -439,7 +436,6 @@
                                        ))
              ;;application of the nfqp happens with interv-store, which is a copy so won't mutate original state.
              ;;after application the store must be captured and put into the mcmc-state.
-             (dummyprint (display 'update))
              (value (church-apply (mcmc-state->address state) interv-store nfqp '()))
              (cd-bw/fw (if (store->enumeration-flag interv-store)
                          0

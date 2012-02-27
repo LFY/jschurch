@@ -16,10 +16,9 @@
     (loop '() xs)))
 
 (for-each display 
-          (larj-mh-query 50 10 100
+          (larj-mh-query 50 300 20
                     (define x
                       (let* ([num-vals (randintS 5 10)]
-                             (dummyprint (display num-vals))
                              [vals (repeat num-vals (lambda () (if (flip) 1 0)))]
                              [constraints (map (lambda (xy) (softeq-discrete2 (first xy) (second xy))) (consec-2 vals))])
                         vals))
