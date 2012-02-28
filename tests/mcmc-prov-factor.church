@@ -1,0 +1,29 @@
+(define softeq-discrete2
+  (make-factor (lambda (x y)
+                 (let* ([res (equal? x y)])
+                   (if res 0.0 (log 0.1))))))
+
+(define (randint low high)
+  (+ low (sample-integer (- high low))))
+
+(define (consec-2 xs)
+  (letrec 
+    ([loop (lambda (acc xs)
+             (cond [(null? (cdr xs)) (reverse acc)]
+                   [else
+                     (loop (cons (list (car xs) (cadr xs)) acc) (cdr xs))]))])
+    (loop '() xs)))
+
+(mh-query 10 1
+          (define x
+            (let* ([num-vals (randint 5 10)]
+                   [vals (repeat num-vals flip)]
+                   [csc2v (consec-2 vals)]
+                   [constraints (map (lambda (xy) 
+                                       (softeq-discrete2 (first xy) (second xy)))
+                                     csc2v)])
+              vals))
+          x
+          true)
+
+
