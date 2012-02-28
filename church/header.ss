@@ -288,7 +288,7 @@
         (display-debug (length store))
         (display-debug new-deps)
         (display-debug (store->structural-addrs store))
-        (set-store-structural-addrs! store (append (store->structural-addrs store) new-deps))
+        (set-store-structural-addrs! store (append (store->structural-addrs store) (filter (lambda (addr) (not (null? addr))) new-deps)))
         (display-debug (store->structural-addrs store))
              ))
 
@@ -730,7 +730,7 @@
                                       (sandbox-store (cons (make-addbox) (cdr store)));;FIXME: this is a hack to need to isolate random choices in sampler from MH.
                                        [db (display-debug "sandbox-store:")]
                                       [db (display-debug (length sandbox-store))]
-                                      (structural? '())
+                                      (structural? #f)
                                       [db (display-debug "structural:")]
                                       [tmp (if (eq? trienone xrp-draw)
                                              (begin 
@@ -852,6 +852,34 @@
     (define (church-make-initial-mcmc-state+provenance address store)
       (prov-init (make-mcmc-state store (prov-init 'init-val) address)))
 
+    ;; We'd like to update the structural? field of each xrp draw according to structural-addrs in interv-store. This can probably be a separate function.
+    (define (xrp-draw-set-structural draw new-str)
+      (make-xrp-draw
+        (xrp-draw-address draw)
+        (xrp-draw-value draw)
+        (xrp-draw-name draw)
+        (xrp-draw-proposer draw)
+        (xrp-draw-ticks draw)
+        (xrp-draw-score draw)
+        (xrp-draw-support draw)
+        new-str))
+
+    (define (update-xrp-draw-structural-fields store)
+      (let* ([draws (store->xrp-draws store)])
+        (let loop ([addrs (store->structural-addrs store)])
+          (if (null? addrs) '()
+            (begin
+              (update-addbox 
+                draws (car addrs) (lambda (draw) (xrp-draw-set-structural draw #t)))
+              (loop (cdr addrs)))))))
+
+    (define (store->structural-draws store)
+      (filter xrp-draw-structural? (addbox->values (store->xrp-draws store))))
+
+    (define (store->nonstructural-draws store)
+      (filter (lambda (d) (not (xrp-draw-structural? d)))
+              (addbox->values (store->xrp-draws stre))))
+
     ;; ;;this is like church-make-initial-mcmc-state, but flags the created state to init new xrp-draws at left-most element of support.
     ;; ;;clears the xrp-draws since it is meant to happen when we begin enumeration (so none of the xrp-draws in store can be relevant).
     ;; (define (church-make-initial-enumeration-state address store)
@@ -861,6 +889,23 @@
     ;;this is the key function for doing mcmc -- update the execution of a procedure, with optional changes to xrp-draw values.
     ;;  takes: an mcmc state, a normal-from-proc, and an optional list of interventions (which is is a list of xrp-draw new-value pairs to assert).
     ;;  returns: a new mcmc state and the bw/fw score of any creations and deletions.
+
+    ;;  counterfactual update will end up doing:
+    ;;  - cleanup of old xrps
+    ;;  - cleanup of old factors
+    ;;  - resetting diff factors (in larj outer kernel)
+    ;;  - updating structural field of xrp draws (when using dynamic analysis)
+    ;;  church-mh:
+    ;;  - cleanup old xrps :: Store -> IO ()
+    ;;  - cleanup old factors :: Store -> IO ()
+    ;;  larj:
+    ;;  - reset diff factors (outer kernel) :: Store -> IO ()
+    ;;  - don't do that (inner kernel)
+    ;;  dynamic analysis:
+    ;;  - update structural field of xrp draws (and take into account provenance of state+, nfqp+, interventions+) :: Store -> IO ()
+
+    ;; so counterfactual update might take any side effecting function that takes the state as argument.
+
     (define (counterfactual-update+provenance state+ nfqp+ . interventions+)
       (let* ([state (erase state+)]
              [nfqp (erase nfqp+)]
@@ -888,9 +933,6 @@
              ;;application of the nfqp happens with interv-store, which is a copy so won't mutate original state.
              ;;after application the store must be captured and put into the mcmc-state.
              (value (church-apply (mcmc-state->address state) interv-store nfqp '()))
-             ;; how do we make value (#t . <procedure>) work w/ provenance tracking?
-             ;; the expr is (cons cond-val (lambda () query-val))
-             ;; the problem is, where is (lambda () query-val) executed.
              [asdf (begin (display-debug (list '(value in counterfactual-update:) value)))]
              (cd-bw/fw (if (store->enumeration-flag interv-store)
                          0
@@ -900,6 +942,10 @@
                  0
                  (clean-store-factors interv-store)))
              ;; (void (begin (display "cdbwfwscore: ") (display cd-bw/fw) (display "factorbwfwscore: ") (display factor-bw/fw)))
+             [void (update-xrp-draw-structural-fields interv-store)]
+             [void (begin
+                     (display-debug '(Checking structural address inference))
+                     (display-debug (map xrp-draw-address (store->structural-draws interv-store))))]
              (proposal-state (make-mcmc-state interv-store value (mcmc-state->address state)))
              [answer (prov-init (list proposal-state cd-bw/fw))])
         ;;(list proposal-state (+ cd-bw/fw factor-bw/fw))))

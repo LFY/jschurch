@@ -180,6 +180,11 @@
 
         ;; header.ss functions
         ;; Lifting various header.ss functions
+
+
+        ;; many cases of lifting:
+        ;; user-defined church functionss a -> b => P[A[a]] -> P[A[b]]
+        ;; Lifting xrp and factor creation
         [(tagged-list? sexpr 'make-xrp) ;; needs address, store, provenance
          `(church-apply (cons ',(next-addr) address) store 
                          ,(church-rename (provenance-rename (first sexpr))) 
@@ -188,8 +193,14 @@
          `(church-apply (cons ',(next-addr) address) store 
                         ,(church-rename (provenance-rename (first sexpr))) 
                         (arglist ,@(map re-addr-prov (rest sexpr))))]
+
+        ;; Lifting counterfactual-update
         [(tagged-list? sexpr 'counterfactual-update) ;; only needs provenance
-         `(apply ,(provenance-rename (first sexpr)) (arglist ,@(map re-addr-prov (rest sexpr))))]
+         `(apply counterfactual-update+provenance (arglist ,@(map re-addr-prov (rest sexpr))))]
+
+        ;; Lifting addbox functions
+        [(tagged-list? sexpr 'addbox->values)
+         `(addbox->values+provenance ,@(map re-addr-prov (rest sexpr)))]
 
         ;; Lifting MCMC state manipulation
         [(tagged-list? sexpr 'make-initial-mcmc-state) 
@@ -197,9 +208,6 @@
                         store
                         ,(church-rename (provenance-rename (first sexpr)))
                         (arglist ,@(map re-addr-prov (rest sexpr))))]
-
-        [(tagged-list? sexpr 'addbox->values)
-         `(addbox->values+provenance ,@(map re-addr-prov (rest sexpr)))]
         [(tagged-list? sexpr 'mcmc-state->xrp-draws) 
          `(mcmc-state->xrp-draws+provenance ,@(map re-addr-prov (rest sexpr)))]
         [(tagged-list? sexpr 'mcmc-state->address) 
@@ -208,10 +216,12 @@
          `(mcmc-state->score+provenance ,@(map re-addr-prov (rest sexpr)))]
         [(tagged-list? sexpr 'mcmc-state->query-value) 
          `(mcmc-state->query-value+provenance ,@(map re-addr-prov (rest sexpr)))]
-         ;; `(apply-prim+prov ,(first sexpr) ,@(map re-addr-prov (rest sexpr)))]
+
+        ;; Lifting XRP draw access
         [(tagged-list? sexpr 'xrp-draw-proposer)
          `(prov-init (xrp-draw-proposer (erase ,(re-addr-prov (second sexpr)))))]
 
+        ;; Lifting reset functions
         [(tagged-list? sexpr 'reset-store-xrp-draws) 
          '(church-reset-store-xrp-draws address store)]
         [(tagged-list? sexpr 'reset-store-factors) 
@@ -224,6 +234,7 @@
                 (if (contains? (first sexpr) lifted-primitive-header-functions)
                   `(apply-prim+prov+addressing address store ,(church-rename (first sexpr)) (arglist ,@(map re-addr-prov (rest sexpr))))
                   `(apply-prim+prov ,(first sexpr) (arglist ,@(map re-addr-prov (rest sexpr)))))]
+               ;; Lifting Apply (but does not cover apply used as a value)
                [(equal? 'apply (first sexpr))
                 `(lifted-apply
                    (cons ',(next-addr) address) store
