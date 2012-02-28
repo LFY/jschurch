@@ -401,6 +401,7 @@
                                        (copy-addbox (store->factors (mcmc-state->store state)))
                                        (store->diff-factors (mcmc-state->store state))
                                        ))
+             
              ;;application of the nfqp happens with interv-store, which is a copy so won't mutate original state.
              ;;after application the store must be captured and put into the mcmc-state.
              (value (church-apply (mcmc-state->address state) interv-store nfqp '()))
@@ -438,19 +439,16 @@
              ;;after application the store must be captured and put into the mcmc-state.
              (value (church-apply (mcmc-state->address state) interv-store nfqp '()))
              (cd-bw/fw (if (store->enumeration-flag interv-store)
-                         0
-                         (clean-store interv-store))) ;;FIXME!! need to clean out unused xrp-stats?
-             (new-diff-factors (f-plus-minus-common interv-store))
-             (factor-score-current 
-               (if (store->enumeration-flag interv-store)
-                             0
-                             (clean-store-factors interv-store)))
-             (void (set-store-diff-factors! interv-store new-diff-factors))
-
-             (proposal-state (make-mcmc-state interv-store value (mcmc-state->address state))))
-        ;;(list proposal-state (+ cd-bw/fw factor-bw/fw))))
-        (list proposal-state cd-bw/fw))
-        )
+                           0
+                           (clean-store interv-store))) ;;FIXME!! need to clean out unused xrp-stats?
+             (new-diff-factors (f-plus-minus-common interv-store)))
+        
+        (when (not (store->enumeration-flag interv-store))
+              (clean-store-factors interv-store))
+        (set-store-diff-factors! interv-store new-diff-factors)
+        
+        (let ((proposal-state (make-mcmc-state interv-store value (mcmc-state->address state))))
+          (list proposal-state cd-bw/fw))))
 
 
     ;;we need to pull out the subset of new-state xrp-draws that were touched on this pass,
