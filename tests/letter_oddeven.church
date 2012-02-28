@@ -1,0 +1,36 @@
+(define (scope-all xs) (list xs))
+
+(define (even? x)
+  (= (modulo x 2) 0))
+
+(define (is-one? x)
+  (= x 1))
+
+(define (is-zero? x)
+  (= x 0))
+
+(define (norm-eq-log x y var)
+  (norm-gauss-log-pdf (- x y) var 0.0))
+
+(define (randintS low high)
+  (+ low (sample-integerS (- high low))))
+
+(define tf-global-even-odd
+  (make-factor (lambda (xs)
+                 (
+                  if (even? (length xs))
+                  (norm-eq-log (length (filter is-one? xs)) (length xs) 0.2)
+                  (norm-eq-log (length (filter is-zero? xs)) (length xs) 0.2)
+                  )
+                 )))
+
+
+(for-each display 
+          (larj-mh-query 300 20 50
+                    (define x
+                      (let* ([num-vals (randintS 5 10)]
+                             [vals (repeat num-vals (lambda () (if (flip) 1 0)))]
+                             [constraints (map (lambda (xs) (tf-global-even-odd xs)) (scope-all vals))])
+                        vals))
+                    x
+                    true))
