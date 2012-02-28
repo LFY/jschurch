@@ -450,7 +450,7 @@
                               samples)))
 
 
-(define (larj-mh-query num-temps samples lag normal-form-proc)
+(define (larj-mh-query samples lag num-temps normal-form-proc)
   (repeated-mcmc-query-core (lambda () (rejection-initializer normal-form-proc))  ;;initializer
                             (larj-kernel num-temps lag normal-form-proc)          ;;kernel
                             samples))                                             ;;num samples to show
