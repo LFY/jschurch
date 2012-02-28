@@ -436,7 +436,7 @@
                             new-factor-instance)))
            new-val)))
 
-    (define (church-make-factor-with-provenance address store factor-function+)
+    (define (church-make-factor+provenance address store factor-function+)
       (let* ([factor-function (erase factor-function+)]
              [hyperprov (prov factor-function+)])
         (prov-init (lambda (address store . args+)
@@ -452,7 +452,8 @@
                                              [void (begin (display-debug "should-update:") (display-debug should-update?))]
                                              ;;(apply-fn+prov address sandbox-store sample+ (list (prov-init stats) hyperparams+ (extract-opt-arg val-provs)))
                                              ;;[val (church-apply address sandbox-store factor-function args)]
-                                             [val+ (apply-fn+prov address sandbox-store factor-function+ (extract-opt-arg args+))]
+                                             [val+ (apply-fn+prov address sandbox-store 
+                                                                  factor-function+ args+)]
                                              [val (erase val+)]
                                              [prov (prov val+)]
                                              ;; [val (cond
@@ -469,7 +470,7 @@
                                         (set! new-val val)
                                         (set-store-score! store (+ (store->score store) val))
                                         new-factor-instance)))
-                     (list new-val prov)))))
+                       (list new-val '())))))
     ;;note: this assumes that the fns (sample, incr-stats, decr-stats, etc) are church procedures.
     ;;FIXME: what should happen with the store when the sampler is a church random fn? should not accumulate stats/score since these are 'marginalized'.
     (define (church-make-xrp address store xrp-name sample incr-stats decr-stats score init-stats hyperparams proposer support)
@@ -870,7 +871,8 @@
           (if (null? addrs) '()
             (begin
               (update-addbox 
-                draws (car addrs) (lambda (draw) (xrp-draw-set-structural draw #t)))
+                draws (car addrs) 
+                (lambda (draw) (xrp-draw-set-structural draw #t)))
               (loop (cdr addrs)))))))
 
     (define (store->structural-draws store)
@@ -928,7 +930,7 @@
                                        (+ 1 (store->tick (mcmc-state->store state))) ;;increment the generation counter.
                                        (store->enumeration-flag (mcmc-state->store state))
                                        (copy-addbox (store->factors (mcmc-state->store state)))
-                                       (store->structural-addrs (mcmc-state->store state))
+                                       '() ;; Empty set of structural addresses
                                        ))
              ;;application of the nfqp happens with interv-store, which is a copy so won't mutate original state.
              ;;after application the store must be captured and put into the mcmc-state.
@@ -947,7 +949,8 @@
                      (display-debug '(Checking structural address inference))
                      (display-debug (map xrp-draw-address (store->structural-draws interv-store))))]
              (proposal-state (make-mcmc-state interv-store value (mcmc-state->address state)))
-             [answer (prov-init (list proposal-state cd-bw/fw))])
+             [answer (prov-init (list proposal-state cd-bw/fw))]
+             )
         ;;(list proposal-state (+ cd-bw/fw factor-bw/fw))))
         (begin
           (display-debug '(end of counterfactual update:))
