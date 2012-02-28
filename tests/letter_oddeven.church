@@ -19,14 +19,13 @@
   (make-factor (lambda (xs)
                  (
                   if (even? (length xs))
-                  (norm-eq-log (length (filter is-one? xs)) (length xs) 0.2)
-                  (norm-eq-log (length (filter is-zero? xs)) (length xs) 0.2)
+                  (norm-eq-log (length (filter is-one? xs)) (length xs) 0.1)
+                  (norm-eq-log (length (filter is-zero? xs)) (length xs) 0.1)
                   )
                  )))
 
-
 (for-each display 
-          (larj-mh-query 300 20 50
+          (larj-mh-query 20000 1 50
                     (define x
                       (let* ([num-vals (randintS 5 10)]
                              [vals (repeat num-vals (lambda () (if (flip) 1 0)))]

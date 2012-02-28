@@ -1,0 +1,18 @@
+(define tf-alternate
+  (make-factor (lambda (x y)
+                 (if (= x y)
+                   (log 0.0005)
+                   0.0))))
+
+(define (randintS low high)
+  (+ low (sample-integerS (- high low))))
+
+(for-each display 
+          (larj-mh-query 20000 1 50
+                    (define x
+                      (let* ([num-vals (randintS 5 10)]
+                             [vals (repeat num-vals (lambda () (if (flip) 1 0)))]
+                             [constraints (map (lambda (xy) (tf-alternate (first xy) (second xy))) (bi-gram vals))])
+                        vals))
+                    x
+                    true))
