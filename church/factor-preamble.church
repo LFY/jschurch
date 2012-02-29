@@ -1,7 +1,23 @@
-;; Built-in factors
+
 
 (define my-pi 3.141592653589793238)
 
+;;
+;; Built-in scope-constructor helper functions
+;;
+
+(define (drop-last xs)
+  (reverse (cdr (reverse xs))))
+
+(define (bi-gram xs)
+    (zip (drop-last xs) (cdr xs)))
+
+(define (circular-bi-gram xs)
+    (zip xs (append (cdr xs) (list (car xs)))))
+
+;; 
+;; Built-in factors
+;;
 (define (gauss-log-pdf mean var smp)
   (let ([diff (- smp mean)])
     (- 

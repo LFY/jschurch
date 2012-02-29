@@ -18,9 +18,8 @@
 (define tf-global-even-odd
   (make-factor (lambda (xs)
                  (if (even? (length xs))
-                     (norm-eq-log (length (filter is-one? xs)) (length xs) 0.2)
-                     (norm-eq-log (length (filter is-zero? xs)) (length xs) 0.2)))))
-
+                     (norm-eq-log (length (filter is-one? xs)) (length xs) 0.1)
+                     (norm-eq-log (length (filter is-zero? xs)) (length xs) 0.1)))))
 
 (for-each display 
           (larj-mh-query 100 30 50
