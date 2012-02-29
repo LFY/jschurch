@@ -1,14 +1,14 @@
 ;; Broken placeholder constants
-(define infinity 999999999999)
-(define minus-infinity (- 999999999999))
-(define nan (/ 1 0))
-(define pi 3.14159265)
+;; (define infinity 999999999999)
+;; (define minus-infinity (- 999999999999))
+;; (define nan (/ 1 0))
+;; (define pi 3.14159265)
 
 ;; These are the correct defines, but they don't work until we fix the compiler
-;; (define infinity Number.POSITIVE_INFINITY)
-;; (define minus-infinity Number.NEGATIVE_INFINITY)
-;; (define nan Number.NaN)
-;; (define pi Math.PI)
+(define infinity Number.POSITIVE_INFINITY)
+(define minus-infinity Number.NEGATIVE_INFINITY)
+(define nan Number.NaN)
+(define pi Math.PI)
 
 ;; These functions are defined in math-functions.js
 ;;(define logistic #f)

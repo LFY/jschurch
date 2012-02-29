@@ -85,6 +85,12 @@
 
     (define church-true #t)
     (define church-false #f)
+
+    (define church-infinity infinity)
+    (define church-minus-infinity minus-infinity)
+    (define church-nan nan)
+    (define church-pi pi)
+    
     (define (church-or address store . args) (fold (lambda (x y) (or x y)) #f args))
     (define (church-and address store . args) (fold (lambda (x y) (and x y)) #t args))
 
