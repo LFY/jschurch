@@ -1,0 +1,50 @@
+(define num-datapoints 15)
+
+(define data
+  (make-list num-datapoints 1))
+
+(define prob-factor
+  (make-factor
+   (lambda (p) (* 30 (log p)))))
+
+(define (fraction-equal? a b)
+  (/ (length (filter (lambda (x) x) (map equal? a b)))
+     (max (length a) (length b))))
+
+(define (factor-lst-equal? a b)
+  (cond [(and (null? a) (null? b)) true]
+        [(or (null? a) (null? b)) false]
+        [(and (list? a) (list? b))
+         (begin (prob-factor (fraction-equal? a b))
+                true)]
+        [else false]))
+
+(define (bool->num x)
+  (if x 1 0))
+
+(define (count-changes lst)
+  (let loop ([start (first lst)]
+             [lst (rest lst)])
+    (if (null? lst)
+        0
+        (if (eq? start (first lst))
+            (loop start (rest lst))
+            (+ 1 (loop (first lst) (rest lst)))))))
+
+(define (get-larj-samples)
+  (display
+   (count-changes
+    (mh-query 30000 1 ;; 100
+                   (define x (flipS))
+                   (define y (map bool->num
+                                  (if x
+                                      (repeat num-datapoints flip)
+                                      (repeat num-datapoints flip))))
+                   (bool->num x) ;; (list (bool->num x) y (fraction-equal? y data))
+                   (if x
+                       (factor-lst-equal? y data)
+                       (factor-lst-equal? y data))
+                   ;; (factor-lst-equal? y data)
+                   ))))
+
+(repeat 5 get-larj-samples)
