@@ -6,43 +6,6 @@ from subprocess import Popen
 from external import optfunc
 from os.path import abspath, dirname, exists, join
 
-S2JS_PORTS = """
-    SC_DEFAULT_OUT = new sc_GenericOutputPort(console.log);
-    SC_ERROR_OUT = SC_DEFAULT_OUT;
-"""
-
-JS_TEMPLATE = S2JS_PORTS + """
-    scmExpr = sc_read(new sc_StringInputPort("(" + "%(church_prog)s" + ")"));
-    sc_forEach(sc_print, compile(scmExpr, null));
-"""
-
-JS_ISOLATOR = """
-var jsChurch = (
-  function(){
-    %(code)s
-    return {
-      "eval" : evalChurchCode
-    };
-  })();
-var evalChurchCode = jsChurch.eval;
-"""
-
-SCM_TEMPLATE = open("scheme-compilers/scheme2js-template.sc").read()
-
-SCM_TEMPLATE_JSWRAPPER = """if (!String.prototype.supplant) {
-  String.prototype.supplant = function (o) {
-    return this.replace(/{([^{}]*)}/g,
-                        function (a, b) {
-                          var r = o[b];
-                          return typeof r === 'string' || typeof r === 'number' ? r : a;
-                        }
-                       );
-  };
-}
-
-var scheme2jsTemplate = "%(scheme2js_template)s";
-"""
-
 LOAD_PATTERN = r"(\(load\s+\"([^\"]+)\"\s*\))"
 
 def inline(fn, paths):
@@ -83,11 +46,51 @@ def combine_files(input_files, output_filename, sep="\n\n"):
     output_file.close()
 
 def js_escape(code):
-    return re.sub("\"", "\\\"", re.sub("\n", "\\\n", code))
+    return re.sub("\"", "\\\"", re.sub("\n", "\\\\n", code))
 
 def rooted(path):
     root = abspath(dirname(sys.argv[0]))
     return os.path.join(root, path)
+
+
+S2JS_PORTS = """
+    SC_DEFAULT_OUT = new sc_GenericOutputPort(console.log);
+    SC_ERROR_OUT = SC_DEFAULT_OUT;
+"""
+
+JS_TEMPLATE = S2JS_PORTS + """
+    scmExpr = sc_read(new sc_StringInputPort("(" + "%(church_prog)s" + "\\n)"));
+    sc_forEach(sc_print, compile(scmExpr, null));
+"""
+
+JS_ISOLATOR = """
+var jsChurch = (
+  function(){
+    %(code)s
+    return {
+      "eval" : evalChurchCode
+    };
+  })();
+var evalChurchCode = jsChurch.eval;
+"""
+
+SCM_TEMPLATE = inline("scheme-compilers/scheme2js-template.sc",
+                      [abspath("."), abspath("./church/")])
+
+SCM_TEMPLATE_JSWRAPPER = """if (!String.prototype.supplant) {
+  String.prototype.supplant = function (o) {
+    return this.replace(/{([^{}]*)}/g,
+                        function (a, b) {
+                          var r = o[b];
+                          return typeof r === 'string' || typeof r === 'number' ? r : a;
+                        }
+                       );
+  };
+}
+
+var scheme2jsTemplate = "%(scheme2js_template)s";
+"""
+
 
 
 def make():
@@ -173,7 +176,7 @@ def run(file):
     print("Wrapping Scheme code in template...")
     scm_src = open(scm_src_filename).read()
     scm_src_file = open(scm_src_filename, "w")
-    scm_src_file.write(SCM_TEMPLATE % { "churchprogram" : scm_src })
+    scm_src_file.write(SCM_TEMPLATE.replace("{churchprogram}", scm_src))
     scm_src_file.close()
 
     print("Compiling Scheme code to js using scheme2js...")

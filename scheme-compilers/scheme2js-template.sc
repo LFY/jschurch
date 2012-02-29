@@ -4,6 +4,8 @@
 ;; (define nan (/ 1 0))
 ;; (define pi 3.14159265)
 
+(load "srfi-1.scm")
+
 ;; These are the correct defines, but they don't work until we fix the compiler
 (define infinity Number.POSITIVE_INFINITY)
 (define minus-infinity Number.NEGATIVE_INFINITY)
@@ -95,7 +97,7 @@
 (define continuous? real?)
 
 ;;;the program, defining the church-main function, will be spliced in here:
-%(churchprogram)s
+{churchprogram}
 
 ;;go...
 (display (church-main '(top) (make-empty-store)))
