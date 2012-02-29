@@ -88,7 +88,42 @@
  ;;note that mem is transformed away by re-using creation-site addresses (at the expense of re-running the mem'd computation).
  
  ;; to add provenance tracking, we would consider something like a hash table of addresses to lists of addresses that denote immediate dependencies. Or, perhaps the addressing scheme itself leads to a dependence analysis.
- 
+
+ ;; static provenance tracking
+ ;; (define (static-provenance sexpr primitive?)
+ ;;   (define (static-prov sexpr)
+ ;;     (cond
+ ;;      ((begin? sexpr) `(begin ,@(map addressing (rest sexpr))))
+ ;;      ((quoted? sexpr) sexpr)
+ ;;      ((if? sexpr) `(if ,@(map addressing (rest sexpr))))
+ ;;      ((letrec? sexpr) `(letrec ,(map (lambda (binding) (list (church-rename (first binding)) (addressing (second binding)))) (second sexpr))
+ ;;                          ,(addressing (third sexpr))))
+ ;;                                        ;((definition? sexpr) (error "addressing" "defines should have all been de-sugared in letrecs!"))
+ ;;      ((lambda? sexpr) `(lambda ,(cons 'address (cons 'store (church-rename-parameters (lambda-parameters sexpr))))
+ ;;                          ,(addressing (lambda-body sexpr))))
+ ;;      ((mem? sexpr) `((lambda (mem-address store proc)
+ ;;                        (lambda (address store . args) (church-apply (cons args mem-address) store proc args)))
+ ;;                      address
+ ;;                      store
+ ;;                      ,(addressing (second sexpr))))
+
+ ;;      ((application? sexpr)
+ ;;       (if (and (symbol? (first sexpr)) (primitive? (first sexpr)))
+ ;;           `(,(first sexpr) ,@(map addressing (rest sexpr)))
+ ;;           `(,(addressing (first sexpr)) (cons ',(next-addr) address) store ,@(map addressing (rest sexpr)))))
+ ;;      ;;symbols (that aren't primitive and in operator position) are renamed to avoid collisions with target language when wrapping them.
+
+ ;;      ((symbol? sexpr) (church-rename sexpr))
+ ;;      ;;((symbol? sexpr) (if (not (primitive? sexpr)) (church-rename sexpr) sexpr))
+ ;;      ;;some compilers can't handle the r6rs inf numbers.
+ ;;      ((number? sexpr) (cond ;((nan? sexpr) 'nan)
+ ;;                             ;((= sexpr +inf.0) 'infinity) ;;FIXME!!!
+ ;;                             ;((= sexpr -inf.0) 'minus-infinity)
+ ;;                             (else sexpr)))
+ ;;      ;;sel-evaluating forms are left alone (assume target language has same primitive types).
+ ;;      (else sexpr) ))
+ ;;   (static-prov sexpr))
+
  (define (addressing* sexpr primitive?)
    (define (addressing sexpr)
      (cond

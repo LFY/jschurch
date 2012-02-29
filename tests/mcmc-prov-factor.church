@@ -14,7 +14,7 @@
                      (loop (cons (list (car xs) (cadr xs)) acc) (cdr xs))]))])
     (loop '() xs)))
 
-(mh-query 10 1
+(mh-query 1 1
           (define x
             (let* ([num-vals (randint 5 10)]
                    [vals (repeat num-vals flip)]

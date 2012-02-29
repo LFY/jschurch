@@ -955,8 +955,8 @@
         (begin
           (display-debug '(end of counterfactual update:))
           (display-debug answer)
-          (display-debug '(Structural addresses:))
-          (display-debug (store->structural-addrs interv-store))
+          (display '(Structural addresses:))
+          (display (store->structural-addrs interv-store))
 
           answer)
         ))
