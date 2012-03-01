@@ -341,10 +341,16 @@
     (define mcmc-state->store first)
     (define mcmc-state->address third)
     (define (mcmc-state->xrp-draws state) (store->xrp-draws (mcmc-state->store state)))
+    (define (mcmc-state->diff-factors state) (store->diff-factors (mcmc-state->store state)))
     (define (mcmc-state->score state)
       (if (not (eq? #t (first (second state))))
         minus-infinity ;;enforce conditioner.
         (store->score (mcmc-state->store state))))
+    (define (print-single-xrp xrp)
+      (display (list (xrp-draw-address xrp) (xrp-draw-value xrp))))
+
+    (define (print-mcmc-state-xrps state)
+      (map print-single-xrp (addbox->values (mcmc-state->xrp-draws state))))
 
     ;;compute the gradient of the score of a trace-container wrt any tapified erp values.
     (define (mcmc-state->gradient state)
@@ -397,6 +403,7 @@
                                                                                (xrp-draw-ticks (first interv))
                                                                                'dummy-score ;;dummy score which will be replace on update.
                                                                                (xrp-draw-support (first interv))
+                                                                               (xrp-draw-structural? (first interv))
                                                                                ))))
                                              (copy-addbox (store->xrp-draws (mcmc-state->store state)))
                                              interventions)
@@ -415,6 +422,10 @@
                            0
                            (clean-store interv-store))) ;;FIXME!! need to clean out unused xrp-stats?
              )
+        ;;(display '================)
+        ;;(for-each 
+        ;;  display (map first (addbox->values (store->xrp-draws interv-store))))
+
         (when (not (store->enumeration-flag interv-store))
               (clean-store-factors interv-store))
         (let ([proposal-state (make-mcmc-state interv-store value (mcmc-state->address state))])
@@ -431,6 +442,7 @@
                                                                                (xrp-draw-ticks (first interv))
                                                                                'dummy-score ;;dummy score which will be replace on update.
                                                                                (xrp-draw-support (first interv))
+                                                                               (xrp-draw-structural? (first interv))
                                                                                ))))
                                              (copy-addbox (store->xrp-draws (mcmc-state->store state)))
                                              interventions)
@@ -444,6 +456,8 @@
              ;;application of the nfqp happens with interv-store, which is a copy so won't mutate original state.
              ;;after application the store must be captured and put into the mcmc-state.
              (value (church-apply (mcmc-state->address state) interv-store nfqp '()))
+             ;;(void (display 'mcmc-state->query-value))
+             ;;(void (display ((cdr value))))
              (cd-bw/fw (if (store->enumeration-flag interv-store)
                            0
                            (clean-store interv-store))) ;;FIXME!! need to clean out unused xrp-stats?

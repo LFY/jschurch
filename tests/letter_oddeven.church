@@ -21,12 +21,32 @@
                      (norm-eq-log (length (filter is-one? xs)) (length xs) 0.1)
                      (norm-eq-log (length (filter is-zero? xs)) (length xs) 0.1)))))
 
+(define tf-global-even
+  (make-factor (lambda (xs)
+                 (norm-eq-log (length (filter is-one? xs)) (length xs) 0.1))))
+
+(define tf-global-odd
+  (make-factor (lambda (xs)
+                 (norm-eq-log (length (filter is-zero? xs)) (length xs) 0.1))))
+
+(define tf-global-even-odd-annealable 
+  (lambda (xs)
+    (if (even? (length xs))
+      (tf-global-even xs)
+      (tf-global-odd xs))))
+
 (for-each display 
-          (larj-mh-query 100 30 50
+          (larj-mh-query-proposal-count 100000 1 100
+          ;;(larj-mh-query 300 1 50
+          ;;(mh-query 100000 1
                          (define x
-                           (let* ([num-vals (randintS 100 110)]
+                           (let* ([num-vals (randintS 5 12)]
+                                  ;;[void (display 'num-vals)]
+                                  ;;[void2 (display num-vals)]
                                   [vals (repeat num-vals (lambda () (if (flip) 1 0)))]
-                                  [constraints (map (lambda (xs) (tf-global-even-odd xs)) (scope-all vals))])
+                                  ;;[void (display 'the-state-is)]
+                                  ;;[void2 (display vals)]
+                                  [constraints (map (lambda (xs) (tf-global-even-odd-annealable xs)) (scope-all vals))])
                              vals))
                          x
                          true))

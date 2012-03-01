@@ -20,12 +20,16 @@
   (+ low (sample-integerS (- high low))))
 
 (for-each display 
-          (larj-mh-query 20000 1 50
+          ;;(larj-mh-query-proposal-count 100000 1 50
+          (mh-query 100000 1
                     (define x
                       (let* ([num-vals (randintS 5 10)]
                              [vals (repeat num-vals (lambda () (if (flip) 1 0)))]
                              [constraints (map (lambda (xy) (tf-alternate (first xy) (second xy))) (bi-gram vals))]
-                             [force-0-constraints (map (lambda (x) (tf-force-0 x)) (scope-head-or-second vals))])
+                             ;;[force-0-constraints (map (lambda (x) (tf-force-0 x)) (scope-head-or-second vals))])
+                             [force-0-constraints (if (even? (length vals))
+                                                    (tf-force-0 (car vals))
+                                                    (tf-force-0 (cadr vals)))])
                         vals))
                     x
                     true))
