@@ -105,10 +105,35 @@
            (old-p (scorer state))
            (new-p (scorer proposal-state))
            (accept (log-flip* (min 0.0 (+ (- new-p old-p) bw/fw))))
-           (dummy (reset-store-xrp-draws))) ;;FIXME!! this is to avoid accumulating xrp-draws...
+           (dummy (reset-store-xrp-draws))
+           (score-ratio (+ (- new-p old-p) bw/fw))
+           ;;(void (display (list 'score-ratio score-ratio)))
+           ) ;;FIXME!! this is to avoid accumulating xrp-draws...
+            
       (if accept
           proposal-state
           state))))
+
+;;Larj Kernel
+(define (larj-scorer state)
+  (apply + (map factor-value (addbox->values (store->factors (mcmc-state->store state))))))
+
+(define (make-larj-kernel proposal-distribution scorer)
+  (lambda (state)
+    (let* ((ret (proposal-distribution state))
+           (bw/fw (first ret))
+           (proposal-state (second ret)) 
+           (number-of-proposals-made (third ret)) 
+           (old-p (scorer state))
+           (new-p (scorer proposal-state))
+           (accept (log-flip* (min 0.0 (+ (- new-p old-p) bw/fw))))
+           (dummy (reset-store-xrp-draws))
+           (score-ratio (- new-p old-p))
+           ;;(dummy (display (list 'score-ratio score-ratio)))
+           ) ;;FIXME!! this is to avoid accumulating xrp-draws...
+      (if accept
+          (list proposal-state number-of-proposals-made)
+          (list state number-of-proposals-made)))))
 
 ;; ;; mixture kernel
 ;; (define (mixture-kernel cdf . kernels )
@@ -138,6 +163,21 @@
 (define (repeated-mcmc-query-core initializer kernel num-samples)
   (let ([init-state (initializer)])
     (mcmc-loop kernel init-state num-samples '())))
+
+(define (repeated-mcmc-query-core-proposal-count initializer kernel num-proposals-to-make)
+  (let ([init-state (initializer)])
+    (let loop ((kernel kernel)
+               (state init-state)
+               (samples '())
+               (num-proposals-left num-proposals-to-make)
+               )
+      (if (< num-proposals-left 1)
+        (reverse samples)
+        (let* (
+              (state-and-num-proposals (kernel state))
+              (next-state (first state-and-num-proposals))
+              (next-num-proposal (second state-and-num-proposals)))
+          (loop kernel next-state (pair (mcmc-state->query-value state) samples) (- num-proposals-left next-num-proposal))))))) 
 
 (define (mcmc-loop kernel state samples-left samples)
   (if (< samples-left 1)
@@ -416,6 +456,11 @@
 
 ;; --------------------------------------------------------------------
 ;; LARJ
+(define (should-do-larj? proposal-state)
+  (let ((fpmc (mcmc-state->diff-factors proposal-state)))
+    ;;(display (map length fpmc))
+    (or (> (length (first fpmc)) 0) (> (length (second fpmc)) 0))
+    ))
 
 ;; This is implementing Larj-mcmc outer proposals.
 ;; Larj-mcmc has two types of outer proposals: structural and non-structural.
@@ -435,15 +480,26 @@
                    (cd-bw/fw (second ret2))
                    (ind-fw (- (log (length proposal-xrps))))
                    (ind-bw (- (log (length (proposable-xrps proposal-state proposable?)))))
-                   (structural-change? (xrp-draw-structural? chosen-xrp))
+                   (structural-change? (should-do-larj? proposal-state))
                    (larj-state-and-correction (if structural-change?
+                                                (begin
+                                                  ;;(display 'do-larj!!!!!!-did-we-do-perturbation-to-structural-xrp?)
+                                                  ;;(display (xrp-draw-structural? chosen-xrp))
                                                   (do-larj-anneal-correction state proposal-state normal-form-proc num-temps static-proposal)
+                                                  )
                                                   (list proposal-state 0)))
                    (proposed-larj-state (first larj-state-and-correction))
-                   (larj-correction (second larj-state-and-correction)))
+                   (larj-correction (second larj-state-and-correction))
+                   ;;(void (if structural-change? (display (list 'larj-correction larj-correction)) 'null))
+                   (num-proposals-to-make (if structural-change? (+ num-temps 1) 1))
+                   (final-correction (+ (+ (- proposal-bw-score proposal-fw-score) cd-bw/fw (- ind-bw ind-fw)) larj-correction))
+                   ;;(void (if structural-change? (display (list 'final-correction final-correction)) 'null))
+                   )
               ;; if structural-change? 1. run static kernel 2. get factor-diffs to compute correction terms
               (list (+ (+ (- proposal-bw-score proposal-fw-score) cd-bw/fw (- ind-bw ind-fw)) larj-correction)
-                    proposed-larj-state))))))
+                    proposed-larj-state
+                    num-proposals-to-make
+                    ))))))
 
 (define (combine-proposable-xrp-draws state1state2 proposable?)
   (let* ((state1 (first state1state2))
@@ -453,6 +509,12 @@
                                    (copy-addbox (store->xrp-draws (mcmc-state->store state1)))
                                    (addbox->values (store->xrp-draws (mcmc-state->store state2)))))
          (proposable-xrp-draws (filter proposable? (addbox->values combined-xrp-draws))))
+    ;;(display 'dimension-of-state1)
+    ;;(display (length (filter proposable? (addbox->values (mcmc-state->xrp-draws state1)))))
+    ;;(display 'dimension-of-state2)
+    ;;(display (length (filter proposable? (addbox->values (mcmc-state->xrp-draws state2)))))
+    ;;(display 'dimension-of-the-extended-state-space)
+    ;;(display (length proposable-xrp-draws))
     proposable-xrp-draws))
 
 (define (xrp-in-state? xrp state)
@@ -487,13 +549,24 @@
                (id-state-and-proposed-val (which-state-to-perturb-and-new-proposal chosen-xrp state1state2))
                (id-state-to-perturb (first id-state-and-proposed-val))
                (proposed-val (first (second id-state-and-proposed-val)))
+               ;;(void (display 'id-state-to-perturb))
+               ;;(void2 (display id-state-to-perturb))
+               ;;(void3 (display 'chosen-xrp))
+               ;;(void3 (print-single-xrp chosen-xrp))
+               ;;(void3 (display 'state1-xrps))
+               ;;(void3 (print-mcmc-state-xrps state1))
+               ;;(void3 (display 'state2-xrps))
+               ;;(void3 (print-mcmc-state-xrps state2))
+               ;;(void (display 'run-counterfactual-update-state1))
                (state1* (if (or (= STATE_SRC_BOTH id-state-to-perturb) (= STATE_SRC_1 id-state-to-perturb)) 
                             (first (counterfactual-update state1 normal-form-proc (pair chosen-xrp proposed-val)))
                             state1
                             ))
+               ;;(void (display 'run-counterfactual-update-state2))
                (state2* (if (or (= STATE_SRC_BOTH id-state-to-perturb) (= STATE_SRC_2 id-state-to-perturb)) 
                             (first (counterfactual-update state2 normal-form-proc (pair chosen-xrp proposed-val)))
-                            state2)))
+                            state2))
+               )
           (list 0 (list state1* state2*))))))
 
 (define (lookup-factor-and-update factors-addbox target-factor)
@@ -518,14 +591,27 @@
          (f-plus (first new-fpmc))
          (f-minus (second new-fpmc))
          (f-common (third new-fpmc))
-         (f-plus-score (* (apply + (map factor-value f-plus)) (- 1.0 temp)))
-         (f-minus-score (* (apply + (map factor-value f-minus)) temp))
-         (f-common-score (* (apply + (map factor-value f-common)) 0.0)))
+         (f-plus-score-before-annealing (apply + (map factor-value f-plus)))
+         (f-minus-score-before-annealing (apply + (map factor-value f-minus)))
+         (f-common-score-before-annealing (apply + (map factor-value f-common)))
+         (f-plus-score (* f-plus-score-before-annealing (- 1.0 temp)))
+         (f-minus-score (* f-minus-score-before-annealing temp))
+         (f-common-score (* f-common-score-before-annealing 0.0)))
+    ;;(display 'f-plus-minus-common)
+    ;;(display (list (length f-plus) (length f-minus) (length f-common)))
+    ;;(display (list 'score-before-annealing 'temp temp))
+    ;;(display (list f-plus-score-before-annealing f-minus-score-before-annealing f-common-score-before-annealing))
+    ;;(display 'score-after-annealing)
+    ;;(display (list f-plus-score f-minus-score f-common-score))
     (+ f-plus-score f-minus-score f-common-score)))
 
 (define (do-larj-anneal-correction original-state jumped-state normal-form-proc num-temps static-proposal)
   (let loop ((total-correction 0)
-             (temp-list (interp-range 1.0 0.0 num-temps)) 
+             (temp-list 
+               (begin 
+               ;;(display (interp-range-pow 1.0 0.0 num-temps 1))
+               (interp-range-pow 1.0 0.0 num-temps 1) 
+                 ))
              (curr-state (list original-state jumped-state)))
     (if (= temp-list '())
         (list (second curr-state) total-correction)
@@ -535,7 +621,9 @@
                (curr-score (get-larj-score curr-state (car temp-list)))
                (next-score (get-larj-score next-state (car temp-list)))
                (local-alpha (- next-score curr-score))
-               (accept (log-flip* (min 0.0 (+ local-alpha bw/fw)))))
+               (accept (log-flip* (min 0.0 (+ local-alpha bw/fw))))
+               ;;(void (display (list 'local-alpha local-alpha 'accept accept)))
+               )
           (if accept
               (loop (+ total-correction (- local-alpha)) (cdr temp-list) next-state) ;;if accept, accumulate alpha
               (loop total-correction (cdr temp-list) curr-state))))))
@@ -574,6 +662,12 @@
       (lambda (state) (larj-proposal-distribution state nfqp num-temps static-proposal))
       mcmc-state->score))))
 
+(define (larj-kernel-proposal-count num-temps steps nfqp)
+  (let ((static-proposal (lambda (state1state2) (extended-state-space-proposal-distribution state1state2 nfqp))))
+     (make-larj-kernel
+      (lambda (state) (larj-proposal-distribution state nfqp num-temps static-proposal))
+      mcmc-state->score)))
+
 (define (non-structural-mh-query samples lag normal-form-proc)
   (repeated-mcmc-query-core (lambda () (rejection-initializer normal-form-proc))
                             (non-structural-kernel lag normal-form-proc)
@@ -583,3 +677,8 @@
   (repeated-mcmc-query-core (lambda () (rejection-initializer normal-form-proc))  ;; initializer
                             (larj-kernel num-temps lag normal-form-proc)     ;; kernel
                             samples))                                        ;; num samples to show
+
+(define (larj-mh-query-proposal-count num-proposals-to-make lag num-temps normal-form-proc)
+  (repeated-mcmc-query-core-proposal-count (lambda () (rejection-initializer normal-form-proc))  ;; initializer
+                            (larj-kernel-proposal-count num-temps lag normal-form-proc)     ;; kernel
+                            num-proposals-to-make))                                        ;; num samples to show
