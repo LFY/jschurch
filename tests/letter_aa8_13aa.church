@@ -1,0 +1,78 @@
+(define (scope-all xs) (list xs))
+
+(define (even? x)
+  (= (modulo x 2) 0))
+
+(define (is-one? x)
+  (= x 1))
+
+(define (is-zero? x)
+  (= x 0))
+
+(define (score-is-one? x)
+  (if (= x 1)
+    0.0
+    (log 0.001)))
+
+(define (score-is-zero? x)
+  (if (= x 0)
+    0.0
+    (log 0.001)))
+
+(define tf-alternate
+  (make-factor (lambda (x y)
+                 (if (= x y)
+                   (log 0.0005)
+                   0.0))))
+
+(define (norm-eq-log x y var)
+  (norm-gauss-log-pdf (- x y) var 0.0))
+
+(define (randintS low high)
+  (+ low (sample-integerS (- high low))))
+
+(define (get-front-end-2 xs)
+  (let* (
+         (elem1 (car xs))
+         (elem2 (cadr xs))
+         (elem3 (car (reverse xs)))
+         (elem4 (cadr (reverse xs)))
+         )
+    (list elem1 elem2 elem3 elem4)))
+
+(define tf-ends-zeros
+  (make-factor (lambda (xs)
+                 (apply + (map score-is-zero? (get-front-end-2 xs))))))
+
+(define tf-ends-ones
+  (make-factor (lambda (xs)
+                 (apply + (map score-is-one? (get-front-end-2 xs))))))
+
+(define tf-ends-same 
+  (lambda (xs)
+    (if (even? (length xs))
+      (tf-ends-zeros xs)
+      (tf-ends-ones xs))))
+
+(define (bi-gram-inside xs)
+    (bi-gram (drop-right (cddr xs) 2)))
+
+;;(display (bi-gram-inside '(1 2 3 4 5 6 7 8 9)))
+
+(for-each display 
+          ;;(larj-mh-query-proposal-count 100000 1 100
+          ;;(larj-mh-query 300 1 50
+          (mh-query 100000 1
+                         (define x
+                           (let* ([num-vals (randintS 8 13)]
+                                  ;;[void (display 'num-vals)]
+                                  ;;[void2 (display num-vals)]
+                                  [vals (repeat num-vals (lambda () (if (flip) 1 0)))]
+                                  ;;[void (display 'the-state-is)]
+                                  ;;[void2 (display vals)]
+                                  [constraints (map (lambda (xy) (tf-alternate (first xy) (second xy))) (bi-gram-inside vals))]
+                                  [constraints-ends-same (map (lambda (xs) (tf-ends-same xs)) (scope-all vals))])
+                             vals))
+                         x
+                         true))
+
