@@ -641,7 +641,7 @@
 (define (larj-proposal-distribution state normal-form-proc num-temps static-proposal)
   (larj-selective-proposal-distribution state
                                         normal-form-proc
-                                        (lambda (xrp-draw) true) num-temps static-proposal))
+                                        (lambda (xrp-draw) (xrp-draw-structural? xrp-draw)) num-temps static-proposal))
 
 (define (non-structural-kernel steps nfqp)
   (repeat-kernel steps 
