@@ -15,6 +15,30 @@
 (define (circular-bi-gram xs)
     (zip xs (append (cdr xs) (list (car xs)))))
 
+;; messy bi-gram-skip
+
+(define (bi-gram-skip n xs)
+  (letrec ([look-ahead (lambda (n xs) (if (= n 0) xs
+                                        (look-ahead (- n 1) (cdr xs))))]
+           [loop (lambda (acc n xs)
+                   (let* ([ahead (look-ahead (+ n 1) xs)])
+                     (cond [(null? ahead) acc]
+                           [else
+                             (loop (cons (cons (car xs) (list (car ahead))) acc)
+                                   n (cdr xs))])))])
+  (cond [(< (length xs) (+ n 1)) '()]
+        [else (loop '() n xs)])))
+
+;; pairs [] = []
+;; pairs [x] = []
+;; pairs (x:xs) = [(x, y) | y <- xs] ++ pairs xs
+
+(define (pairs xs)
+  (cond [(null? xs) '()]
+        [(null? (cdr xs)) '()]
+        [else
+          (append (map (lambda (i) (list (car xs) i)) (cdr xs))
+                  (pairs (cdr xs)))]))
 ;; 
 ;; Built-in factors
 ;;

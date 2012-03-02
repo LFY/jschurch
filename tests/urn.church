@@ -1,0 +1,20 @@
+;; Two levels of structural change.....
+
+;; when church-mh makes a proposal to one variable, it needs to properly change
+;; the other one too
+
+;; but it doesn't do that
+
+;; isn't this the difference between doing M-H over programs and doing Gibbs
+;; sampling over programs---in mh we leave even dependent xrp's unchanged, and
+;; in Gibbs we always re-sample from xrp that is conditioned on everything else
+;; (and propagates its changes downstream).
+
+(mh-query 100 10 
+          (define num-balls (sample-integerS 10))
+          (define balls (repeat num-balls flip))
+          (define num-draw (sample-integerS (length balls)))
+          (define drawn (begin
+                          (display (list num-balls num-draw)) (take balls num-draw)))
+          (list balls drawn)
+          true)
