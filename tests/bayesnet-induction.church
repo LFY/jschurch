@@ -1,0 +1,82 @@
+(define prob-factor
+  (make-factor
+   (lambda (p) (* 50 (log p)))))
+
+(define (fraction-equal? a b)
+  (/ (length (filter (lambda (x) x) (map equal? a b)))
+     (max (length a) (length b))))
+
+(define (factor-lst-equal? a b)
+  (cond [(and (null? a) (null? b)) true]
+        [(or (null? a) (null? b)) false]
+        [(and (list? a) (list? b))
+         (begin (prob-factor (fraction-equal? a b))
+                true)]
+        [else false]))
+
+(define (in-list? a lst)
+  (if (null? lst)
+      false
+      (if (eq? a (first lst))
+          true
+          (in-list? a (rest lst)))))
+
+
+(define noise .01)
+
+(define baserate .1)
+
+(define conn-baserate .3)
+
+(define nodes '(A B C))
+
+(define samples
+
+  (mh-query 20 100
+
+  ;; (larj-mh-query-proposal-count
+  ;;  20 100 10
+
+   ;; flipS is not really a structural flip, but it acts
+   ;; like one in that changing it requires adjustment of
+   ;; other random variables.
+   (define parents
+     (mem (lambda (node)
+            (filter-map (lambda (c)
+                          (if (eq? c node)
+                              false
+                              (if (flipS conn-baserate) c false)))
+                        nodes))))
+
+   (define (parent-of a b)
+     (in-list? a (parents b)))
+
+   (define (acyclic? nodes)
+     (all (map (lambda (n)
+                 (all (map (lambda (m)
+                             (not (and (parent-of n m)
+                                       (parent-of m n))))
+                           nodes)))
+               nodes)))
+
+   (define node-value
+     (mem (lambda (node sample-index)
+            (if (null? (parents node))
+                (flip baserate)
+                (any (pair (flip noise)
+                           (map (lambda (n) (node-value n sample-index))
+                                (parents node))))))))
+
+   (define (node-values sample-index)
+     (map (lambda (n) (node-value n sample-index))
+          nodes))
+   
+   (zip (list nodes (map parents nodes)))
+   
+   (and (acyclic? nodes)
+        (factor-lst-equal? (node-values 0)
+                           (list true true false))
+        (factor-lst-equal? (node-values 1)
+                           (list false false true)))))
+
+(for-each display samples)
