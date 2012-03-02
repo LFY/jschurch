@@ -40,7 +40,7 @@
                                   (if x
                                       (repeat num-datapoints flip)
                                       (repeat num-datapoints flip))))
-                   (bool->num x) ;; n(list (bool->num x) y (fraction-equal? y data))
+                   (bool->num x)
                    (if x
                        (factor-lst-equal? y data)
                        (factor-lst-equal? y data))
