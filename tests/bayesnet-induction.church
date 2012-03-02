@@ -1,3 +1,5 @@
+;; FIXME: factors need to be annealed in/out.
+
 (define prob-factor
   (make-factor
    (lambda (p) (* 50 (log p)))))
