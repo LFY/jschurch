@@ -42,6 +42,8 @@
 ;; 
 ;; Built-in factors
 ;;
+;;
+
 (define (gauss-log-pdf mean var smp)
   (let ([diff (- smp mean)])
     (- 
@@ -56,3 +58,5 @@
   (make-factor
     (lambda (x y) (norm-gauss-log-pdf x 0.1 y))))
 
+(define (norm-eq-log x y var)
+  (norm-gauss-log-pdf (- x y) var 0.0))

@@ -42,6 +42,19 @@ o examples:
     1010101
     01010101
 
+o filename:
+    letter_aa8_13aa.church
+o constraints:
+    The numner of letters range from 8 to 13.
+    When the number of letters is even, the sequence should start with 00 and end with 00.
+    When the number of letters is odd, the sequence should start with 11 and end with 11.
+    All consecutive pairs of letters in the middle should be different.
+o examples:
+    0 0 0 1 0 1 0 0
+    1 1 1 0 1 0 1 1 1
+    1 1 0 1 0 1 0 1 1
+    1 1 1 0 1 0 1 0 1 1 1
+    0 0 0 1 0 1 0 1 0 1 0 0
 
 ===============================
 Aircraft Tracking

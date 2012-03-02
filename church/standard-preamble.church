@@ -336,3 +336,7 @@
         max
         (map (lambda (i) (+ min (* (/ i (- n 1)) (- max min)))) (iota n))
 ))
+
+(define (interp-range-pow min max n pow)
+  (let ((res-list (interp-range min max n)))
+    (map (lambda (x) (- 1.0 (expt (- 1.0 x) pow))) res-list)))
