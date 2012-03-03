@@ -596,7 +596,7 @@
          (f-common-score-before-annealing (apply + (map factor-value f-common)))
          (f-plus-score (* f-plus-score-before-annealing (- 1.0 temp)))
          (f-minus-score (* f-minus-score-before-annealing temp))
-         (f-common-score (* f-common-score-before-annealing 0.0)))
+         (f-common-score f-common-score-before-annealing))
     ;;(display 'f-plus-minus-common)
     ;;(display (list (length f-plus) (length f-minus) (length f-common)))
     ;;(display (list 'score-before-annealing 'temp temp))
