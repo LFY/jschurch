@@ -14,7 +14,12 @@
           (define num-balls (sample-integerS 10))
           (define balls (repeat num-balls flip))
           (define num-draw (sample-integerS (length balls)))
-          (define drawn (begin
+          (define (drawn) (begin
                           (display (list num-balls num-draw)) (take balls num-draw)))
-          (list balls drawn)
-          true)
+          (list balls (drawn))
+          (<= num-draw num-balls))
+
+
+
+
+
