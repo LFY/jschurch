@@ -1,0 +1,6 @@
+(mh-query 1 1
+          (define x (flip))
+          (define y (if x (flip) 1))
+          (list x y)
+          true)
+
