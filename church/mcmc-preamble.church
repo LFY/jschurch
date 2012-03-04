@@ -583,7 +583,7 @@
                 factor-instances))
          target-f-plus-minus-common)))
 
-(define (get-larj-score state1state2 temp)
+(define (get-larj-score state1state2 temp up-down-temp)
   (let* ((state1 (first state1state2))
          (state2 (second state1state2))
          (after-update-from-state1-fpmc (update-f-plus-minus-common-scores state1 (store->diff-factors (mcmc-state->store state2))))
@@ -593,10 +593,14 @@
          (f-common (third new-fpmc))
          (f-plus-score-before-annealing (apply + (map factor-value f-plus)))
          (f-minus-score-before-annealing (apply + (map factor-value f-minus)))
+         (f-common-must-anneal (apply + (map factor-value (filter factor-must-anneal? f-common))))
+         (f-common-no-anneal (apply + (map factor-value (filter (lambda (f)
+                                       (or (factor-auto-anneal? f)
+                                           (factor-must-not-anneal? f))) f-common))))
          (f-common-score-before-annealing (apply + (map factor-value f-common)))
          (f-plus-score (* f-plus-score-before-annealing (- 1.0 temp)))
          (f-minus-score (* f-minus-score-before-annealing temp))
-         (f-common-score f-common-score-before-annealing))
+         (f-common-score (+ (* f-common-must-anneal up-down-temp) f-common-no-anneal)))
     ;;(display 'f-plus-minus-common)
     ;;(display (list (length f-plus) (length f-minus) (length f-common)))
     ;;(display (list 'score-before-annealing 'temp temp))
@@ -609,24 +613,32 @@
   (let loop ((total-correction 0)
              (temp-list 
                (begin 
-               ;;(display (interp-range-pow 1.0 0.0 num-temps 1))
-               (interp-range-pow 1.0 0.0 num-temps 1) 
+                 ;;(display (interp-range-pow 1.0 0.0 num-temps 1))
+                 (interp-range-pow 1.0 0.0 num-temps 1) 
                  ))
+             (up-down-temp-list
+               (if (even? num-temps)
+                 (append
+                   (interp-range-pow 1.0 0.0 (/ num-temps 2) 1)
+                   (interp-range-pow 0.0 1.0 (/ num-temps 2) 1))
+                 (append
+                   (interp-range-pow 1.0 0.0 (+ 1 (/ num-temps 2)) 1)
+                   (cdr (interp-range-pow 0.0 1.0 (+ 1 (/ num-temps 2)) 1)))))
              (curr-state (list original-state jumped-state)))
     (if (= temp-list '())
-        (list (second curr-state) total-correction)
-        (let* ((bw/fw-and-next-state (static-proposal curr-state))
-               (bw/fw (first bw/fw-and-next-state))
-               (next-state (second bw/fw-and-next-state))
-               (curr-score (get-larj-score curr-state (car temp-list)))
-               (next-score (get-larj-score next-state (car temp-list)))
-               (local-alpha (- next-score curr-score))
-               (accept (log-flip* (min 0.0 (+ local-alpha bw/fw))))
-               ;;(void (display (list 'local-alpha local-alpha 'accept accept)))
-               )
-          (if accept
-              (loop (+ total-correction (- local-alpha)) (cdr temp-list) next-state) ;;if accept, accumulate alpha
-              (loop total-correction (cdr temp-list) curr-state))))))
+      (list (second curr-state) total-correction)
+      (let* ((bw/fw-and-next-state (static-proposal curr-state))
+             (bw/fw (first bw/fw-and-next-state))
+             (next-state (second bw/fw-and-next-state))
+             (curr-score (get-larj-score curr-state (car temp-list) (car up-down-temp-list)))
+             (next-score (get-larj-score next-state (car temp-list) (car up-down-temp-list)))
+             (local-alpha (- next-score curr-score))
+             (accept (log-flip* (min 0.0 (+ local-alpha bw/fw))))
+             ;;(void (display (list 'local-alpha local-alpha 'accept accept)))
+             )
+        (if accept
+          (loop (+ total-correction (- local-alpha)) (cdr temp-list) (cdr up-down-temp-list) next-state) ;;if accept, accumulate alpha
+          (loop total-correction (cdr temp-list) (cdr up-down-temp-list) curr-state))))))
 
 (define (non-structural-proposal-distribution state normal-form-proc)
   (selective-proposal-distribution state

@@ -215,8 +215,12 @@
     (define xrp-draw-support seventh)
     (define xrp-draw-structural? eighth)
 
-    (define (make-factor-instance address args value factor-function ticks should-update?)
-      (list address args value factor-function ticks should-update?))
+    (define MUST-ANNEAL 0)
+    (define AUTO-ANNEAL 1)
+    (define MUST-NOT-ANNEAL 2)
+
+    (define (make-factor-instance address args value factor-function ticks should-update? should-anneal?)
+      (list address args value factor-function ticks should-update? should-anneal?))
 
     (define factor-address first)
     (define factor-args second)
@@ -224,8 +228,13 @@
     (define factor-scorer fourth)
     (define factor-ticks fifth)
     (define factor-should-update? sixth)
+    (define factor-should-anneal? seventh)
 
-    (define (church-make-factor address store factor-function)
+    (define (factor-must-anneal? f) (eq? MUST-ANNEAL (factor-should-anneal? f)))
+    (define (factor-must-not-anneal? f) (eq? MUST-NOT-ANNEAL (factor-should-anneal? f)))
+    (define (factor-auto-anneal? f) (eq? AUTO-ANNEAL (factor-should-anneal? f)))
+
+    (define (church-make-factor-generic address store factor-function should-anneal)
       (lambda (address store . args)
         (define new-val '())
         (update-addbox (store->factors store)
@@ -245,12 +254,22 @@
                                  (make-factor-instance
                                   address args val factor-function
                                   (cons (store->tick store) last-tick)
-                                  should-update?)])
+                                  should-update?
+                                  should-anneal)])
                            (set! new-val val)
                            (set-store-score! store (+ (store->score store) val))
                            new-factor-instance)))
           new-val
         ))
+
+    (define (church-make-factor address store factor-function)
+      (church-make-factor-generic address store factor-function AUTO-ANNEAL))
+
+    (define (church-make-factor-annealed address store factor-function)
+      (church-make-factor-generic address store factor-function MUST-ANNEAL))
+
+    (define (church-make-factor-frozen address store factor-function)
+      (church-make-factor-generic address store factor-function MUST-NOT-ANNEAL))
 
     ;;note: this assumes that the fns (sample, incr-stats, decr-stats, etc) are church procedures.
     ;;FIXME: what should happen with the store when the sampler is a church random fn? should not accumulate stats/score since these are 'marginalized'.
