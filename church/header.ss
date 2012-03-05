@@ -13,15 +13,15 @@
 ;;NOTE: primitive symbols not otherwise defined are assumed to be provided by the target language. this includes, for example, a bunch of random sampling/scoring functions that xrp-preamble will want.
 
 
-;(library
-; (church header)
+;;(library
+;; (church header)
 
-; (export generate-header)
+;; (export generate-header)
 
-; (import (rnrs)
-;         (scheme-tools srfi-compat :1) ; lists
-;         (church readable-scheme)
-;         )
+;; (import (rnrs)
+;;         (scheme-tools srfi-compat :1) ; lists
+;;         (church readable-scheme)
+;;         )
 
 (define *no-forcing* true)
 (define *AD* false) ;;when AD is true, continuous XRP return values will be tapified.
@@ -41,14 +41,14 @@
 
 (define (prefix-church symb) (string->symbol (string-append "church-" (symbol->string symb))))
 (define (un-prefix-church symb) (if (church-symbol? symb)
-                                  (string->symbol (list->string (drop (string->list (symbol->string symb)) 7)))
-                                  symb))
+                                    (string->symbol (list->string (drop (string->list (symbol->string symb)) 7)))
+                                    symb))
 (define (church-symbol? symb) (and (< 7 (length (string->list (symbol->string symb))))
                                    (equal? "church-" (list->string (take (string->list (symbol->string symb)) 7)))))
 (define (primitive-def symb)
   (if *no-forcing*
-    `(define ,symb (lambda (address store . args) (apply ,(un-prefix-church symb) args)))
-    `(define ,symb (lambda (address store . args) (apply ,(un-prefix-church symb) (map (lambda (a) (church-force address store a)) args))))))
+      `(define ,symb (lambda (address store . args) (apply ,(un-prefix-church symb) args)))
+      `(define ,symb (lambda (address store . args) (apply ,(un-prefix-church symb) (map (lambda (a) (church-force address store a)) args))))))
 
 (define (primitive-def+provenance symb)
   (if *no-forcing*
@@ -71,7 +71,7 @@
          `(apply (church-force address store proc) address store (church-force address store args))
          ))
 
-     ;; ;;requires compile, eval, and environment to be available from underlying scheme....
+    ;; ;;requires compile, eval, and environment to be available from underlying scheme....
     ;; (define (church-eval addr store sexpr)
     ;;   ;(display (compile sexpr '()) ))
     ;;   ((eval `(letrec ,(map (lambda (def)
@@ -98,8 +98,8 @@
 
     ;;provided for laziness and constraint prop:
     (define (church-force address store val) (if (and (pair? val) (eq? (car val) 'delayed))
-                                               (church-force address store ((cadr val) address store))
-                                               val))
+                                                 (church-force address store ((cadr val) address store))
+                                                 val))
 
     ;; provenance Stuff
     ;; argument lists
@@ -121,13 +121,13 @@
     (define (prov+ e p)
       (list (erase e) (append (prov e) p)))
 
-   (define church-apply+prov
+    (define church-apply+prov
       (prov-init
-        (lambda (address store proc args)
-          ,(if *no-forcing*
-             `(apply (erase proc) address store args)
-             `(apply (church-force address store proc) address store (church-force address store args))
-             ))))
+       (lambda (address store proc args)
+         ,(if *no-forcing*
+              `(apply (erase proc) address store args)
+              `(apply (church-force address store proc) address store (church-force address store args))
+              ))))
 
     (define DEBUG #f)
 
@@ -145,8 +145,8 @@
             store
             prov-of-condition)
           (if res
-            (prov+ (true-branch) prov-of-condition)
-            (prov+ (false-branch) prov-of-condition)))))
+              (prov+ (true-branch) prov-of-condition)
+              (prov+ (false-branch) prov-of-condition)))))
 
     (define (fsts xs) (map car xs))
     (define (snds xs) (map cadr xs))
@@ -185,13 +185,13 @@
         (display-debug (length args))
         (display-debug "end-apply-prim:")
         (make-prov
-          (apply proc (extract-vals args))
-          (apply append (extract-provs args)))))
+         (apply proc (extract-vals args))
+         (apply append (extract-provs args)))))
 
     (define (apply-prim+prov+addressing address store proc args)
       (make-prov
-        (apply proc address store (extract-vals args))
-        (apply append (extract-provs args))))
+       (apply proc address store (extract-vals args))
+       (apply append (extract-provs args))))
 
     (define (my-last xs)
       (cond [(null? (cdr xs)) (car xs)]
@@ -201,7 +201,7 @@
       (define (loop acc n xs)
         (cond [(= n 0) (reverse acc)]
               [else
-                (loop (cons (car xs) acc) (- n 1) (cdr xs))]))
+               (loop (cons (car xs) acc) (- n 1) (cdr xs))]))
       (loop '() n xs))
 
     (define (split-share-prov args-prov)
@@ -218,18 +218,18 @@
                      (display-debug '(in lifted apply:))
                      (display-debug args+s))]
              [split-args+s (if (= (length args+s) 1) 
-                             (split-share-prov (car args+s))
-                             (append (my-take args+s (- (length args+s) 1))
-                                     (split-share-prov (my-last args+s))))]
+                               (split-share-prov (car args+s))
+                               (append (my-take args+s (- (length args+s) 1))
+                                       (split-share-prov (my-last args+s))))]
 
              [db (begin
                    (display-debug "in-lifted-apply:")
                    (display-debug args+s)
                    (display-debug all-vals))]
              [flattened-vals (if (null? all-vals) '()
-                               (if (= (length all-vals) 1) all-vals
-                                 (append (my-take all-vals (- (length all-vals) 1)) 
-                                         (my-last all-vals))))]
+                                 (if (= (length all-vals) 1) all-vals
+                                     (append (my-take all-vals (- (length all-vals) 1)) 
+                                             (my-last all-vals))))]
              [new-provs (apply append all-provs)]
 
              [db (begin
@@ -263,15 +263,15 @@
     (define (set-store-factors! store new-factors)
       (define (loop curr n)
         (if (= n 5)
-          (set-car! curr new-factors)
-          (loop (cdr curr) (+ n 1))))
+            (set-car! curr new-factors)
+            (loop (cdr curr) (+ n 1))))
       (loop store 0))
 
     (define (set-store-structural-addrs! store structural)
       (define (loop curr n)
         (if (= n 6)
-          (set-car! curr structural)
-          (loop (cdr curr) (+ n 1))))
+            (set-car! curr structural)
+            (loop (cdr curr) (+ n 1))))
       (begin
         (loop store 0)))
 
@@ -286,7 +286,7 @@
         (display-debug (store->structural-addrs store))
         (set-store-structural-addrs! store (append (store->structural-addrs store) (filter (lambda (addr) (not (null? addr))) new-deps)))
         (display-debug (store->structural-addrs store))
-             ))
+        ))
 
     (define store->xrp-stats second)
     (define store->score third)
@@ -335,15 +335,15 @@
     ;;apply fn to all the leaves of trie.
     (define (walk-trie trie fn)
       (if (not (eq? trienone (trie->val trie)));(null? (trie->children trie))
-        (fn (trie->val trie))
-        (map (lambda (c) (walk-trie (cdr c) fn)) (trie->children trie))))
+          (fn (trie->val trie))
+          (map (lambda (c) (walk-trie (cdr c) fn)) (trie->children trie))))
 
     (define (alist->trie alist)
       (let loop ((alist alist)
                  (trie (make-empty-trie)))
         (if (null? alist)
-          trie
-          (loop (cdr alist) (trie-insert trie (caar alist) (cdar alist))))))
+            trie
+            (loop (cdr alist) (trie-insert trie (caar alist) (cdar alist))))))
 
 
     ;;walk trie, making new pairs.
@@ -359,14 +359,14 @@
       (let loop ((trie trie)
                  (key key))
         (if (null? key)
-          (set-car! trie (fn (trie->val trie)))
-          (let* ((entry (assoc (car key) (trie->children trie)))
-                 (sub-trie (if (eq? #f entry)
-                             (let ((new-child (make-empty-trie)))
-                               (set-cdr! trie (cons (cons (car key) new-child) (trie->children trie)))
-                               new-child)
-                             (cdr entry))))
-            (loop sub-trie (cdr key)))))
+            (set-car! trie (fn (trie->val trie)))
+            (let* ((entry (assoc (car key) (trie->children trie)))
+                   (sub-trie (if (eq? #f entry)
+                                 (let ((new-child (make-empty-trie)))
+                                   (set-cdr! trie (cons (cons (car key) new-child) (trie->children trie)))
+                                   new-child)
+                                 (cdr entry))))
+              (loop sub-trie (cdr key)))))
       trie)
 
     ;;; trie addbox
@@ -404,33 +404,33 @@
     (define factor-ticks fifth)
     (define factor-should-update? sixth)
 
-   (define (church-make-factor address store factor-function)
-     (let* ()
-       (lambda (address store . args)
-         (define new-val '())
-         (update-addbox (store->factors store)
-                        address
-                        (lambda (factor-instance)
-                          (let* ([sandbox-store (cons (make-addbox) (cdr store))]
-                                 [should-update? #t];;(if (eq? trienone factor-instance) #t (not (equal? (factor-args factor-instance) args)))]
-                                 [void (begin (display-debug "should-update:") 
-                                              (display-debug should-update?))]
-                                 [val (church-apply address sandbox-store factor-function args)]
-                                 ;; [val (cond
-                                 ;; [(eq? trienone factor-instance) (factor-function address sandbox-store args)]
-                                 ;; [(not (equal? (factor-args factor-instance) args)) (factor-function address sandbox-store args)]
-                                 ;; [else (factor-value factor-instance)])]
-                                 [last-tick (if (eq? trienone factor-instance) #f
-                                              (car (factor-ticks factor-instance)))]
-                                 [new-factor-instance
+    (define (church-make-factor address store factor-function)
+      (let* ()
+        (lambda (address store . args)
+          (define new-val '())
+          (update-addbox (store->factors store)
+                         address
+                         (lambda (factor-instance)
+                           (let* ([sandbox-store (cons (make-addbox) (cdr store))]
+                                  [should-update? #t];;(if (eq? trienone factor-instance) #t (not (equal? (factor-args factor-instance) args)))]
+                                  [void (begin (display-debug "should-update:") 
+                                               (display-debug should-update?))]
+                                  [val (church-apply address sandbox-store factor-function args)]
+                                  ;; [val (cond
+                                  ;; [(eq? trienone factor-instance) (factor-function address sandbox-store args)]
+                                  ;; [(not (equal? (factor-args factor-instance) args)) (factor-function address sandbox-store args)]
+                                  ;; [else (factor-value factor-instance)])]
+                                  [last-tick (if (eq? trienone factor-instance) #f
+                                                 (car (factor-ticks factor-instance)))]
+                                  [new-factor-instance
                                    (make-factor-instance
-                                     address args val factor-function
-                                     (cons (store->tick store) last-tick)
-                                     should-update?)])
-                            (set! new-val val)
-                            (set-store-score! store (+ (store->score store) val))
-                            new-factor-instance)))
-           new-val)))
+                                    address args val factor-function
+                                    (cons (store->tick store) last-tick)
+                                    should-update?)])
+                             (set! new-val val)
+                             (set-store-score! store (+ (store->score store) val))
+                             new-factor-instance)))
+          new-val)))
 
     (define (church-make-factor+provenance address store factor-function+)
       (let* ([factor-function (erase factor-function+)]
@@ -457,52 +457,52 @@
                                              ;; [(not (equal? (factor-args factor-instance) args)) (factor-function address sandbox-store args)]
                                              ;; [else (factor-value factor-instance)])]
                                              [last-tick (if (eq? trienone factor-instance) #f
-                                                          (car (factor-ticks factor-instance)))]
+                                                            (car (factor-ticks factor-instance)))]
                                              [new-factor-instance
-                                               (make-factor-instance
-                                                 address args val factor-function
-                                                 (cons (store->tick store) last-tick)
-                                                 should-update?)])
+                                              (make-factor-instance
+                                               address args val factor-function
+                                               (cons (store->tick store) last-tick)
+                                               should-update?)])
                                         (set! new-val val)
                                         (set-store-score! store (+ (store->score store) val))
                                         new-factor-instance)))
-                       (list new-val '())))))
+                     (list new-val '())))))
     ;;note: this assumes that the fns (sample, incr-stats, decr-stats, etc) are church procedures.
     ;;FIXME: what should happen with the store when the sampler is a church random fn? should not accumulate stats/score since these are 'marginalized'.
     (define (church-make-xrp address store xrp-name sample incr-stats decr-stats score init-stats hyperparams proposer support)
       (let* ,(if *no-forcing*
-               '()
-               ;;when we might be lazy must force the input pieces:
-               '((xrp-name (church-force address store xrp-name))
-                 (sample (church-force address store sample))
-                 (incr-stats (church-force address store incr-stats))
-                 (decr-stats (church-force address store decr-stats))
-                 (score (church-force address store score))
-                 (init-stats (church-force address store init-stats))
-                 (hyperparams (church-force address store hyperparams))
-                 (proposer (church-force address store proposer))
-                 (support (church-force address store support))) )
+                 '()
+                 ;;when we might be lazy must force the input pieces:
+                 '((xrp-name (church-force address store xrp-name))
+                   (sample (church-force address store sample))
+                   (incr-stats (church-force address store incr-stats))
+                   (decr-stats (church-force address store decr-stats))
+                   (score (church-force address store score))
+                   (init-stats (church-force address store init-stats))
+                   (hyperparams (church-force address store hyperparams))
+                   (proposer (church-force address store proposer))
+                   (support (church-force address store support))) )
 
         ;;reset stats if this is first touch on this tick.
         (update-addbox (store->xrp-stats store)
                        address
                        (lambda (stats)
                          (if (or (eq? trienone stats) (not (= (store->tick store) (second stats))))
-                           (list init-stats (store->tick store))
-                           stats)))
+                             (list init-stats (store->tick store))
+                             stats)))
 
         (let* ((xrp-address address)
                (proposer (if (null? proposer)
-                           (lambda (address store operands old-value) ;;--> proposed-value forward-log-prob backward-log-prob
-                             (let* ((dec (decr-stats address store old-value (car (read-addbox (store->xrp-stats store) xrp-address)) hyperparams operands))
-                                    (decstats (second dec))
-                                    (decscore (third dec))
-                                    (sandbox-store (cons (make-addbox) (cdr store)));;FIXME: this is a hack to need to isolate random choices in sampler from MH.
-                                    (inc (sample address sandbox-store decstats hyperparams operands))
-                                    (proposal-value (first inc))
-                                    (incscore (third inc)))
-                               (list proposal-value incscore decscore)))
-                           proposer))) ;;FIXME!! need to isolate provided proposer from MH...
+                             (lambda (address store operands old-value) ;;--> proposed-value forward-log-prob backward-log-prob
+                               (let* ((dec (decr-stats address store old-value (car (read-addbox (store->xrp-stats store) xrp-address)) hyperparams operands))
+                                      (decstats (second dec))
+                                      (decscore (third dec))
+                                      (sandbox-store (cons (make-addbox) (cdr store)));;FIXME: this is a hack to need to isolate random choices in sampler from MH.
+                                      (inc (sample address sandbox-store decstats hyperparams operands))
+                                      (proposal-value (first inc))
+                                      (incscore (third inc)))
+                                 (list proposal-value incscore decscore)))
+                             proposer))) ;;FIXME!! need to isolate provided proposer from MH...
 
           ;;the xrp itself: we update the xrp-draw at call address and return the new value.
           (lambda (address store . args)
@@ -513,72 +513,72 @@
                              ;;FIXME!! check if this is same xrp (ie. if xrp-address has changed)?
                              ;;if this xrp-draw exists and has been touched on this tick, as in mem, don't change score or stats.
                              (if (and (not (eq? trienone xrp-draw)) (equal? (store->tick store) (car (xrp-draw-ticks xrp-draw))))
-                               (begin (set! new-val (xrp-draw-value xrp-draw))
-                                      xrp-draw)
-                               (let* ((stats (car (read-addbox (store->xrp-stats store) xrp-address))) ;;FIXME: should only need to find the stats once, then do mutable update...
-                                      (support-vals (if (null? support) '() (support address store stats hyperparams args))) 
-                                      (sandbox-store (cons (make-addbox) (cdr store)));;FIXME: this is a hack to need to isolate random choices in sampler from MH.
-                                      (structural? #f)
-                                      (tmp (if (eq? trienone xrp-draw)
-                                             (sample address sandbox-store stats hyperparams args) 
-                                             (incr-stats address sandbox-store (xrp-draw-value xrp-draw) stats hyperparams args)))
-                                      ;(value ,(if *AD* '(if (continuous? (first tmp)) (tapify (first tmp)) (first tmp)) '(first tmp)))
-                                      (value (first tmp))
-                                      (new-stats (list (second tmp) (store->tick store)))
-                                      (incr-score (third tmp)) ;;FIXME: need to catch measure zero xrp situation?
-                                      (last-tick (if (eq? trienone xrp-draw)
-                                                   #f
-                                                   (car (xrp-draw-ticks xrp-draw))))
-                                      (new-xrp-draw (make-xrp-draw address
-                                                                   value
-                                                                   xrp-name
-                                                                   (lambda (address store state) ;;FIXME: clean up this proposer stuff...
-                                                                     (let ((store (cons (first (mcmc-state->store state)) (cdr (mcmc-state->store state)))))
-                                                                       (church-apply (mcmc-state->address state) store proposer (list args value))))
-                                                                   (cons (store->tick store) last-tick)
-                                                                   incr-score
-                                                                   support-vals
-                                                                   structural?)))
-                                 (set! new-val value)
-                                 (insert-addbox (store->xrp-stats store) xrp-address new-stats)
-                                 (set-store-score! store (+ (store->score store) incr-score))
-                                 new-xrp-draw))))
+                                 (begin (set! new-val (xrp-draw-value xrp-draw))
+                                        xrp-draw)
+                                 (let* ((stats (car (read-addbox (store->xrp-stats store) xrp-address))) ;;FIXME: should only need to find the stats once, then do mutable update...
+                                        (support-vals (if (null? support) '() (support address store stats hyperparams args))) 
+                                        (sandbox-store (cons (make-addbox) (cdr store)));;FIXME: this is a hack to need to isolate random choices in sampler from MH.
+                                        (structural? #f)
+                                        (tmp (if (eq? trienone xrp-draw)
+                                                 (sample address sandbox-store stats hyperparams args) 
+                                                 (incr-stats address sandbox-store (xrp-draw-value xrp-draw) stats hyperparams args)))
+                                        ;(value ,(if *AD* '(if (continuous? (first tmp)) (tapify (first tmp)) (first tmp)) '(first tmp)))
+                                        (value (first tmp))
+                                        (new-stats (list (second tmp) (store->tick store)))
+                                        (incr-score (third tmp)) ;;FIXME: need to catch measure zero xrp situation?
+                                        (last-tick (if (eq? trienone xrp-draw)
+                                                       #f
+                                                       (car (xrp-draw-ticks xrp-draw))))
+                                        (new-xrp-draw (make-xrp-draw address
+                                                                     value
+                                                                     xrp-name
+                                                                     (lambda (address store state) ;;FIXME: clean up this proposer stuff...
+                                                                       (let ((store (cons (first (mcmc-state->store state)) (cdr (mcmc-state->store state)))))
+                                                                         (church-apply (mcmc-state->address state) store proposer (list args value))))
+                                                                     (cons (store->tick store) last-tick)
+                                                                     incr-score
+                                                                     support-vals
+                                                                     structural?)))
+                                   (set! new-val value)
+                                   (insert-addbox (store->xrp-stats store) xrp-address new-stats)
+                                   (set-store-score! store (+ (store->score store) incr-score))
+                                   new-xrp-draw))))
             new-val))))
 
-(define (church-make-structural-xrp address store xrp-name sample incr-stats decr-stats score init-stats hyperparams proposer support)
+    (define (church-make-structural-xrp address store xrp-name sample incr-stats decr-stats score init-stats hyperparams proposer support)
       (let* ,(if *no-forcing*
-               '()
-               ;;when we might be lazy must force the input pieces:
-               '((xrp-name (church-force address store xrp-name))
-                 (sample (church-force address store sample))
-                 (incr-stats (church-force address store incr-stats))
-                 (decr-stats (church-force address store decr-stats))
-                 (score (church-force address store score))
-                 (init-stats (church-force address store init-stats))
-                 (hyperparams (church-force address store hyperparams))
-                 (proposer (church-force address store proposer))
-                 (support (church-force address store support))) )
+                 '()
+                 ;;when we might be lazy must force the input pieces:
+                 '((xrp-name (church-force address store xrp-name))
+                   (sample (church-force address store sample))
+                   (incr-stats (church-force address store incr-stats))
+                   (decr-stats (church-force address store decr-stats))
+                   (score (church-force address store score))
+                   (init-stats (church-force address store init-stats))
+                   (hyperparams (church-force address store hyperparams))
+                   (proposer (church-force address store proposer))
+                   (support (church-force address store support))) )
 
         ;;reset stats if this is first touch on this tick.
         (update-addbox (store->xrp-stats store)
                        address
                        (lambda (stats)
                          (if (or (eq? trienone stats) (not (= (store->tick store) (second stats))))
-                           (list init-stats (store->tick store))
-                           stats)))
+                             (list init-stats (store->tick store))
+                             stats)))
 
         (let* ((xrp-address address)
                (proposer (if (null? proposer)
-                           (lambda (address store operands old-value) ;;--> proposed-value forward-log-prob backward-log-prob
-                             (let* ((dec (decr-stats address store old-value (car (read-addbox (store->xrp-stats store) xrp-address)) hyperparams operands))
-                                    (decstats (second dec))
-                                    (decscore (third dec))
-                                    (sandbox-store (cons (make-addbox) (cdr store)));;FIXME: this is a hack to need to isolate random choices in sampler from MH.
-                                    (inc (sample address sandbox-store decstats hyperparams operands))
-                                    (proposal-value (first inc))
-                                    (incscore (third inc)))
-                               (list proposal-value incscore decscore)))
-                           proposer))) ;;FIXME!! need to isolate provided proposer from MH...
+                             (lambda (address store operands old-value) ;;--> proposed-value forward-log-prob backward-log-prob
+                               (let* ((dec (decr-stats address store old-value (car (read-addbox (store->xrp-stats store) xrp-address)) hyperparams operands))
+                                      (decstats (second dec))
+                                      (decscore (third dec))
+                                      (sandbox-store (cons (make-addbox) (cdr store)));;FIXME: this is a hack to need to isolate random choices in sampler from MH.
+                                      (inc (sample address sandbox-store decstats hyperparams operands))
+                                      (proposal-value (first inc))
+                                      (incscore (third inc)))
+                                 (list proposal-value incscore decscore)))
+                             proposer))) ;;FIXME!! need to isolate provided proposer from MH...
 
           ;;the xrp itself: we update the xrp-draw at call address and return the new value.
           (lambda (address store . args)
@@ -589,185 +589,185 @@
                              ;;FIXME!! check if this is same xrp (ie. if xrp-address has changed)?
                              ;;if this xrp-draw exists and has been touched on this tick, as in mem, don't change score or stats.
                              (if (and (not (eq? trienone xrp-draw)) (equal? (store->tick store) (car (xrp-draw-ticks xrp-draw))))
-                               (begin (set! new-val (xrp-draw-value xrp-draw))
-                                      xrp-draw)
-                               (let* ((stats (car (read-addbox (store->xrp-stats store) xrp-address))) ;;FIXME: should only need to find the stats once, then do mutable update...
-                                      (support-vals (if (null? support) '() (support address store stats hyperparams args))) 
-                                      (sandbox-store (cons (make-addbox) (cdr store)));;FIXME: this is a hack to need to isolate random choices in sampler from MH.
-                                      (structural? #t)
-                                      (tmp (if (eq? trienone xrp-draw)
-                                             (sample address sandbox-store stats hyperparams args) 
-                                             (incr-stats address sandbox-store (xrp-draw-value xrp-draw) stats hyperparams args)))
-                                      ;(value ,(if *AD* '(if (continuous? (first tmp)) (tapify (first tmp)) (first tmp)) '(first tmp)))
-                                      (value (first tmp))
-                                      (new-stats (list (second tmp) (store->tick store)))
-                                      (incr-score (third tmp)) ;;FIXME: need to catch measure zero xrp situation?
-                                      (last-tick (if (eq? trienone xrp-draw)
-                                                   #f
-                                                   (car (xrp-draw-ticks xrp-draw))))
-                                      (new-xrp-draw (make-xrp-draw address
-                                                                   value
-                                                                   xrp-name
-                                                                   (lambda (address store state) ;;FIXME: clean up this proposer stuff...
-                                                                     (let ((store (cons (first (mcmc-state->store state)) (cdr (mcmc-state->store state)))))
-                                                                       (church-apply (mcmc-state->address state) store proposer (list args value))))
-                                                                   (cons (store->tick store) last-tick)
-                                                                   incr-score
-                                                                   support-vals
-                                                                   structural?)))
-                                 (set! new-val value)
-                                 (insert-addbox (store->xrp-stats store) xrp-address new-stats)
-                                 (set-store-score! store (+ (store->score store) incr-score))
-                                 new-xrp-draw))))
+                                 (begin (set! new-val (xrp-draw-value xrp-draw))
+                                        xrp-draw)
+                                 (let* ((stats (car (read-addbox (store->xrp-stats store) xrp-address))) ;;FIXME: should only need to find the stats once, then do mutable update...
+                                        (support-vals (if (null? support) '() (support address store stats hyperparams args))) 
+                                        (sandbox-store (cons (make-addbox) (cdr store)));;FIXME: this is a hack to need to isolate random choices in sampler from MH.
+                                        (structural? #t)
+                                        (tmp (if (eq? trienone xrp-draw)
+                                                 (sample address sandbox-store stats hyperparams args) 
+                                                 (incr-stats address sandbox-store (xrp-draw-value xrp-draw) stats hyperparams args)))
+                                        ;(value ,(if *AD* '(if (continuous? (first tmp)) (tapify (first tmp)) (first tmp)) '(first tmp)))
+                                        (value (first tmp))
+                                        (new-stats (list (second tmp) (store->tick store)))
+                                        (incr-score (third tmp)) ;;FIXME: need to catch measure zero xrp situation?
+                                        (last-tick (if (eq? trienone xrp-draw)
+                                                       #f
+                                                       (car (xrp-draw-ticks xrp-draw))))
+                                        (new-xrp-draw (make-xrp-draw address
+                                                                     value
+                                                                     xrp-name
+                                                                     (lambda (address store state) ;;FIXME: clean up this proposer stuff...
+                                                                       (let ((store (cons (first (mcmc-state->store state)) (cdr (mcmc-state->store state)))))
+                                                                         (church-apply (mcmc-state->address state) store proposer (list args value))))
+                                                                     (cons (store->tick store) last-tick)
+                                                                     incr-score
+                                                                     support-vals
+                                                                     structural?)))
+                                   (set! new-val value)
+                                   (insert-addbox (store->xrp-stats store) xrp-address new-stats)
+                                   (set-store-score! store (+ (store->score store) incr-score))
+                                   new-xrp-draw))))
             new-val))))
 
-(define (church-make-xrp+provenance
-          address
-          store
-          xrp-name+
-          sample+
-          incr-stats+
-          decr-stats+
-          score+
-          init-stats+
-          hyperparams+
-          proposer+
-          support+
-          )
+    (define (church-make-xrp+provenance
+             address
+             store
+             xrp-name+
+             sample+
+             incr-stats+
+             decr-stats+
+             score+
+             init-stats+
+             hyperparams+
+             proposer+
+             support+
+             )
       (let* ,(if *no-forcing*
-               '(          
-          ;; [address (erase address+)]
-          ;; [store (erase store+)]
-          [xrp-name (erase xrp-name+)]
-          [sample (erase sample+)]
-          [incr-stats (erase incr-stats+)]
-          [decr-stats (erase decr-stats+)]
-          [score (erase score+)]
-          [init-stats (erase init-stats+)]
-          [hyperparams (erase hyperparams+)]
-          [proposer (erase proposer+)]
-          [support (erase support+)]
-          [hyperprovs (prov hyperparams+)]
-          )
-               ;;when we might be lazy must force the input pieces:
-               '((xrp-name (church-force address store xrp-name))
-                 (sample (church-force address store sample))
-                 (incr-stats (church-force address store incr-stats))
-                 (decr-stats (church-force address store decr-stats))
-                 (score (church-force address store score))
-                 (init-stats (church-force address store init-stats))
-                 (hyperparams (church-force address store hyperparams))
-                 (proposer (church-force address store proposer))
-                 (support (church-force address store support))) )
+                 '(          
+                   ;; [address (erase address+)]
+                   ;; [store (erase store+)]
+                   [xrp-name (erase xrp-name+)]
+                   [sample (erase sample+)]
+                   [incr-stats (erase incr-stats+)]
+                   [decr-stats (erase decr-stats+)]
+                   [score (erase score+)]
+                   [init-stats (erase init-stats+)]
+                   [hyperparams (erase hyperparams+)]
+                   [proposer (erase proposer+)]
+                   [support (erase support+)]
+                   [hyperprovs (prov hyperparams+)]
+                   )
+                 ;;when we might be lazy must force the input pieces:
+                 '((xrp-name (church-force address store xrp-name))
+                   (sample (church-force address store sample))
+                   (incr-stats (church-force address store incr-stats))
+                   (decr-stats (church-force address store decr-stats))
+                   (score (church-force address store score))
+                   (init-stats (church-force address store init-stats))
+                   (hyperparams (church-force address store hyperparams))
+                   (proposer (church-force address store proposer))
+                   (support (church-force address store support))) )
 
         ;;reset stats if this is first touch on this tick.
         (update-addbox (store->xrp-stats store)
                        address
                        (lambda (stats)
                          (if (or (eq? trienone stats) (not (= (store->tick store) (second stats))))
-                           (list init-stats (store->tick store))
-                           stats)))
+                             (list init-stats (store->tick store))
+                             stats)))
         (display-debug "church-make-xrp-with-provenance:")
 
         (let* ((xrp-address address)
                (proposer (if (null? proposer)
-                           (prov-init
-                             (lambda (address store operands old-value) ;;--> proposed-value forward-log-prob backward-log-prob
-                               (let* (
-                                      [void 
+                             (prov-init
+                              (lambda (address store operands old-value) ;;--> proposed-value forward-log-prob backward-log-prob
+                                (let* (
+                                       [void 
                                         (begin
                                           (display-debug '(in churchmakexrpwithprovenance calling decrstats:))
                                           (display-debug (list address store old-value (car (read-addbox (store->xrp-stats store) xrp-address)) hyperparams operands)))]
-                                      ;; (dec (decr-stats address store old-value (car (read-addbox (store->xrp-stats store) xrp-address)) hyperparams operands))
-                                      [dec (erase (decr-stats address store
-                                                              (prov-init old-value)
-                                                              (prov-init (car (read-addbox (store->xrp-stats store) xrp-address)))
-                                                              (prov-init hyperparams)
-                                                              (prov-init operands)))]
+                                       ;; (dec (decr-stats address store old-value (car (read-addbox (store->xrp-stats store) xrp-address)) hyperparams operands))
+                                       [dec (erase (decr-stats address store
+                                                               (prov-init old-value)
+                                                               (prov-init (car (read-addbox (store->xrp-stats store) xrp-address)))
+                                                               (prov-init hyperparams)
+                                                               (prov-init operands)))]
 
-                                      (decstats (second dec))
-                                      (decscore (third dec))
-                                      (sandbox-store (cons (make-addbox) (cdr store)));;FIXME: this is a hack to need to isolate random choices in sampler from MH.
-                                      (inc (erase (sample address sandbox-store (prov-init decstats) (prov-init hyperparams) (prov-init operands))))
-                                      (proposal-value (first inc))
-                                      (incscore (third inc)))
-                                 (prov-init (list proposal-value incscore decscore)))))
-                           proposer))) ;;FIXME!! need to isolate provided proposer from MH...
+                                       (decstats (second dec))
+                                       (decscore (third dec))
+                                       (sandbox-store (cons (make-addbox) (cdr store)));;FIXME: this is a hack to need to isolate random choices in sampler from MH.
+                                       (inc (erase (sample address sandbox-store (prov-init decstats) (prov-init hyperparams) (prov-init operands))))
+                                       (proposal-value (first inc))
+                                       (incscore (third inc)))
+                                  (prov-init (list proposal-value incscore decscore)))))
+                             proposer))) ;;FIXME!! need to isolate provided proposer from MH...
 
-        (display-debug "church-make-xrp-with-provenance-actual-xrp:")
+          (display-debug "church-make-xrp-with-provenance-actual-xrp:")
           ;;the xrp itself: we update the xrp-draw at call address and return the new value.
           (prov-init (lambda (address store . val-provs)
 
-            (define void (begin (display-debug "church-make-xrp-start:")
-                                (display-debug val-provs)))
-            (define provs (extract-provs val-provs))
-            (define args (extract-vals val-provs))
-            (define void2 (begin (display-debug "church-make-xrp-after-extract:")))
-            (define new-val '())
-            (update-addbox (store->xrp-draws store)
-                           address
-                           (lambda (xrp-draw)
-                             (begin 
-                               (display-debug "in-actual-update:")
-                             ;;FIXME!! check if this is same xrp (ie. if xrp-address has changed)?
-                             ;;if this xrp-draw exists and has been touched on this tick, as in mem, don't change score or stats.
-                             (if (and (not (eq? trienone xrp-draw)) (equal? (store->tick store) (car (xrp-draw-ticks xrp-draw))))
-                               (begin (set! new-val (xrp-draw-value xrp-draw))
-                                      xrp-draw)
-                               (let* ((stats (car (read-addbox (store->xrp-stats store) xrp-address))) ;;FIXME: should only need to find the stats once, then do mutable update...
-                                       [db (display-debug "stats:")]
-                                      [db (begin
-                                             (display-debug "print-support:")
-                                             (display-debug support)
-                                             (display-debug (list (prov-init stats) hyperparams+ (extract-opt-arg val-provs)))
-                                            (display-debug (apply-fn+prov address store support+ (list (prov-init stats) hyperparams+ (extract-opt-arg val-provs))))
-                                             (display-debug "end-print-support:"))]
-                                      (support-vals (if (null? support) '() (erase (apply-fn+prov address store support+ (list (prov-init stats) hyperparams+ (extract-opt-arg val-provs))))))
-                                      [db (display-debug "support-vals")]
-                                      (sandbox-store (cons (make-addbox) (cdr store)));;FIXME: this is a hack to need to isolate random choices in sampler from MH.
-                                       [db (display-debug "sandbox-store:")]
-                                      [db (display-debug (length sandbox-store))]
-                                      (structural? #f)
-                                      [db (display-debug "structural:")]
-                                      [tmp (if (eq? trienone xrp-draw)
-                                             (begin 
-                                               (display-debug '(in make-xrp+provenance calling sampler))
-                                               (display-debug (list (prov-init stats) hyperparams+ (extract-opt-arg val-provs)))
-                                             (erase (apply-fn+prov address sandbox-store sample+ (list (prov-init stats) hyperparams+ (extract-opt-arg val-provs)))))
-                                             ;;(sample address sandbox-store stats hyperparams args) 
-                                             (erase (apply-fn+prov address sandbox-store incr-stats+ (list (prov-init (xrp-draw-value xrp-draw)) (prov-init stats) hyperparams+ (extract-opt-arg val-provs)))))]
-                                      ;(value ,(if *AD* '(if (continuous? (first tmp)) (tapify (first tmp)) (first tmp)) '(first tmp)))
-                                      [db (begin
-                                            (display-debug "tmp:")
-                                            (display-debug tmp))]
-                                      [value (first tmp)]
-                                      [db (begin (display-debug "sampled-val:") (display-debug value))]
-                                      (new-stats (list (second tmp) (store->tick store)))
-                                      (incr-score (third tmp)) ;;FIXME: need to catch measure zero xrp situation?
-                                      (last-tick (if (eq? trienone xrp-draw)
-                                                   #f
-                                                   (car (xrp-draw-ticks xrp-draw))))
-                                      (new-xrp-draw (make-xrp-draw address
-                                                                   value
-                                                                   xrp-name
-                                                                   ;; this is weird, since we don't want this to be wrapped, but it does something that needs to be wrapped. someone kill me now.
-                                                                   (lambda (address store state+) ;;FIXME: clean up this proposer stuff...
-                                                                     (let* ([state (erase state+)])
-                                                                     (let ((store (cons (first (mcmc-state->store state)) (cdr (mcmc-state->store state)))))
-                                                                       (church-apply (mcmc-state->address state) store (erase proposer) (list args value)))))
-                                                                   (cons (store->tick store) last-tick)
-                                                                   incr-score
-                                                                   support-vals
-                                                                   structural?)))
-                                 (set! new-val value)
-                                 (insert-addbox (store->xrp-stats store) xrp-address new-stats)
-                                 (set-store-score! store (+ (store->score store) incr-score))
-                                 new-xrp-draw)))))
-            (begin 
-              (display-debug "Thingreturnedfrommakexrpwithprov:")
-              (display-debug (list new-val (cons address (append hyperprovs provs))))
-            (list new-val (cons address (append hyperprovs provs))))
-            )))))
+                       (define void (begin (display-debug "church-make-xrp-start:")
+                                           (display-debug val-provs)))
+                       (define provs (extract-provs val-provs))
+                       (define args (extract-vals val-provs))
+                       (define void2 (begin (display-debug "church-make-xrp-after-extract:")))
+                       (define new-val '())
+                       (update-addbox (store->xrp-draws store)
+                                      address
+                                      (lambda (xrp-draw)
+                                        (begin 
+                                          (display-debug "in-actual-update:")
+                                          ;;FIXME!! check if this is same xrp (ie. if xrp-address has changed)?
+                                          ;;if this xrp-draw exists and has been touched on this tick, as in mem, don't change score or stats.
+                                          (if (and (not (eq? trienone xrp-draw)) (equal? (store->tick store) (car (xrp-draw-ticks xrp-draw))))
+                                              (begin (set! new-val (xrp-draw-value xrp-draw))
+                                                     xrp-draw)
+                                              (let* ((stats (car (read-addbox (store->xrp-stats store) xrp-address))) ;;FIXME: should only need to find the stats once, then do mutable update...
+                                                     [db (display-debug "stats:")]
+                                                     [db (begin
+                                                           (display-debug "print-support:")
+                                                           (display-debug support)
+                                                           (display-debug (list (prov-init stats) hyperparams+ (extract-opt-arg val-provs)))
+                                                           (display-debug (apply-fn+prov address store support+ (list (prov-init stats) hyperparams+ (extract-opt-arg val-provs))))
+                                                           (display-debug "end-print-support:"))]
+                                                     (support-vals (if (null? support) '() (erase (apply-fn+prov address store support+ (list (prov-init stats) hyperparams+ (extract-opt-arg val-provs))))))
+                                                     [db (display-debug "support-vals")]
+                                                     (sandbox-store (cons (make-addbox) (cdr store)));;FIXME: this is a hack to need to isolate random choices in sampler from MH.
+                                                     [db (display-debug "sandbox-store:")]
+                                                     [db (display-debug (length sandbox-store))]
+                                                     (structural? #f)
+                                                     [db (display-debug "structural:")]
+                                                     [tmp (if (eq? trienone xrp-draw)
+                                                              (begin 
+                                                                (display-debug '(in make-xrp+provenance calling sampler))
+                                                                (display-debug (list (prov-init stats) hyperparams+ (extract-opt-arg val-provs)))
+                                                                (erase (apply-fn+prov address sandbox-store sample+ (list (prov-init stats) hyperparams+ (extract-opt-arg val-provs)))))
+                                                              ;;(sample address sandbox-store stats hyperparams args) 
+                                                              (erase (apply-fn+prov address sandbox-store incr-stats+ (list (prov-init (xrp-draw-value xrp-draw)) (prov-init stats) hyperparams+ (extract-opt-arg val-provs)))))]
+                                        ;(value ,(if *AD* '(if (continuous? (first tmp)) (tapify (first tmp)) (first tmp)) '(first tmp)))
+                                                     [db (begin
+                                                           (display-debug "tmp:")
+                                                           (display-debug tmp))]
+                                                     [value (first tmp)]
+                                                     [db (begin (display-debug "sampled-val:") (display-debug value))]
+                                                     (new-stats (list (second tmp) (store->tick store)))
+                                                     (incr-score (third tmp)) ;;FIXME: need to catch measure zero xrp situation?
+                                                     (last-tick (if (eq? trienone xrp-draw)
+                                                                    #f
+                                                                    (car (xrp-draw-ticks xrp-draw))))
+                                                     (new-xrp-draw (make-xrp-draw address
+                                                                                  value
+                                                                                  xrp-name
+                                                                                  ;; this is weird, since we don't want this to be wrapped, but it does something that needs to be wrapped. someone kill me now.
+                                                                                  (lambda (address store state+) ;;FIXME: clean up this proposer stuff...
+                                                                                    (let* ([state (erase state+)])
+                                                                                      (let ((store (cons (first (mcmc-state->store state)) (cdr (mcmc-state->store state)))))
+                                                                                        (church-apply (mcmc-state->address state) store (erase proposer) (list args value)))))
+                                                                                  (cons (store->tick store) last-tick)
+                                                                                  incr-score
+                                                                                  support-vals
+                                                                                  structural?)))
+                                                (set! new-val value)
+                                                (insert-addbox (store->xrp-stats store) xrp-address new-stats)
+                                                (set-store-score! store (+ (store->score store) incr-score))
+                                                new-xrp-draw)))))
+                       (begin 
+                         (display-debug "Thingreturnedfrommakexrpwithprov:")
+                         (display-debug (list new-val (cons address (append hyperprovs provs))))
+                         (list new-val (cons address (append hyperprovs provs))))
+                       )))))
     ;;mcmc-state structures consist of a store (which captures xrp state, etc), a score (which includes constraint enforcement), and a return value from applying a nfqp.
     ;;constructor/accessor fns: mcmc-state->xrp-draws, mcmc-state->score, mcmc-state->query-value, church-make-initial-mcmc-state.
     (define (make-mcmc-state store value address) (list store value address))
@@ -777,25 +777,25 @@
     (define (mcmc-state->score+provenance state+-with-val+)
       (prov-init (let* ([state-with-val+ (erase state+-with-val+)])
                    (if (not (eq? #t (first (erase (second state-with-val+)))))
-                     minus-infinity
-                     (store->score (mcmc-state->store state-with-val+))))))
+                       minus-infinity
+                       (store->score (mcmc-state->store state-with-val+))))))
 
     (define (mcmc-state->score state)
       (if (not (eq? #t (first (second state))))
-        minus-infinity ;;enforce conditioner.
-        (store->score (mcmc-state->store state))))
+          minus-infinity ;;enforce conditioner.
+          (store->score (mcmc-state->store state))))
 
     ;;compute the gradient of the score of a trace-container wrt any tapified erp values.
     (define (mcmc-state->gradient state)
       (first
-        (second
-          (xy-gradient-R (lambda (f xrp-draws) (filter-map (lambda (x) (if (tape? (xrp-draw-value x))
-                                                                         (f (xrp-draw-value x)) ;;FIXME: check structure
-                                                                         #f))
-                                                           xrp-draws)) ;map-independent
-                         (addbox->values (mcmc-state->xrp-draws state)) ;x-reverse
-                         (mcmc-state->score state) ;y-reverse
-                         tapify))))
+       (second
+        (xy-gradient-R (lambda (f xrp-draws) (filter-map (lambda (x) (if (tape? (xrp-draw-value x))
+                                                               (f (xrp-draw-value x)) ;;FIXME: check structure
+                                                               #f))
+                                                    xrp-draws)) ;map-independent
+                       (addbox->values (mcmc-state->xrp-draws state)) ;x-reverse
+                       (mcmc-state->score state) ;y-reverse
+                       tapify))))
 
 
     ;;this assumes that nfqp returns a thunk, which is the delayed query value. we force (apply) the thunk here, using the store from the current state.
@@ -814,25 +814,25 @@
         (begin (display-debug (list '(mcmc-state->query-value answer:) answer))
                answer)))
 
-(define (mcmc-state->query-value+provenance state+)
-  (let* ([state (erase state+)]
-         (store (mcmc-state->store state))
-         (store (make-store (copy-addbox (store->xrp-draws store))
-                            (copy-addbox (store->xrp-stats store))
-                            (store->score store)
-                            (store->tick store)
-                            (store->enumeration-flag store)
-                            (copy-addbox (store->factors store))
-                            (store->structural-addrs store)
-                            ))
-    ;; we need to clear the provenance otherwise if statements in mcmc kernels will wrongly mark xrp's as structural
-         [debug (begin (display-debug '(in queryvalue+prov))
-                       (display-debug (store->structural-addrs store)))]
-         [answer (clear-prov (church-apply (mcmc-state->address state) store (cdr (erase (second state))) '()))]
-         )
-    (begin
-      (display-debug (list '(mcmc-state->query-value answer:) answer))
-      answer)))
+    (define (mcmc-state->query-value+provenance state+)
+      (let* ([state (erase state+)]
+             (store (mcmc-state->store state))
+             (store (make-store (copy-addbox (store->xrp-draws store))
+                                (copy-addbox (store->xrp-stats store))
+                                (store->score store)
+                                (store->tick store)
+                                (store->enumeration-flag store)
+                                (copy-addbox (store->factors store))
+                                (store->structural-addrs store)
+                                ))
+             ;; we need to clear the provenance otherwise if statements in mcmc kernels will wrongly mark xrp's as structural
+             [debug (begin (display-debug '(in queryvalue+prov))
+                           (display-debug (store->structural-addrs store)))]
+             [answer (clear-prov (church-apply (mcmc-state->address state) store (cdr (erase (second state))) '()))]
+             )
+        (begin
+          (display-debug (list '(mcmc-state->query-value answer:) answer))
+          answer)))
 
     ;;this captures the current store/address and packages up an initial mcmc-state.
     ;;should copy here? not needed currently, since counterfactual-update coppies and is only thing aplied to states....
@@ -846,24 +846,22 @@
     ;; We'd like to update the structural? field of each xrp draw according to structural-addrs in interv-store. This can probably be a separate function.
     (define (xrp-draw-set-structural draw new-str)
       (make-xrp-draw
-        (xrp-draw-address draw)
-        (xrp-draw-value draw)
-        (xrp-draw-name draw)
-        (xrp-draw-proposer draw)
-        (xrp-draw-ticks draw)
-        (xrp-draw-score draw)
-        (xrp-draw-support draw)
-        new-str))
+       (xrp-draw-address draw)
+       (xrp-draw-value draw)
+       (xrp-draw-name draw)
+       (xrp-draw-proposer draw)
+       (xrp-draw-ticks draw)
+       (xrp-draw-score draw)
+       (xrp-draw-support draw)
+       new-str))
 
     (define (update-xrp-draw-structural-fields store)
-      (let* ([draws (store->xrp-draws store)])
-        (let loop ([addrs (store->structural-addrs store)])
-          (if (null? addrs) '()
-            (begin
-              (update-addbox 
-                draws (car addrs) 
-                (lambda (draw) (xrp-draw-set-structural draw #t)))
-              (loop (cdr addrs)))))))
+      (let ([draws (store->xrp-draws store)])
+        (for-each (lambda (addr)
+                    (update-addbox draws
+                                   addr 
+                                   (lambda (draw) (xrp-draw-set-structural draw #t))))
+                  (store->structural-addrs store))))
 
     (define (store->structural-draws store)
       (filter xrp-draw-structural? (addbox->values (store->xrp-draws store))))
@@ -924,12 +922,12 @@
              (value (church-apply (mcmc-state->address state) interv-store nfqp '()))
              [asdf (begin (display-debug (list '(value in counterfactual-update:) value)))]
              (cd-bw/fw (if (store->enumeration-flag interv-store)
-                         0
-                         (clean-store interv-store))) ;;FIXME!! need to clean out unused xrp-stats?
+                           0
+                           (clean-store interv-store))) ;;FIXME!! need to clean out unused xrp-stats?
              (factor-score-current 
-               (if (store->enumeration-flag interv-store)
-                 0
-                 (clean-store-factors interv-store)))
+              (if (store->enumeration-flag interv-store)
+                  0
+                  (clean-store-factors interv-store)))
              ;; (void (begin (display "cdbwfwscore: ") (display cd-bw/fw) (display "factorbwfwscore: ") (display factor-bw/fw)))
              [void (update-xrp-draw-structural-fields interv-store)]
              [void (begin
@@ -962,17 +960,17 @@
                  (set-store-xrp-draws! store (alist->addbox (map (lambda (d) (cons (xrp-draw-address d) d)) used-draws)))
                  bw/fw)]
               [else (if (= (first (xrp-draw-ticks (car draws))) (store->tick store))
-                      (if (eq? #f (cdr (xrp-draw-ticks (car draws))))
-                        ;;this was a new xrp-draw, accumulate fw prob:
-                        (loop (cdr draws) (cons (car draws) used-draws) (- bw/fw
-                                                                           (xrp-draw-score (car draws)) ;;NOTE: incremental differs here
-                                                                           )) 
-                        ;;this xrp-draw existed already:
-                        (loop (cdr draws) (cons (car draws) used-draws) bw/fw))
-                      ;;this xrp-draw was not used in last update, drop it and accumulate bw prob:
-                      (loop (cdr draws) used-draws (+ bw/fw
-                                                      (xrp-draw-score (car draws)) ;;NOTE: incremental differs here
-                                                      )))])))
+                        (if (eq? #f (cdr (xrp-draw-ticks (car draws))))
+                            ;;this was a new xrp-draw, accumulate fw prob:
+                            (loop (cdr draws) (cons (car draws) used-draws) (- bw/fw
+                                                                               (xrp-draw-score (car draws)) ;;NOTE: incremental differs here
+                                                                               )) 
+                            ;;this xrp-draw existed already:
+                            (loop (cdr draws) (cons (car draws) used-draws) bw/fw))
+                        ;;this xrp-draw was not used in last update, drop it and accumulate bw prob:
+                        (loop (cdr draws) used-draws (+ bw/fw
+                                                        (xrp-draw-score (car draws)) ;;NOTE: incremental differs here
+                                                        )))])))
     (define (clean-store-factors store)
       (let loop ((factors (addbox->values (store->factors store)))
                  (used-factors '())
@@ -982,11 +980,11 @@
                  (set-store-factors! store (alist->addbox (map (lambda (d) (cons (factor-address d) d)) used-factors)))
                  bw/fw)]
               [else (if (= (first (factor-ticks (car factors))) (store->tick store))
-                      (loop (cdr factors) (cons (car factors) used-factors) (+ bw/fw
-                                                                               (factor-value (car factors)) ;; Perform possibly expensive scoring function here.
-                                                                               )) 
-                      ;;this factor was not used in last update, drop it: 
-                      (loop (cdr factors) used-factors bw/fw))])))
+                        (loop (cdr factors) (cons (car factors) used-factors) (+ bw/fw
+                                                                                 (factor-value (car factors)) ;; Perform possibly expensive scoring function here.
+                                                                                 )) 
+                        ;;this factor was not used in last update, drop it: 
+                        (loop (cdr factors) used-factors bw/fw))])))
     ) )
 
-; )
+                                        ; )
