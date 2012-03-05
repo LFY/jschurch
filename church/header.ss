@@ -53,14 +53,10 @@
 (define (primitive-def+provenance symb)
   (if *no-forcing*
     `(define ,symb (list (lambda (address store . args) 
-                           (begin
-                             (display-debug "primitive:")
-                             (display-debug args)
-                             (display-debug "end-primitive:")
-                             (list
-                              (apply ,(un-prefix-church symb) (extract-vals args))
-                              (apply append (extract-provs args)))
-                              ))
+                           (list
+                             (apply ,(un-prefix-church symb) (extract-vals args))
+                             (apply append (extract-provs args))
+                             ))
                          '()))
     `(define ,symb (lambda (address store . args) (apply ,(un-prefix-church symb) (map (lambda (a) (church-force address store a)) args))))))
 
@@ -70,13 +66,10 @@
     ;;;
     ;;misc church primitives
     (define (church-apply address store proc args)
-      (begin (display-debug '(in church apply))
-             (display-debug args)
-             (display-debug '(end church apply))
       ,(if *no-forcing*
          `(apply proc address store args)
          `(apply (church-force address store proc) address store (church-force address store args))
-         )))
+         ))
 
      ;; ;;requires compile, eval, and environment to be available from underlying scheme....
     ;; (define (church-eval addr store sexpr)
