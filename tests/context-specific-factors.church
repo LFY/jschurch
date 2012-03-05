@@ -1,0 +1,25 @@
+
+(define f1
+  (make-factor 
+    (lambda (x y z) 
+      (log (if (apply and (list x y z)) 1.0 0.01)))))
+
+(define f2
+  (make-factor 
+    (lambda (x y z) 
+      (log (if (not (apply or (list x y z))) 1.0 0.01)))))
+
+(define (which-f f)
+  (if (eq? f1 f) 'f1 'f2))
+
+(for-each display (mh-query 100 1
+  (define res
+    (letrec ([x (flip)]
+             [c-gate (flipS)] 
+             [m (flip)]
+             [p (flip)]
+             [factor (if c-gate f1 f2)]
+             [constr (factor x m p)])
+      (list x m p (which-f factor))))
+  res
+  true))
