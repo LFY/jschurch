@@ -35,7 +35,15 @@
 
  ;;list of the primitive routines (defined in header) that need access to address and store.
  (define *threaded-primitives*
-   '(apply force reset-store-xrp-draws make-xrp make-structural-xrp make-factor make-initial-mcmc-state make-initial-enumeration-state))
+   '(apply force reset-store-xrp-draws 
+           make-xrp 
+           make-structural-xrp 
+           
+           make-factor 
+           
+           make-initial-mcmc-state 
+           
+           make-initial-enumeration-state))
 
 ;; list of the primitive routines that not only need access to address and store, but the provenance information as well.
 ;; the syntactic transformation will add +provenance onto the end, much like how appending church- to the front will make them use the header.ss definitions.
@@ -176,6 +184,55 @@
   (list 'and 'or))
 
 (define (addressing+provenance+structural-deps* sexpr primitive?)
+
+  ;; lifting a + addr_store -> b (defined in header.ss)
+  (define (primitive+addr? s)
+    (contains? s '(and or
+                   reset-store-xrp-draws
+                    reset-store-factors
+                    reset-store-structural-addrs)))
+
+  ;; lifting P[a] -> P[b] (defined in header.ss so needs +provenance rename)
+  (define (libfunc+prov? s)
+    (contains? s '(mcmc-state->score mcmc-state->query-value)))
+
+  ;; lifting P[a] + a
+  (define (libfunc+prov+addr? s)
+    (contains? s '(make-xrp 
+                    make-factor 
+                    make-initial-mcmc-state)))
+
+  ;; lifting a -> b (defined in header.ss)
+  (define (threaded-primitive-libfunc? s)
+    (contains? s '(;; counterfactual-updates
+                   counterfactual-update
+
+                   ;; addbox
+                   read-addbox
+                   update-addbox
+                   addbox->values
+
+                   mcmc-state->store
+                   mcmc-state->address
+                   mcmc-state->xrp-draws
+
+                   xrp-draw-address
+                   xrp-draw-value
+                   xrp-draw-name
+                   xrp-draw-propsoer
+                   xrp-draw-ticks
+                   xrp-draw-score
+                   xrp-draw-support
+                   xrp-draw-proposer
+                   xrp-draw-structural?
+
+                   factor-address
+                   factor-args
+                   factor-value
+                   factor-scorer
+                   factor-ticks
+                   factor-should-update?)))
+
   (define (addr-prov sexpr re-init)
     (let* ([re-addr-prov (lambda (e) (addr-prov e re-init))])
       (cond
@@ -213,68 +270,26 @@
            store
            ,(re-addr-prov (second sexpr)))]
 
-        ;; header.ss functions
-        ;; Lifting various header.ss functions
-
-
-        ;; many cases of lifting:
-        ;; user-defined church functionss a -> b => P[A[a]] -> P[A[b]]
-        ;; Lifting xrp and factor creation
-        [(tagged-list? sexpr 'make-xrp) ;; needs address, store, provenance
-         `(church-apply (cons ',(next-addr) address) store 
-                         ,(church-rename (provenance-rename (first sexpr))) 
-                         (arglist ,@(map re-addr-prov (rest sexpr))))]
-        [(tagged-list? sexpr 'make-factor) ;; needs address, store, provenance
-         `(church-apply (cons ',(next-addr) address) store 
-                        ,(church-rename (provenance-rename (first sexpr))) 
-                        (arglist ,@(map re-addr-prov (rest sexpr))))]
-
-        ;; Lifting counterfactual-update
-        [(tagged-list? sexpr 'counterfactual-update) ;; only needs provenance
-         `(apply counterfactual-update+provenance (arglist ,@(map re-addr-prov (rest sexpr))))]
-
-        ;; Lifting addbox functions
-        [(tagged-list? sexpr 'addbox->values)
-         `(addbox->values+provenance ,@(map re-addr-prov (rest sexpr)))]
-
-        ;; Lifting MCMC state manipulation
-        [(tagged-list? sexpr 'make-initial-mcmc-state) 
-         `(church-apply (cons ',(next-addr) address)  ;; if we defined fn usually we don't want to 'erase' it so no apply-fn+prov
-                        store
-                        ,(church-rename (provenance-rename (first sexpr)))
-                        (arglist ,@(map re-addr-prov (rest sexpr))))]
-        [(tagged-list? sexpr 'mcmc-state->xrp-draws) 
-         `(mcmc-state->xrp-draws+provenance ,@(map re-addr-prov (rest sexpr)))]
-        [(tagged-list? sexpr 'mcmc-state->address) 
-         `(mcmc-state->address+provenance ,@(map re-addr-prov (rest sexpr)))]
-        [(tagged-list? sexpr 'mcmc-state->score) 
-         `(mcmc-state->score+provenance ,@(map re-addr-prov (rest sexpr)))]
-        [(tagged-list? sexpr 'mcmc-state->query-value) 
-         `(mcmc-state->query-value+provenance ,@(map re-addr-prov (rest sexpr)))]
-
-        ;; Lifting XRP draw access
-        [(tagged-list? sexpr 'xrp-draw-proposer)
-         `(prov-init (xrp-draw-proposer (erase ,(re-addr-prov (second sexpr)))))]
-
-        ;; Lifting reset functions
-        [(tagged-list? sexpr 'reset-store-xrp-draws) 
-         '(church-reset-store-xrp-draws address store)]
-        [(tagged-list? sexpr 'reset-store-factors) 
-         '(church-reset-store-factors address store)]
-        [(tagged-list? sexpr 'reset-store-structural-addrs) 
-         '(church-reset-store-structural-addrs+provenance address store)]
-
         [(application? sexpr)
-         (cond [(and (symbol? (first sexpr)) (primitive? (first sexpr)))
-                (if (contains? (first sexpr) lifted-primitive-header-functions)
-                  `(apply-prim+prov+addressing address store ,(church-rename (first sexpr)) (arglist ,@(map re-addr-prov (rest sexpr))))
-                  `(apply-prim+prov ,(first sexpr) (arglist ,@(map re-addr-prov (rest sexpr)))))]
-               ;; Lifting Apply (but does not cover apply used as a value)
-               [(equal? 'apply (first sexpr))
-                `(lifted-apply
-                   (cons ',(next-addr) address) store
-                   ,(re-addr-prov (second sexpr))
-                   ,@(map re-addr-prov (rest (rest sexpr))))]
+         (cond [(symbol? (first sexpr))
+                (let* ([name (first sexpr)])
+                  (cond 
+                    [(primitive+addr? name)
+                     `(prim+prov+addr address store ,(church-rename (first sexpr)) ,@(map re-addr-prov (rest sexpr)))]
+                    [(libfunc+prov? name)
+                     `(,(provenance-rename (first sexpr)) ,@(map re-addr-prov (rest sexpr)))]
+                    [(libfunc+prov+addr? name)
+                     `(church-apply (cons ',(next-addr) address) store 
+                                    ,(church-rename (provenance-rename (first sexpr))) 
+                                    (arglist ,@(map re-addr-prov (rest sexpr))))]
+                    [(equal? name 'apply)
+                     `(lifted-apply (cons ',(next-addr) address) store
+                                    ,(re-addr-prov (second sexpr)) ,@(map re-addr-prov (rest (rest sexpr))))]
+                    [(or (primitive? name) (threaded-primitive-libfunc? name))
+                     `(prim+prov ,(first sexpr) ,@(map re-addr-prov (rest sexpr)))]
+                    [else
+                      `(apply-fn+prov (cons ',(next-addr) address) store ,(re-addr-prov (first sexpr)) 
+                                      (arglist ,@(map re-addr-prov (rest sexpr))))]))]
                [else
                  `(apply-fn+prov (cons ',(next-addr) address) store ,(re-addr-prov (first sexpr)) 
                                  (arglist ,@(map re-addr-prov (rest sexpr))))])]

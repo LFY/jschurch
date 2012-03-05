@@ -146,7 +146,6 @@
              [prov-of-condition (prov condition)])
         (begin
               (display-debug "if:")
-              ;; (display-debug loc)
               (display-debug condition)
               (display-debug "endif:") 
           (store-add-structural-dep!
@@ -155,13 +154,6 @@
           (if res
             (prov+ (true-branch) prov-of-condition)
             (prov+ (false-branch) prov-of-condition)))))
-
-
-    ;; (define (extract-vals val-provs)
-      ;; (map (lambda (x) (if (procedure? x) x (car x))) val-provs))
-
-    ;; (define (extract-provs val-provs)
-      ;; (map cadr (filter (lambda (x) (not (procedure? x))) val-provs)))
 
     (define (fsts xs) (map car xs))
     (define (snds xs) (map cadr xs))
@@ -175,6 +167,22 @@
         (display-debug pr-pvs)        
         (make-prov (extract-vals pr-pvs) 
                    (apply append (extract-provs pr-pvs)))))
+
+    (define (prim+prov f . args)
+      (apply-prim+prov f args))
+
+    (define (prim+prov+addr address store f . args)
+      (apply-prim+prov+addressing address store f args))
+
+    (define (fn+prov address store f . args)
+      (apply-fn+prov address store f args))
+
+    (define (bind-prov f . args+)
+      (apply f (map erase args+)))
+
+    (define (bind-prov+addr address store f . args+)
+      (church-apply address store f (map erase args+)))
+
 
     (define (apply-prim+prov proc args)
       (begin 
@@ -249,12 +257,7 @@
         (display-debug val-provs)
         (display-debug "end-apply-fn:")
         (church-apply address store (erase proc) val-provs)))
-      ;; (make-prov
-        ;; (church-apply address store (erase proc) (extract-vals val-provs))
-        ;; (apply append (extract-provs val-provs)))))
 
-    ;;;
-    ;;stuff for xrps (and dealing with stores):
     (define (make-store xrp-draws xrp-stats score tick enumeration-flag factors structural-addrs) 
       (list xrp-draws xrp-stats score tick enumeration-flag factors structural-addrs))
 
@@ -381,8 +384,8 @@
     (define (read-addbox addbox address) (trie-lookup addbox (reverse address)))
     (define (update-addbox addbox address fn) (trie-update addbox (reverse address) fn))
     (define addbox->values trie->values)
-    (define (addbox->values+provenance addbox+)
-      (prov-init (addbox->values (erase addbox+))))
+    ;; (define (addbox->values+provenance addbox+)
+      ;; (prov-init (addbox->values (erase addbox+))))
     (define (alist->addbox alist) (alist->trie (map (lambda (b) (cons (reverse (car b)) (cdr b))) alist)))
     (define addbox-empty? trie-empty?)
 
@@ -777,13 +780,7 @@
     (define (make-mcmc-state store value address) (list store value address))
     (define mcmc-state->store first)
     (define mcmc-state->address third)
-    (define (mcmc-state->address+provenance state+)
-      (prov-init (mcmc-state->address (erase state+))))
     (define (mcmc-state->xrp-draws state) (store->xrp-draws (mcmc-state->store state)))
-
-    (define (mcmc-state->xrp-draws+provenance state+) 
-      (prov-init (store->xrp-draws (mcmc-state->store (erase state+)))))
-
     (define (mcmc-state->score+provenance state+-with-val+)
       (prov-init (let* ([state-with-val+ (erase state+-with-val+)])
                    (if (not (eq? #t (first (erase (second state-with-val+)))))
@@ -908,11 +905,8 @@
 
     ;; so counterfactual update might take any side effecting function that takes the state as argument.
 
-    (define (counterfactual-update+provenance state+ nfqp+ . interventions+)
-      (let* ([state (erase state+)]
-             [nfqp (erase nfqp+)]
-             [interventions (extract-vals interventions+)]
-             (interv-store (make-store (fold (lambda (interv xrps)
+    (define (counterfactual-update state nfqp . interventions)
+      (let* ((interv-store (make-store (fold (lambda (interv xrps)
                                                (update-addbox xrps (xrp-draw-address (first interv))
                                                               (lambda (xrp-draw)
                                                                 (make-xrp-draw (xrp-draw-address (first interv))
@@ -949,53 +943,17 @@
                      (display-debug '(Checking structural address inference))
                      (display-debug (map xrp-draw-address (store->structural-draws interv-store))))]
              (proposal-state (make-mcmc-state interv-store value (mcmc-state->address state)))
-             [answer (prov-init (list proposal-state cd-bw/fw))]
+             [answer (list proposal-state cd-bw/fw)]
              )
         ;;(list proposal-state (+ cd-bw/fw factor-bw/fw))))
         (begin
           (display-debug '(end of counterfactual update:))
           (display-debug answer)
-          (display '(Structural addresses:))
-          (display (store->structural-addrs interv-store))
+          ;; (display '(Structural addresses:))
+          ;; (display (store->structural-addrs interv-store))
 
           answer)
         ))
-
-    (define (counterfactual-update state nfqp . interventions)
-          (let* ((interv-store (make-store (fold (lambda (interv xrps)
-                                                   (update-addbox xrps (xrp-draw-address (first interv))
-                                                                  (lambda (xrp-draw)
-                                                                    (make-xrp-draw (xrp-draw-address (first interv))
-                                                                                   (cdr interv)
-                                                                                   (xrp-draw-name (first interv))
-                                                                                   (xrp-draw-proposer (first interv))
-                                                                                   (xrp-draw-ticks (first interv))
-                                                                                   'dummy-score ;;dummy score which will be replace on update.
-                                                                                   (xrp-draw-support (first interv))
-                                                                                   ))))
-                                                 (copy-addbox (store->xrp-draws (mcmc-state->store state)))
-                                                 interventions)
-                                           (copy-addbox (store->xrp-stats (mcmc-state->store state)))
-                                           0.0
-                                           (+ 1 (store->tick (mcmc-state->store state))) ;;increment the generation counter.
-                                           (store->enumeration-flag (mcmc-state->store state))
-                                           (copy-addbox (store->factors (mcmc-state->store state)))
-                                           (store->structural-addrs (mcmc-state->store state))
-                                           ))
-                 ;;application of the nfqp happens with interv-store, which is a copy so won't mutate original state.
-                 ;;after application the store must be captured and put into the mcmc-state.
-                 (value (church-apply (mcmc-state->address state) interv-store nfqp '()))
-                 (cd-bw/fw (if (store->enumeration-flag interv-store)
-                             0
-                             (clean-store interv-store))) ;;FIXME!! need to clean out unused xrp-stats?
-                 (factor-score-current 
-                   (if (store->enumeration-flag interv-store)
-                                 0
-                                 (clean-store-factors interv-store)))
-                 ;; (void (begin (display "cdbwfwscore: ") (display cd-bw/fw) (display "factorbwfwscore: ") (display factor-bw/fw)))
-                 (proposal-state (make-mcmc-state interv-store value (mcmc-state->address state))))
-            ;;(list proposal-state (+ cd-bw/fw factor-bw/fw))))
-            (list proposal-state cd-bw/fw)))
 
     ;;we need to pull out the subset of new-state xrp-draws that were touched on this pass,
     ;;at the same time we want to accumulate the bw score of these deleted xrp-draws and the fw score of any new ones.
