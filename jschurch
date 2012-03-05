@@ -90,11 +90,12 @@ def rooted(path):
     return os.path.join(root, path)
 
 
-def make():
+# build church using custom compiler.
+def make_with_compiler(compiler_fn):
     """ Builds the Church compiler in Javascript using scheme2js. """
 
     print("Combining Church compiler code into single file...")
-    inlined_compiler_src = inline(rooted("church/compiler.ss"),
+    inlined_compiler_src = inline(rooted("church/" + compiler_fn),
                                   [abspath(dirname(sys.argv[0])), rooted("church/")])
     church_compiler_scm_filename = rooted("compiled/church-compiler.tmp.ss")
     f = open(church_compiler_scm_filename, "w")
@@ -107,7 +108,12 @@ def make():
                                                                   church_compiler_scm_filename))
 
     print("Building JS compiler done.")
+    
+def make():
+    make_with_compiler("compiler.ss")
 
+def makecustom(file):
+    make_with_compiler(file)
 
 def webservice():
     """
@@ -201,4 +207,4 @@ def run(file):
 
     
 if __name__ == "__main__":
-    optfunc.run([make, run, webservice])
+    optfunc.run([make, run, webservice, makecustom])
