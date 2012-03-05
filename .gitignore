@@ -9,3 +9,4 @@ external/__init__.pyc
 *.swp
 *.swp
 *.swn
+default_compiler

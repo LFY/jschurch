@@ -108,11 +108,25 @@ def make_with_compiler(compiler_fn):
                                                                   church_compiler_scm_filename))
 
     print("Building JS compiler done.")
-    
+
+DEFAULT_COMPILER_CFG = "default_compiler"
+
+def read_default_compiler(fn):
+    if exists(fn):
+        return open(fn).read().strip()
+    else:
+        return "compiler.ss"
+
+def setdefault(fn):
+    fh = open(DEFAULT_COMPILER_CFG, 'w')
+    fh.write(fn)
+    fh.close()
+
 def make():
-    make_with_compiler("compiler.ss")
+    make_with_compiler(read_default_compiler("default_compiler"))
 
 def makecustom(file):
+    setdefault(file)
     make_with_compiler(file)
 
 def webservice():
