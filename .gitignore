@@ -5,3 +5,7 @@
 external/optfunc.pyc
 *tmp*
 external/__init__.pyc
+*~
+*.swp
+*.swp
+*.swn
