@@ -141,12 +141,12 @@
     (define (display-debug x)
       (if DEBUG (display x) '()))
 
-    (define (if+prov loc store condition true-branch false-branch)
+    (define (if+prov store condition true-branch false-branch)
       (let* ([res (erase condition)]
              [prov-of-condition (prov condition)])
         (begin
               (display-debug "if:")
-              (display-debug loc)
+              ;; (display-debug loc)
               (display-debug condition)
               (display-debug "endif:") 
           (store-add-structural-dep!
