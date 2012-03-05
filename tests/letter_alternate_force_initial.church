@@ -20,7 +20,7 @@
   (+ low (sample-integerS (- high low))))
 
 (for-each display 
-          (larj-mh-query-proposal-count 100000 1 50
+          (larj-mh-query-proposal-count+power 100000 1 200 3
           ;;(mh-query 100000 1
                     (define x
                       (let* ([num-vals (randintS 5 10)]
