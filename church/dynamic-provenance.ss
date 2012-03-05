@@ -59,11 +59,6 @@
      make-xrp
      make-factor))
 
-(define (addr-primitive-def symb)
-  (if *no-forcing*
-      `(define ,symb (lambda (address store . args) (apply ,(un-prefix-church symb) args)))
-      `(define ,symb (lambda (address store . args) (apply ,(un-prefix-church symb) (map (lambda (a) (church-force address store a)) args))))))
-
 (define (compile top-list external-defs . lazy)
    (let* ((church-sexpr  `(begin
                             (load "standard-preamble.church")
@@ -80,9 +75,9 @@
           (primitive? (let ((primitive-symbols (delete-duplicates (free-variables ds-sexpr '()))))
                         (lambda (sym) (and (not (memq sym *threaded-primitives*))
                                            (memq sym primitive-symbols)))))
-          (scexpr (addressing* ds-sexpr primitive?)))
+          (scexpr (addressing+provenance+structural-deps* ds-sexpr primitive?)))
           ;;(scexpr (addressing* ds-sexpr primitive?)))
-     `( ,@(generate-header-generic addr-primitive-def (delete-duplicates (free-variables scexpr '())) external-defs (eq? #t lazy))
+     `( ,@(generate-header (delete-duplicates (free-variables scexpr '())) external-defs (eq? #t lazy))
         (define (church-main address store) ,scexpr))))
  ;;syntax:
  (define (mem? sexpr) (tagged-list? sexpr 'mem))
@@ -147,12 +142,6 @@
     (or (equal? (first l) i) 
         (contains? i (rest l)))))
 
-(define lifted-constant-symbols
-  (list 'true 'false))
-
-(define lifted-primitive-header-functions
-  (list 'and 'or))
-
 (define (addressing+provenance+structural-deps* sexpr primitive?)
 
   ;; lifting a + addr_store -> b (defined in header.ss)
@@ -169,6 +158,7 @@
   ;; lifting P[a] + a
   (define (libfunc+prov+addr? s)
     (contains? s '(make-xrp 
+                    make-structural-xrp
                     make-factor 
                     make-factor-annealed
                     make-factor-frozen
@@ -176,8 +166,10 @@
 
   ;; lifting a -> b (defined in header.ss)
   (define (threaded-primitive-libfunc? s)
-    (contains? s '(;; counterfactual-updates
+    (contains? s '(
+                   ;; counterfactual-updates
                    counterfactual-update
+                   counterfactual-update-larj
 
                    ;; addbox
                    read-addbox
@@ -187,6 +179,11 @@
                    mcmc-state->store
                    mcmc-state->address
                    mcmc-state->xrp-draws
+                   mcmc-state->diff-factors
+
+                   store->factors
+                   store->diff-factors
+                   store->xrp-draws
 
                    xrp-draw-address
                    xrp-draw-value
@@ -204,6 +201,11 @@
                    factor-scorer
                    factor-ticks
                    factor-should-update?)))
+
+  ;; lifted constant symbols like and, or, +-\infty
+  (define (lifted-constant-symbol? s)
+    (contains? s '(true false infinity minus-infinity nan pi)))
+  
 
   (define (addr-prov sexpr re-init)
     (let* ([re-addr-prov (lambda (e) (addr-prov e re-init))])
@@ -258,7 +260,7 @@
                      `(lifted-apply (cons ',(next-addr) address) store
                                     ,(re-addr-prov (second sexpr)) ,@(map re-addr-prov (rest (rest sexpr))))]
                     [(or (primitive? name) (threaded-primitive-libfunc? name))
-                     `(prim+prov ,(first sexpr) ,@(map re-addr-prov (rest sexpr)))]
+                     `(prim+prov ,name ,@(map re-addr-prov (rest sexpr)))]
                     [else
                       `(apply-fn+prov (cons ',(next-addr) address) store ,(re-addr-prov (first sexpr)) 
                                       (arglist ,@(map re-addr-prov (rest sexpr))))]))]
@@ -266,7 +268,7 @@
                  `(apply-fn+prov (cons ',(next-addr) address) store ,(re-addr-prov (first sexpr)) 
                                  (arglist ,@(map re-addr-prov (rest sexpr))))])]
 
-        [(and (symbol? sexpr) (contains? sexpr lifted-constant-symbols)) `(prov-init ,(church-rename sexpr))]
+        [(and (symbol? sexpr) (lifted-constant-symbol? sexpr)) `(prov-init ,(church-rename sexpr))]
         [(symbol? sexpr) (church-rename sexpr)]
         [(number? sexpr) `(prov-init ,sexpr)]
         [else `(prov-init ,sexpr)] )))

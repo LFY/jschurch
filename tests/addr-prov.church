@@ -1,0 +1,8 @@
+(define x (flip))
+(define y (flip))
+(define z2 (flip))
+(define z (and x y))
+
+(define res (if z z2 (flip)))
+
+(list x y z z2 res)

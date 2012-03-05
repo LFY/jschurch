@@ -5,7 +5,7 @@
                    (if res 0.0 (log 0.1))))))
 
 (define (randint low high)
-  (+ low (sample-integer (- high low))))
+  (+ low (sample-integerS (- high low))))
 
 (define (consec-2 xs)
   (letrec 
@@ -16,7 +16,7 @@
     (loop '() xs)))
 
 (for-each display 
-          (mh-query 10 1
+          (larj-mh-query 2 1 2
                     (define x
                       (let* ([num-vals (randint 5 10)]
                              [vals (repeat num-vals (lambda () (if (flip) 1 0)))]
