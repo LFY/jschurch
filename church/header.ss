@@ -39,6 +39,15 @@
          (primitive-defs (map primitive-def+provenance (lset-difference eq? (filter church-symbol? free-variables) def-symbols))))
     (append external-defs primitive-defs special-defs)))
 
+(define (generate-header-generic primitive-lifter free-variables external-defs lazy)
+  (set! *no-forcing* (not lazy)) 
+  (let* ((special-defs (generate-special))
+         (def-symbols (map (lambda (d) (if (pair? (second d)) (first (second d)) (second d)))
+                           (append special-defs external-defs))) ;;get symbols defined by header and external fns.
+         ;;any remaining church- free variables is assumed to have an underlying primitive, package them up:
+         (primitive-defs (map primitive-lifter (lset-difference eq? (filter church-symbol? free-variables) def-symbols))))
+    (append external-defs primitive-defs special-defs)))
+
 (define (prefix-church symb) (string->symbol (string-append "church-" (symbol->string symb))))
 (define (un-prefix-church symb) (if (church-symbol? symb)
                                     (string->symbol (list->string (drop (string->list (symbol->string symb)) 7)))
