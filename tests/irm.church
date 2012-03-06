@@ -1,0 +1,110 @@
+;; Adapted from
+;; http://projects.csail.mit.edu/church/wiki/Mixture_and_Non-Parametric_Models
+;;
+;; Once we have provenance tracking, use local factors.
+
+(define prob-factor
+  (make-factor
+   (lambda (p) (* 50 (log p)))))
+
+(define (fraction-equal? a b)
+  (/ (length (filter (lambda (x) x) (map equal? a b)))
+     (max (length a) (length b))))
+
+(define (factor-lst-equal? a b)
+  (cond [(and (null? a) (null? b)) true]
+        [(or (null? a) (null? b)) false]
+        [(and (list? a) (list? b))
+         (begin (prob-factor (fraction-equal? a b))
+                true)]
+        [else false]))
+
+(define (bool->int obj)
+  (if (list? obj)
+      (map bool->int obj)
+      (if obj 1 0)))
+
+(define (print-bool-matrix matrix)
+  (for-each (lambda (row)
+              (display row))
+            (bool->int matrix)))
+
+(define (generate-square-matrix proc objs)
+  (map (lambda (obj1)
+         (map (lambda (obj2)
+                (proc obj1 obj2))
+              objects))
+       objects))
+
+(define (generate-irm-data num-objects)
+  (let* ([class-distribution (DPmem 1.0 gensym)]
+         [object->class (mem (lambda (object) (class-distribution)))]
+         [classes->parameters (mem (lambda (class1 class2) (first (beta 0.5 0.5))))]
+         [related (lambda (obj1 obj2) (flip (classes->parameters (object->class object1) (object->class object2))))]
+         [objects (iota num-objects)])
+    (let ([matrix (generate-square-matrix related objects)]
+          [classes (map object->class objects)])
+      (list matrix classes))))
+
+(define data->matrix first)
+(define data->classes second)
+
+(define (classes->equivalences classes)
+  (map (lambda (c1) 
+         (map (lambda (c2)
+                (eq? c1 c2))
+              classes))
+       classes))
+
+(define (display-irm-sample)
+  (let* ([matrix+classes (generate-irm-data 10)]
+         [matrix (first matrix+classes)]
+         [classes (second matrix+classes)])
+    (print-bool-matrix matrix)))
+
+(define (matrices-equal? m1 m2)
+  (fraction-equal? (apply append m1)
+                   (apply append m2)))
+
+(define (score-classes true-classes classes)
+  (matrix-fraction-equal? (classes->equivalences true-classes)
+                          (classes->equivalences classes)))
+
+(define (baseline-score num-objects)
+  (mean
+   (repeat 100
+           (lambda ()
+             (let ([s1 (generate-irm-data num-objects)]
+                   [s2 (generate-irm-data num-objects)])
+               (score-classes (data->classes s1)
+                              (data->classes s2)))))))
+
+  
+(define (irm-inference num-samples lag num-objects observation-matrix true-classes)
+  (mh-query 
+   num-samples lag
+
+   (define objects (iota num-objects))
+   
+   (define class-distribution (DPmem 1.0 gensym))
+   
+   (define object->class
+     (mem (lambda (object) (class-distribution))))
+   
+   (define classes->parameters
+     (mem (lambda (class1 class2) (first (beta 0.5 0.5)))))
+   
+   (define (related object1 object2)
+     (flip (classes->parameters (object->class object1) (object->class object2))))
+
+   (score-classes true-classes (map object->class objects))
+
+   (flip (matrix-fraction-equal? observation-matrix
+                                 (generate-square-matrix related objects)))))
+
+(let* ([num-objects 10]
+       [data (generate-irm-data num-objects)])
+  (irm-inference 10 10
+                 num-objects
+                 (data->matrix data)
+                 (data->classes data)))

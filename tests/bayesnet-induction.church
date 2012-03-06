@@ -53,6 +53,7 @@
    (define (parent-of a b)
      (in-list? a (parents b)))
 
+   ;; FIXME: this detects cycles locally, not globally
    (define (acyclic? nodes)
      (all (map (lambda (n)
                  (all (map (lambda (m)
