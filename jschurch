@@ -189,7 +189,7 @@ def run(file):
     church_prog_core_file.write(S2JS_PORTS + "\n\n" + church_prog_core_src)
     church_prog_core_file.close()
 
-    print("Adding libraries")
+    print("Adding libraries...")
     libs = ["external/scheme2js/runtime.js",
             "scheme-compilers/javascript/math-functions.js",
             "scheme-compilers/javascript/random/MRG32k3a.js",
