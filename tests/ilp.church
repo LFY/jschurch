@@ -1,0 +1,68 @@
+
+(define (var-sym i) 
+  (string->symbol (string-append "F" (number->string i))))
+
+(define (uniform-select xs)
+  (let* ([idx (sample-integerS (length xs))])
+    (list-ref xs idx)))
+
+;; type Literal = (Symbol Int)
+;; type Head = Literal
+;; type Call = (Literal [Int])
+;; type Body = [Call]
+;; type Clause = (Head Body)
+
+(define make-literal list)
+(define literal->sym car)
+(define literal->arity cadr)
+
+(define make-call list)
+(define call->literal car)
+(define call->args cadr)
+
+(define make-clause list)
+(define clause->head car)
+(define clause->body cadr)
+
+(define make-body list)
+(define body->calls (lambda (x) x))
+
+(define (gen-call num-vars literals)
+  (let* ([which-literal (uniform-select literals)]
+         [which-vars (take (random-permutation num-vars) (literal->arity which-literal))]
+         )
+    (make-call which-literal which-vars)))
+
+(define (gen-clause literals counter)
+  (let* ([num-vars 2]
+         [num-literals (sample-integerS 3)]
+         [new-sym (var-sym counter)]
+         [new-literal (make-literal new-sym num-vars)]
+         [body (repeat num-literals (lambda () (gen-call num-vars literals)))]
+         [new-literals (cons new-literal literals)])
+    (list (make-clause new-literal body) (+ 1 counter))))
+
+(define start-literals 
+  (list 
+    (make-literal 'eq 2)
+    (make-literal 'offby1 2)))
+
+(define (explode-cl-b-ctr clsctr k)
+  (k (car clsctr)
+     (cadr clsctr)))
+
+(define (gen-theory)
+  (letrec ([loop (lambda (literals clauses counter)
+                   (cond [(flipS) clauses]
+                         [else
+                           (let* ([next-clause-counter (gen-clause literals counter)])
+                             (explode-cl-b-ctr next-clause-counter
+                                (lambda (clause counter)
+                                  (loop (cons (clause->head clause) literals)
+                                        (cons clause clauses)
+                                        counter))))]))])
+    (loop start-literals '() 0)))
+
+(repeat 10 (lambda () (begin
+                        (display 'theory:)
+                        (for-each display (gen-theory)))))
