@@ -1,0 +1,8 @@
+(define (randint a b)
+  (+ a (sample-integer b)))
+
+(mh-query 10 1
+          (define n (randint 5 10))
+          (define xs (map (lambda (i) (flip)) (iota n)))
+          xs
+          true)

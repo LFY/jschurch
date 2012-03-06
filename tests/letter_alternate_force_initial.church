@@ -11,7 +11,7 @@
                    0.0))))
 
 (define tf-alternate
-  (make-factor (lambda (x y)
+  (make-factor-annealed (lambda (x y)
                  (if (= x y)
                    (log 0.0005)
                    0.0))))
@@ -20,8 +20,8 @@
   (+ low (sample-integerS (- high low))))
 
 (for-each display 
-          ;;(larj-mh-query-proposal-count 100000 1 50
-          (mh-query 100000 1
+          (larj-mh-query-proposal-count+power 100000 1 200 3
+          ;;(mh-query 100000 1
                     (define x
                       (let* ([num-vals (randintS 5 10)]
                              [vals (repeat num-vals (lambda () (if (flip) 1 0)))]

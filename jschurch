@@ -52,7 +52,6 @@ def rooted(path):
     root = abspath(dirname(sys.argv[0]))
     return os.path.join(root, path)
 
-
 S2JS_PORTS = """
     SC_DEFAULT_OUT = new sc_GenericOutputPort(console.log);
     SC_ERROR_OUT = SC_DEFAULT_OUT;
@@ -91,13 +90,12 @@ SCM_TEMPLATE_JSWRAPPER = """if (!String.prototype.supplant) {
 var scheme2jsTemplate = "%(scheme2js_template)s";
 """
 
-
-
-def make():
+# build church using custom compiler.
+def make_with_compiler(compiler_fn):
     """ Builds the Church compiler in Javascript using scheme2js. """
 
     print("Combining Church compiler code into single file...")
-    inlined_compiler_src = inline(rooted("church/compiler.ss"),
+    inlined_compiler_src = inline(rooted("church/" + compiler_fn),
                                   [abspath(dirname(sys.argv[0])), rooted("church/")])
     church_compiler_scm_filename = rooted("compiled/church-compiler.tmp.ss")
     f = open(church_compiler_scm_filename, "w")
@@ -111,6 +109,25 @@ def make():
 
     print("Building JS compiler done.")
 
+DEFAULT_COMPILER_CFG = "default_compiler"
+
+def read_default_compiler(fn):
+    if exists(fn):
+        return open(fn).read().strip()
+    else:
+        return "compiler.ss"
+
+def setdefault(fn):
+    fh = open(DEFAULT_COMPILER_CFG, 'w')
+    fh.write(fn)
+    fh.close()
+
+def make():
+    make_with_compiler(read_default_compiler("default_compiler"))
+
+def makecustom(file):
+    setdefault(file)
+    make_with_compiler(file)
 
 def webservice():
     """
@@ -204,4 +221,4 @@ def run(file):
 
     
 if __name__ == "__main__":
-    optfunc.run([make, run, webservice])
+    optfunc.run([make, run, webservice, makecustom])

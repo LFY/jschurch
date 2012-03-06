@@ -47,10 +47,12 @@
 
 (define (rejection-initializer normal-form-proc)
   (let loop ()
-    (let ((rejectioninit-proposal-state (first (counterfactual-update (make-initial-mcmc-state) normal-form-proc))))
+    (let* ([res-cu (counterfactual-update (make-initial-mcmc-state) normal-form-proc)]
+           (rejectioninit-proposal-state (first res-cu))
+           )
       (if (= minus-infinity (mcmc-state->score rejectioninit-proposal-state))
-          (loop) ;;don't care about bw/fw for init.
-          rejectioninit-proposal-state))))
+        (loop) ;;don't care about bw/fw for init.
+        rejectioninit-proposal-state))))
 
 (define verbose-init #f)
 
@@ -99,7 +101,8 @@
 
 (define (make-mh-kernel proposal-distribution scorer)
   (lambda (state)
-    (let* ((ret (proposal-distribution state))
+    (let* (
+           (ret (proposal-distribution state))
            (bw/fw (first ret))
            (proposal-state (second ret)) 
            (old-p (scorer state))
@@ -181,8 +184,9 @@
 
 (define (mcmc-loop kernel state samples-left samples)
   (if (< samples-left 1)
-      (reverse samples)
-      (mcmc-loop kernel (kernel state) (- samples-left 1) (pair (mcmc-state->query-value state) samples))))
+    (reverse samples)
+    (let* ([q-v (mcmc-state->query-value state)])
+      (mcmc-loop kernel (kernel state) (- samples-left 1) (pair q-v samples)))))
 
 (define (mh-query samples lag normal-form-proc)
   (repeated-mcmc-query-core (lambda () (rejection-initializer normal-form-proc))
@@ -456,6 +460,7 @@
 
 ;; --------------------------------------------------------------------
 ;; LARJ
+
 (define (should-do-larj? proposal-state)
   (let ((fpmc (mcmc-state->diff-factors proposal-state)))
     ;;(display (map length fpmc))
@@ -464,12 +469,13 @@
 
 ;; This is implementing Larj-mcmc outer proposals.
 ;; Larj-mcmc has two types of outer proposals: structural and non-structural.
-(define (larj-selective-proposal-distribution state normal-form-proc proposable? num-temps static-proposal)
+(define (larj-selective-proposal-distribution state normal-form-proc proposable? num-temps power static-proposal)
   (if (addbox-empty? (mcmc-state->xrp-draws state))
-      (list 0.0 state) ;; if no xrps have been drawn (eg all randomness in q-e) make trivial proposal. (still have to update..??)
+    (begin (display 'noxrpdraws)
+      (list 0.0 state)) ;; if no xrps have been drawn (eg all randomness in q-e) make trivial proposal. (still have to update..??)
       (let ((proposal-xrps (proposable-xrps state proposable?))) ;;fileter out proposable xrps to proposal-xrps
         (if (null? proposal-xrps)
-            (list 0.0 state)
+            (begin (display 'nopropxrps) (list 0.0 state))
             (let* ((chosen-xrp (uniform-draw* proposal-xrps))
                    (ret1 ((xrp-draw-proposer chosen-xrp) state))
                    (proposed-val (first ret1))
@@ -480,14 +486,19 @@
                    (cd-bw/fw (second ret2))
                    (ind-fw (- (log (length proposal-xrps))))
                    (ind-bw (- (log (length (proposable-xrps proposal-state proposable?)))))
-                   (structural-change? (should-do-larj? proposal-state))
+                   ;;(structural-change? (should-do-larj? proposal-state))
+                   (structural-change? (xrp-draw-structural? chosen-xrp))
+                   ;;(should-do-larj? proposal-state))
                    (larj-state-and-correction (if structural-change?
                                                 (begin
-                                                  ;;(display 'do-larj!!!!!!-did-we-do-perturbation-to-structural-xrp?)
-                                                  ;;(display (xrp-draw-structural? chosen-xrp))
-                                                  (do-larj-anneal-correction state proposal-state normal-form-proc num-temps static-proposal)
+                                                  ;; (display 'do-larj!!!!!!-did-we-do-perturbation-to-structural-xrp?)
+                                                  ;; (display (xrp-draw-structural? chosen-xrp))
+                                                  
+                                                  (do-larj-anneal-correction state proposal-state normal-form-proc num-temps power static-proposal)
                                                   )
-                                                  (list proposal-state 0)))
+                                                (begin 
+                                                  (display 'no-str-change)
+                                                  (list proposal-state 0))))
                    (proposed-larj-state (first larj-state-and-correction))
                    (larj-correction (second larj-state-and-correction))
                    ;;(void (if structural-change? (display (list 'larj-correction larj-correction)) 'null))
@@ -583,7 +594,7 @@
                 factor-instances))
          target-f-plus-minus-common)))
 
-(define (get-larj-score state1state2 temp)
+(define (get-larj-score state1state2 temp up-down-temp)
   (let* ((state1 (first state1state2))
          (state2 (second state1state2))
          (after-update-from-state1-fpmc (update-f-plus-minus-common-scores state1 (store->diff-factors (mcmc-state->store state2))))
@@ -591,42 +602,90 @@
          (f-plus (first new-fpmc))
          (f-minus (second new-fpmc))
          (f-common (third new-fpmc))
-         (f-plus-score-before-annealing (apply + (map factor-value f-plus)))
-         (f-minus-score-before-annealing (apply + (map factor-value f-minus)))
-         (f-common-score-before-annealing (apply + (map factor-value f-common)))
-         (f-plus-score (* f-plus-score-before-annealing (- 1.0 temp)))
-         (f-minus-score (* f-minus-score-before-annealing temp))
-         (f-common-score f-common-score-before-annealing))
-    ;;(display 'f-plus-minus-common)
-    ;;(display (list (length f-plus) (length f-minus) (length f-common)))
+
+         (num-f-plus-no-anneal (length (map factor-value (filter factor-must-not-anneal? f-plus))))
+         (num-f-plus-anneal (length (map factor-value (filter (lambda (f)
+                                                             (or (factor-auto-anneal? f)
+                                                                 (factor-must-anneal? f))) f-plus))))
+         (num-f-minus-no-anneal (length (map factor-value (filter factor-must-not-anneal? f-minus))))
+         (num-f-minus-anneal (length (map factor-value (filter (lambda (f)
+                                                             (or (factor-auto-anneal? f)
+                                                                 (factor-must-anneal? f))) f-minus))))
+
+         (num-f-common-anneal (length (map factor-value (filter factor-must-anneal? f-common))))
+         (num-f-common-no-anneal (length (map factor-value (filter (lambda (f)
+                                       (or (factor-auto-anneal? f)
+                                           (factor-must-not-anneal? f))) f-common))))
+
+         (f-plus-no-anneal (apply + (map factor-value (filter factor-must-not-anneal? f-plus))))
+         (f-plus-anneal (apply + (map factor-value (filter (lambda (f)
+                                                             (or (factor-auto-anneal? f)
+                                                                 (factor-must-anneal? f))) f-plus))))
+         (f-minus-no-anneal (apply + (map factor-value (filter factor-must-not-anneal? f-minus))))
+         (f-minus-anneal (apply + (map factor-value (filter (lambda (f)
+                                                             (or (factor-auto-anneal? f)
+                                                                 (factor-must-anneal? f))) f-minus))))
+         (f-common-must-anneal (apply + (map factor-value (filter factor-must-anneal? f-common))))
+         (f-common-no-anneal (apply + (map factor-value (filter (lambda (f)
+                                       (or (factor-auto-anneal? f)
+                                           (factor-must-not-anneal? f))) f-common))))
+
+         (f-plus-score (+ f-plus-no-anneal (* f-plus-anneal (- 1.0 temp))))
+         (f-minus-score (+ f-minus-no-anneal (* f-minus-anneal temp)))
+         (f-common-score (+ (* f-common-must-anneal up-down-temp) f-common-no-anneal)))
+    ;; (if #t
+    ;;   (begin
+    ;;     (display 'f-plus-minus-common)
+    ;;     (display (list (length f-plus) (length f-minus) (length f-common)))
+    ;;     (display 'which-anneal)
+    ;;     (display (list 
+    ;;                (list num-f-plus-anneal num-f-plus-no-anneal)
+    ;;                (list num-f-minus-anneal num-f-minus-no-anneal)
+    ;;                (list num-f-common-anneal num-f-common-no-anneal )))
+    ;;     (display 'score-after-annealing)
+    ;;     (display (list f-plus-score f-minus-score f-common-score)))
+    ;;   '()
+    ;;   )
+
+    ;; (display `(
+               ;; (f+: ,num-f-plus-anneal ,num-f-plus-no-anneal)
+               ;; (f-: ,num-f-minus-anneal ,num-f-minus-no-anneal)
+               ;; (fc: ,num-f-common-anneal ,num-f-common-no-anneal)))
     ;;(display (list 'score-before-annealing 'temp temp))
     ;;(display (list f-plus-score-before-annealing f-minus-score-before-annealing f-common-score-before-annealing))
-    ;;(display 'score-after-annealing)
-    ;;(display (list f-plus-score f-minus-score f-common-score))
+
     (+ f-plus-score f-minus-score f-common-score)))
 
-(define (do-larj-anneal-correction original-state jumped-state normal-form-proc num-temps static-proposal)
+(define (do-larj-anneal-correction original-state jumped-state normal-form-proc num-temps power static-proposal)
   (let loop ((total-correction 0)
              (temp-list 
                (begin 
-               ;;(display (interp-range-pow 1.0 0.0 num-temps 1))
-               (interp-range-pow 1.0 0.0 num-temps 1) 
+                 ;;(display (interp-range-pow 1.0 0.0 num-temps 1))
+                 (interp-range-pow 1.0 0.0 num-temps power) 
                  ))
+             (up-down-temp-list
+               (if (even? num-temps)
+                 (append
+                   (interp-range-pow 1.0 0.0 (/ num-temps 2) power)
+                   (interp-range-pow 0.0 1.0 (/ num-temps 2) power))
+                 (append
+                   (interp-range-pow 1.0 0.0 (+ 1 (/ num-temps 2)) power)
+                   (cdr (interp-range-pow 0.0 1.0 (+ 1 (/ num-temps 2)) power)))))
              (curr-state (list original-state jumped-state)))
     (if (= temp-list '())
-        (list (second curr-state) total-correction)
-        (let* ((bw/fw-and-next-state (static-proposal curr-state))
-               (bw/fw (first bw/fw-and-next-state))
-               (next-state (second bw/fw-and-next-state))
-               (curr-score (get-larj-score curr-state (car temp-list)))
-               (next-score (get-larj-score next-state (car temp-list)))
-               (local-alpha (- next-score curr-score))
-               (accept (log-flip* (min 0.0 (+ local-alpha bw/fw))))
-               ;;(void (display (list 'local-alpha local-alpha 'accept accept)))
-               )
-          (if accept
-              (loop (+ total-correction (- local-alpha)) (cdr temp-list) next-state) ;;if accept, accumulate alpha
-              (loop total-correction (cdr temp-list) curr-state))))))
+      (list (second curr-state) total-correction)
+      (let* ((bw/fw-and-next-state (static-proposal curr-state))
+             (bw/fw (first bw/fw-and-next-state))
+             (next-state (second bw/fw-and-next-state))
+             (curr-score (get-larj-score curr-state (car temp-list) (car up-down-temp-list)))
+             (next-score (get-larj-score next-state (car temp-list) (car up-down-temp-list)))
+             (local-alpha (- next-score curr-score))
+             (accept (log-flip* (min 0.0 (+ local-alpha bw/fw))))
+             ;;(void (display (list 'local-alpha local-alpha 'accept accept)))
+             )
+        (if accept
+          (loop (+ total-correction (- local-alpha)) (cdr temp-list) (cdr up-down-temp-list) next-state) ;;if accept, accumulate alpha
+          (loop total-correction (cdr temp-list) (cdr up-down-temp-list) curr-state))))))
 
 (define (non-structural-proposal-distribution state normal-form-proc)
   (selective-proposal-distribution state
@@ -638,10 +697,10 @@
                                                         normal-form-proc
                                                         (lambda (xrp-draw) (not (xrp-draw-structural? xrp-draw)))))
 
-(define (larj-proposal-distribution state normal-form-proc num-temps static-proposal)
+(define (larj-proposal-distribution state normal-form-proc num-temps power static-proposal)
   (larj-selective-proposal-distribution state
                                         normal-form-proc
-                                        (lambda (xrp-draw) (xrp-draw-structural? xrp-draw)) num-temps static-proposal))
+                                        xrp-draw-structural? num-temps power static-proposal))
 
 (define (non-structural-kernel steps nfqp)
   (repeat-kernel steps 
@@ -654,18 +713,18 @@
 ;; The extended-state-space, state1state2, is a list of two states corresponding to the state space before and after the jump.
 ;; We use the extended-state-space representation it lets us to make proposals to variables to be removed more easily. 
 ;; In addition, we need to calculate the scores of f-plus, f-minus, and f-common.
-(define (larj-kernel num-temps steps nfqp)
+(define (larj-kernel num-temps steps power nfqp)
   (let ((static-proposal (lambda (state1state2) (extended-state-space-proposal-distribution state1state2 nfqp))))
     (repeat-kernel 
      steps 
      (make-mh-kernel
-      (lambda (state) (larj-proposal-distribution state nfqp num-temps static-proposal))
+      (lambda (state) (larj-proposal-distribution state nfqp num-temps power static-proposal))
       mcmc-state->score))))
 
-(define (larj-kernel-proposal-count num-temps steps nfqp)
+(define (larj-kernel-proposal-count num-temps steps power nfqp)
   (let ((static-proposal (lambda (state1state2) (extended-state-space-proposal-distribution state1state2 nfqp))))
      (make-larj-kernel
-      (lambda (state) (larj-proposal-distribution state nfqp num-temps static-proposal))
+      (lambda (state) (larj-proposal-distribution state nfqp num-temps power static-proposal))
       mcmc-state->score)))
 
 (define (non-structural-mh-query samples lag normal-form-proc)
@@ -673,12 +732,23 @@
                             (non-structural-kernel lag normal-form-proc)
                             samples))
 
+(define (larj-mh-query+power samples lag num-temps power normal-form-proc)
+  (repeated-mcmc-query-core (lambda () (rejection-initializer normal-form-proc))  ;; initializer
+                            (larj-kernel num-temps lag power normal-form-proc)     ;; kernel
+                            samples))                                        ;; num samples to show
+
 (define (larj-mh-query samples lag num-temps normal-form-proc)
   (repeated-mcmc-query-core (lambda () (rejection-initializer normal-form-proc))  ;; initializer
-                            (larj-kernel num-temps lag normal-form-proc)     ;; kernel
-                            samples))                                        ;; num samples to show
+                            (larj-kernel num-temps lag 1 normal-form-proc)     ;; kernel
+                            samples))
+
+
+(define (larj-mh-query-proposal-count+power num-proposals-to-make lag num-temps power normal-form-proc)
+  (repeated-mcmc-query-core-proposal-count (lambda () (rejection-initializer normal-form-proc))  ;; initializer
+                            (larj-kernel-proposal-count num-temps lag power normal-form-proc)     ;; kernel
+                            num-proposals-to-make))                                        ;; num samples to show
 
 (define (larj-mh-query-proposal-count num-proposals-to-make lag num-temps normal-form-proc)
   (repeated-mcmc-query-core-proposal-count (lambda () (rejection-initializer normal-form-proc))  ;; initializer
-                            (larj-kernel-proposal-count num-temps lag normal-form-proc)     ;; kernel
-                            num-proposals-to-make))                                        ;; num samples to show
+                            (larj-kernel-proposal-count num-temps lag 1 normal-form-proc)     ;; kernel
+                            num-proposals-to-make))

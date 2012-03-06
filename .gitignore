@@ -5,4 +5,7 @@
 external/optfunc.pyc
 *tmp*
 external/__init__.pyc
+*~
 *.swp
+*.swn
+default_compiler
