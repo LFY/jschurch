@@ -29,7 +29,7 @@
               (display row))
             (bool->int matrix)))
 
-(define (generate-square-matrix proc objs)
+(define (generate-square-matrix proc objects)
   (map (lambda (obj1)
          (map (lambda (obj2)
                 (proc obj1 obj2))
@@ -40,13 +40,15 @@
   (let* ([class-distribution (DPmem 1.0 gensym)]
          [object->class (mem (lambda (object) (class-distribution)))]
          [classes->parameters (mem (lambda (class1 class2) (first (beta 0.5 0.5))))]
-         [related (lambda (obj1 obj2) (flip (classes->parameters (object->class object1) (object->class object2))))]
+         [related (lambda (obj1 obj2) (flip (classes->parameters (object->class obj1)
+                                                            (object->class obj2))))]
          [objects (iota num-objects)])
     (let ([matrix (generate-square-matrix related objects)]
           [classes (map object->class objects)])
       (list matrix classes))))
 
 (define data->matrix first)
+
 (define data->classes second)
 
 (define (classes->equivalences classes)
@@ -62,13 +64,14 @@
          [classes (second matrix+classes)])
     (print-bool-matrix matrix)))
 
-(define (matrices-equal? m1 m2)
+(define (matrix-fraction-equal? m1 m2)
   (fraction-equal? (apply append m1)
                    (apply append m2)))
 
 (define (score-classes true-classes classes)
-  (matrix-fraction-equal? (classes->equivalences true-classes)
-                          (classes->equivalences classes)))
+  (exact->inexact
+   (matrix-fraction-equal? (classes->equivalences true-classes)
+                           (classes->equivalences classes))))
 
 (define (baseline-score num-objects)
   (mean
@@ -80,7 +83,7 @@
                               (data->classes s2)))))))
 
   
-(define (irm-inference num-samples lag num-objects observation-matrix true-classes)
+(define (irm-mh-inference num-samples lag num-objects observation-matrix true-classes)
   (mh-query 
    num-samples lag
 
@@ -102,9 +105,45 @@
    (flip (matrix-fraction-equal? observation-matrix
                                  (generate-square-matrix related objects)))))
 
+
+(define (irm-larj-inference num-samples lag anneal-steps observation-matrix true-classes)
+  (larj-mh-query-proposal-count
+   num-samples lag anneal-steps
+
+   (define objects (iota num-objects))
+   
+   (define class-distribution (DPmem 1.0 gensym))
+   
+   (define object->class
+     (mem (lambda (object) (class-distribution))))
+   
+   (define classes->parameters
+     (mem (lambda (class1 class2) (first (beta 0.5 0.5)))))
+   
+   (define (related object1 object2)
+     (flip (classes->parameters (object->class object1) (object->class object2))))
+
+   (score-classes true-classes (map object->class objects))
+
+   (prob-factor (matrix-fraction-equal? observation-matrix
+                                        (generate-square-matrix related objects)))))
+
+
 (let* ([num-objects 10]
+       [num-steps 1000]
+       [anneal-steps 50]
        [data (generate-irm-data num-objects)])
-  (irm-inference 10 10
-                 num-objects
-                 (data->matrix data)
-                 (data->classes data)))
+  (let ([mh-scores (irm-mh-inference num-steps 1
+                                     num-objects
+                                     (data->matrix data)
+                                     (data->classes data))])
+    (display "mh-scores:")
+    (display mh-scores)
+    (display (mean mh-scores))
+    (let ([larj-scores (irm-larj-inference num-steps 1
+                                           anneal-steps
+                                           (data->matrix data)
+                                           (data->classes data))])
+      (display "larj-scores:")
+      (display larj-scores)
+      (mean larj-scores))))
