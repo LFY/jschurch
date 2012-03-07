@@ -31,13 +31,7 @@
 ;;is assumed to be a scheme primitive, and a church- definition is generated for it.
 ;;(free symbols that occur in operator position are assumed primitive, and won't have church- prefix.)
 (define (generate-header free-variables external-defs lazy)
-  (set! *no-forcing* (not lazy)) 
-  (let* ((special-defs (generate-special))
-         (def-symbols (map (lambda (d) (if (pair? (second d)) (first (second d)) (second d)))
-                           (append special-defs external-defs))) ;;get symbols defined by header and external fns.
-         ;;any remaining church- free variables is assumed to have an underlying primitive, package them up:
-         (primitive-defs (map primitive-def+provenance (lset-difference eq? (filter church-symbol? free-variables) def-symbols))))
-    (append external-defs primitive-defs special-defs)))
+  (generate-header-generic primitive-def+provenance free-variables external-defs lazy))
 
 (define (generate-header-generic primitive-lifter free-variables external-defs lazy)
   (set! *no-forcing* (not lazy)) 
