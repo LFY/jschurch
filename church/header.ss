@@ -64,7 +64,7 @@
     `(define ,symb (list (lambda (address store . args) 
                            (list
                              (apply ,(un-prefix-church symb) (extract-vals args))
-                             (apply append (extract-provs args))
+                             (merge-provs (extract-provs args))
                              ))
                          '()))
     `(define ,symb (lambda (address store . args) (apply ,(un-prefix-church symb) (map (lambda (a) (church-force address store a)) args))))))
@@ -138,6 +138,13 @@
     (define (prov+ e p)
       (list (erase e) (append (prov e) p)))
 
+    (define add-prov cons)
+
+    (define provs->list (lambda (x) x))
+    
+    (define union-provs append)
+
+    
     (define church-apply+prov
       (prov-init
        (lambda (address store proc args)
@@ -145,7 +152,7 @@
               `(apply (erase proc) address store args)
               `(apply (church-force address store proc) address store (church-force address store args))
               ))))
-
+    
     (define DEBUG #f)
 
     (define (display-debug x)
@@ -155,12 +162,11 @@
       (let* ([res (erase condition)]
              [prov-of-condition (prov condition)])
         (begin
-              (display-debug "if:")
-              (display-debug condition)
-              (display-debug "endif:") 
-          (store-add-structural-dep!
-            store
-            prov-of-condition)
+          (display-debug "if:")
+          (display-debug condition)
+          (display-debug "endif:") 
+          (store-add-structural-dep! store
+                                     prov-of-condition)
           (if res
               (prov+ (true-branch) prov-of-condition)
               (prov+ (false-branch) prov-of-condition)))))
@@ -169,14 +175,18 @@
     (define (snds xs) (map cadr xs))
 
     (define (extract-vals xs) (map (lambda (x) (if (null? x) '() (car x))) xs))
+    
     (define (extract-provs xs) (map (lambda (x) (if (null? x) '() (cadr x))) xs))
+
+    (define (merge-provs xs)
+      (apply append xs))
 
     (define (extract-opt-arg pr-pvs)
       (begin
         (display-debug "extract-opt-arg:")
         (display-debug pr-pvs)        
         (make-prov (extract-vals pr-pvs) 
-                   (apply append (extract-provs pr-pvs)))))
+                   (merge-provs (extract-provs pr-pvs)))))
 
     (define (prim+prov f . args)
       (apply-prim+prov f args))
@@ -203,12 +213,12 @@
         (display-debug "end-apply-prim:")
         (make-prov
          (apply proc (extract-vals args))
-         (apply append (extract-provs args)))))
+         (merge-provs (extract-provs args)))))
 
     (define (apply-prim+prov+addressing address store proc args)
       (make-prov
        (apply proc address store (extract-vals args))
-       (apply append (extract-provs args))))
+       (merge-provs (extract-provs args))))
 
     (define (my-last xs)
       (cond [(null? (cdr xs)) (car xs)]
@@ -247,7 +257,7 @@
                                  (if (= (length all-vals) 1) all-vals
                                      (append (my-take all-vals (- (length all-vals) 1)) 
                                              (my-last all-vals))))]
-             [new-provs (apply append all-provs)]
+             [new-provs (merge-provs all-provs)]
 
              [db (begin
                    (display-debug "lifted-apply:")
@@ -299,7 +309,8 @@
         (display-debug (length store))
         (display-debug new-deps)
         (display-debug (store->structural-addrs store))
-        (set-store-structural-addrs! store (append (store->structural-addrs store) (filter (lambda (addr) (not (null? addr))) new-deps)))
+        (set-store-structural-addrs! store (append (store->structural-addrs store)
+                                                   (filter (lambda (addr) (not (null? addr))) (provs->list new-deps))))
         (display-debug (store->structural-addrs store))
         ))
 
@@ -744,8 +755,8 @@
                                                 new-xrp-draw)))))
                        (begin 
                          (display-debug "Thingreturnedfrommakexrpwithprov:")
-                         (display-debug (list new-val (cons address (append hyperprovs provs))))
-                         (list new-val (cons address (append hyperprovs provs))))
+                         (display-debug (list new-val (add-prov address (union-provs hyperprovs provs))))
+                         (list new-val (add-prov address (union-provs hyperprovs provs))))
                        )))))
     (define (print-single-xrp xrp)
       (display (list (xrp-draw-address xrp) (xrp-draw-value xrp))))
@@ -954,7 +965,7 @@
              (void1 (when (not (store->enumeration-flag interv-store))
               (clean-store-factors interv-store)))
              (void2 (set-store-diff-factors! interv-store new-diff-factors))
-             ;;(void3 (update-xrp-draw-structural-fields interv-store))
+             (void3 (update-xrp-draw-structural-fields interv-store))
              (proposal-state (make-mcmc-state interv-store value (mcmc-state->address state)))
              )
         (list proposal-state cd-bw/fw)))
