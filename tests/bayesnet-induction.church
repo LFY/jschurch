@@ -1,7 +1,7 @@
 ;; FIXME: factors need to be annealed in/out.
 
 (define prob-factor
-  (make-factor
+  (make-factor-annealed
    (lambda (p) (* 50 (log p)))))
 
 (define (fraction-equal? a b)
@@ -34,10 +34,10 @@
 
 (define samples
 
-  (mh-query 20 100
+  ;; (mh-query 20 100
 
-  ;; (larj-mh-query-proposal-count
-  ;;  20 100 10
+  (larj-mh-query-proposal-count
+   6000 10 30
 
    ;; flipS is not really a structural flip, but it acts
    ;; like one in that changing it requires adjustment of
