@@ -149,13 +149,16 @@
     (contains? s '(and or
                    reset-store-xrp-draws
                     reset-store-factors
-                    reset-store-structural-addrs)))
+                    reset-store-structural-addrs
+
+                    display-structural-addrs)))
 
   ;; lifting P[a] -> P[b] (defined in header.ss so needs +provenance rename)
   (define (libfunc+prov? s)
     (contains? s '(mcmc-state->score 
                     mcmc-state->query-value
-                    combine-proposable-xrp-draws)))
+                    combine-proposable-xrp-draws
+                    display-prov)))
 
   ;; lifting P[a] + a -> P[b]
   ;; (no lifting, merely church- rename and +provenance rename)
