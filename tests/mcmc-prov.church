@@ -1,4 +1,4 @@
-(mh-query 1 1
+(larj-mh-query 2 2 4
           (define x (flip))
           (define y (if x (flip) 1))
           (define z (flipS))

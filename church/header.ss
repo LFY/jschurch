@@ -154,6 +154,7 @@
               ))))
     
     (define DEBUG #f)
+    (define DEBUG-DEP #f)
 
     (define (display-debug x)
       (if DEBUG (display x) '()))
@@ -402,6 +403,88 @@
     (define (insert-addbox addbox address val) (trie-insert addbox (reverse address) val))
     (define (read-addbox addbox address) (trie-lookup addbox (reverse address)))
     (define (update-addbox addbox address fn) (trie-update addbox (reverse address) fn))
+
+;; helper functions for LARJ-MCMC===============================================
+
+(define make-extended-state list)
+(define extended-state->before first)
+(define extended-state->after second)
+
+(define STATE_SRC_NONE 0)
+(define STATE_SRC_1 1)
+(define STATE_SRC_2 2)
+(define STATE_SRC_BOTH 3)
+
+(define church-STATE_SRC_NONE 0)
+(define church-STATE_SRC_1 1)
+(define church-STATE_SRC_2 2)
+(define church-STATE_SRC_BOTH 3)
+
+(define (xrp-in-state? xrp state)
+  (not (eq? 'none (read-addbox (store->xrp-draws (mcmc-state->store state))
+                               (xrp-draw-address xrp)))))
+
+(define (which-state-to-perturb-and-new-proposal chosen-xrp state1state2)
+  (let* ((state1 (extended-state->before state1state2))
+         (state2 (extended-state->after state1state2))
+         [void (display state1)])
+    (cond 
+     [(and (xrp-in-state? chosen-xrp state1) (xrp-in-state? chosen-xrp state2)) ;; the chosen-xrp belongs to both state1 and state2
+      (list STATE_SRC_BOTH ((xrp-draw-proposer chosen-xrp) 0 0 state2))] 
+     [(xrp-in-state? chosen-xrp state2) ;; the chosen-xrp only belongs to state2
+      (list STATE_SRC_2 ((xrp-draw-proposer chosen-xrp) 0 0 state2))] 
+     [(xrp-in-state? chosen-xrp state1) ;; the chosen-xrp only belongs to state1
+      (list STATE_SRC_1 ((xrp-draw-proposer chosen-xrp) 0 0 state1))] 
+     [else
+      (error chosen-xrp "Error: chosen xrp not in any of the two states!")])))
+
+;; tricky since proposable is a function P[xrp]+addr_store -> P[bool]
+(define (combine-proposable-xrp-draws+provenance state1state2+ proposable?+)
+  (let* ([state1state2 (erase state1state2+)]
+         [proposable? (lambda (addr store e) (erase ((erase proposable?+) addr store e)))])
+    (prov-init (combine-proposable-xrp-draws state1state2 proposable?))))
+
+(define (combine-proposable-xrp-draws state1state2 proposable?)
+  (let* ((state1 (extended-state->before state1state2))
+         (state2 (extended-state->after state1state2))
+         (combined-xrp-draws (fold (lambda (xrp xrps)
+                                     (update-addbox xrps (xrp-draw-address xrp) (lambda (xrp-draw) xrp)))
+                                   (copy-addbox (store->xrp-draws (mcmc-state->store state1))) 
+                                   (addbox->values (store->xrp-draws (mcmc-state->store state2)))))
+         (proposable-xrp-draws (filter (lambda (x) (proposable? 'addr 'store x)) (addbox->values combined-xrp-draws))))
+    ;;(display 'dimension-of-state1)
+    ;;(display (length (filter proposable? (addbox->values (mcmc-state->xrp-draws state1)))))
+    ;;(display 'dimension-of-state2)
+    ;;(display (length (filter proposable? (addbox->values (mcmc-state->xrp-draws state2)))))
+    ;;(display 'dimension-of-the-extended-state-space)
+    ;;(display (length proposable-xrp-draws))
+    proposable-xrp-draws))
+
+(define (lookup-factor-and-update factors-addbox target-factor)
+  (let ((lookup-factor (read-addbox factors-addbox (factor-address target-factor))))
+    (if (not (eq? 'none lookup-factor))
+        lookup-factor
+        target-factor)))
+
+(define (update-f-plus-minus-common-scores state target-f-plus-minus-common)
+  (let ([fresh-factors (store->factors (mcmc-state->store state))])
+    (map (lambda (factor-instances)
+           (map (lambda (factor-instance)
+                  (lookup-factor-and-update fresh-factors factor-instance))
+                factor-instances))
+         target-f-plus-minus-common)))
+
+    ;; fn++: P[P[a] + addr_store -> P[b]]
+    ;; (define (update-addbox+provenance addbox+ address+ fn++)
+    ;;   (let* ([addbox (erase addbox+)]
+    ;;          [address (erase address+)]
+    ;;          [fn- (lambda (entry) 
+    ;;                 (begin (display entry)
+    ;;                        (display (erase ((erase fn++) 'empty-addr 'empty-store (prov-init entry))))
+    ;;                        (display 'donewithupdateaddbox)
+    ;;                        (erase ((erase fn++) 'empty-addr 'empty-store (prov-init entry)))
+    ;;                        ))]) 
+    ;;     (trie-update addbox (reverse address) fn-)))
     (define addbox->values trie->values)
     ;; (define (addbox->values+provenance addbox+)
       ;; (prov-init (addbox->values (erase addbox+))))
@@ -487,7 +570,8 @@
                      (update-addbox (store->factors store)
                                     address
                                     (lambda (factor-instance)
-                                      (let* ([sandbox-store (cons (make-addbox) (cdr store))]
+                                      (let* (;;[sandbox-store (cons (make-addbox) (cdr store))]
+                                             [sandbox-store (make-empty-store)]
                                              [should-update? #t];;(if (eq? trienone factor-instance) #t (not (equal? (factor-args factor-instance) args)))]
                                              [void (begin (display-debug "should-update:") (display-debug should-update?))]
                                              ;;(apply-fn+prov address sandbox-store sample+ (list (prov-init stats) hyperparams+ (extract-opt-arg val-provs)))
@@ -887,6 +971,29 @@
 
     ;; so counterfactual update might take any side effecting function that takes the state as argument.
 
+    (define (print-structural-addresses store)
+      (for-each display
+                (store->structural-addrs store)))
+
+    (define (zip2 xs ys)
+      (let loop ([acc '()]
+                 [xs xs]
+                 [ys ys])
+        (cond [(or (null? xs) (null? ys)) (reverse acc)]
+              [else
+                (loop (cons (list (car xs) (car ys)) acc) (cdr xs) (cdr ys))])))
+
+    (define (print-diff-factor-addrs store)
+      (let* ([diff-factors (store->diff-factors store)]
+             [f+ (car diff-factors)]
+             [f- (cadr diff-factors)]
+             [fc (caddr diff-factors)])
+        (map (lambda (fs-l) 
+               (begin
+                 (display (cadr fs-l))
+                 (for-each display (map factor-address (car fs-l)))))
+             (zip2 (list f+ f- fc) '(f+ f- fc)))))
+
     ;; the counterfactual update that only affects static kernels
     (define (counterfactual-update state nfqp . interventions)
       (let* ((interv-store (make-store (fold (lambda (interv xrps)
@@ -915,7 +1022,12 @@
              ;;application of the nfqp happens with interv-store, which is a copy so won't mutate original state.
              ;;after application the store must be captured and put into the mcmc-state.
              (value (church-apply (mcmc-state->address state) interv-store nfqp '()))
-             [asdf (begin (display-debug (list '(value in counterfactual-update:) value)))]
+             [asdf (begin (display (list '(value in counterfactual-update:) value)))]
+             (void3 (update-xrp-draw-structural-fields interv-store))
+             (void4 (if DEBUG-DEP (begin
+                      (display 'counterfactual-update:)
+                      (print-structural-addresses interv-store)
+                      (print-diff-factor-addrs interv-store))))
              (cd-bw/fw (if (store->enumeration-flag interv-store)
                            0
                            (clean-store interv-store))) ;;FIXME!! need to clean out unused xrp-stats?
@@ -966,6 +1078,10 @@
               (clean-store-factors interv-store)))
              (void2 (set-store-diff-factors! interv-store new-diff-factors))
              (void3 (update-xrp-draw-structural-fields interv-store))
+             (void4 (if DEBUG-DEP (begin
+                      (display 'counterfactual-update:)
+                      (print-structural-addresses interv-store)
+                      (print-diff-factor-addrs interv-store))))
              (proposal-state (make-mcmc-state interv-store value (mcmc-state->address state)))
              )
         (list proposal-state cd-bw/fw)))

@@ -153,9 +153,12 @@
 
   ;; lifting P[a] -> P[b] (defined in header.ss so needs +provenance rename)
   (define (libfunc+prov? s)
-    (contains? s '(mcmc-state->score mcmc-state->query-value)))
+    (contains? s '(mcmc-state->score 
+                    mcmc-state->query-value
+                    combine-proposable-xrp-draws)))
 
-  ;; lifting P[a] + a
+  ;; lifting P[a] + a -> P[b]
+  ;; (no lifting, merely church- rename and +provenance rename)
   (define (libfunc+prov+addr? s)
     (contains? s '(make-xrp 
                     make-structural-xrp
@@ -167,13 +170,23 @@
   ;; lifting a -> b (defined in header.ss)
   (define (threaded-primitive-libfunc? s)
     (contains? s '(
+                   ;; state stuff
+                   make-extended-state
+                   extended-state->before
+                   extended-state->after
+                   combine-proposable-xrp-draws
+                   which-state-to-perturb-and-new-proposal
+
+                   lookup-factor-and-update
+                   update-f-plus-minus-common-scores
+
                    ;; counterfactual-updates
                    counterfactual-update
                    counterfactual-update-larj
 
                    ;; addbox
                    read-addbox
-                   update-addbox
+                   copy-addbox
                    addbox->values
 
                    mcmc-state->store

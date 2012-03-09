@@ -1,0 +1,12 @@
+(define my-eq
+  (make-factor (lambda (x y)
+                 (if (eq? x y) 0.0 -10.0))))
+
+(larj-mh-query 5 5 10
+          (define res
+            (let* ([x (flip)]
+                   [y (flip)]
+                   [c (my-eq x y)])
+              (map (lambda (x) x) (list x y))))
+          res 
+          true)
