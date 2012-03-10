@@ -138,11 +138,12 @@
     (define (prov+ e p)
       (list (erase e) (append (prov e) p)))
 
-    (define add-prov cons)
+    (define (add-prov p ps) (cons p ps))
 
     (define provs->list (lambda (x) x))
     
-    (define union-provs append)
+    (define (union-provs xs ys)
+      (append xs ys))
 
     
     (define church-apply+prov
@@ -188,6 +189,12 @@
         (display-debug pr-pvs)        
         (make-prov (extract-vals pr-pvs) 
                    (merge-provs (extract-provs pr-pvs)))))
+
+    (define (display-prov+provenance x+)
+      (display (list 'val (erase x+) 'prov (prov x+))))
+
+    (define (church-display-structural-addrs address store)
+      (print-structural-addresses store))
 
     (define (prim+prov f . args)
       (apply-prim+prov f args))
@@ -972,8 +979,10 @@
     ;; so counterfactual update might take any side effecting function that takes the state as argument.
 
     (define (print-structural-addresses store)
-      (for-each display
-                (store->structural-addrs store)))
+      (begin
+        (display 'structural-addresses:)
+        (for-each display
+                  (store->structural-addrs store))))
 
     (define (zip2 xs ys)
       (let loop ([acc '()]
@@ -1022,10 +1031,9 @@
              ;;application of the nfqp happens with interv-store, which is a copy so won't mutate original state.
              ;;after application the store must be captured and put into the mcmc-state.
              (value (church-apply (mcmc-state->address state) interv-store nfqp '()))
-             ;; [asdf (begin (display (list '(value in counterfactual-update:) value)))]
              (void3 (update-xrp-draw-structural-fields interv-store))
              (void4 (if DEBUG-DEP (begin
-                      (display 'counterfactual-update:)
+                      (display 'counterfactual-update-start+static:)
                       (print-structural-addresses interv-store)
                       (print-diff-factor-addrs interv-store))))
              (cd-bw/fw (if (store->enumeration-flag interv-store)
@@ -1079,7 +1087,7 @@
              (void2 (set-store-diff-factors! interv-store new-diff-factors))
              (void3 (update-xrp-draw-structural-fields interv-store))
              (void4 (if DEBUG-DEP (begin
-                      (display 'counterfactual-update:)
+                      (display 'counterfactual-update-larj:)
                       (print-structural-addresses interv-store)
                       (print-diff-factor-addrs interv-store))))
              (proposal-state (make-mcmc-state interv-store value (mcmc-state->address state)))

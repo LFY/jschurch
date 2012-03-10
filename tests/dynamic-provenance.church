@@ -1,12 +1,13 @@
+
 (define my-eq
   (make-factor (lambda (x y)
                  (if (eq? x y) 0.0 -10.0))))
 
 (larj-mh-query 5 5 10
-          (define res
-            (let* ([x (flip)]
-                   [y (flip)]
-                   [c (my-eq x y)])
-              (map (lambda (x) x) (list x y))))
-          res 
-          true)
+               (define res
+                 (letrec ([n (sample-integer 10)]
+                          [xs (map (lambda (i) (flip)) (iota n))]
+                          [constr (map (lambda (vs) (apply my-eq vs)) (bi-gram xs))])
+                   xs))
+               res
+               true)

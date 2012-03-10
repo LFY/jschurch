@@ -7,7 +7,8 @@
 ;;
 
 (define (drop-last xs)
-  (reverse (cdr (reverse xs))))
+  (if (null? (cdr xs)) '()
+    (cons (car xs) (drop-last (cdr xs)))))
 
 (define (bi-gram xs)
     (zip (drop-last xs) (cdr xs)))
