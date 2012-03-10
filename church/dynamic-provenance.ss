@@ -160,7 +160,6 @@
     (contains? s '(
                    mcmc-state->score 
                     mcmc-state->query-value
-                    combine-proposable-xrp-draws
 
                     ;; Debugging provenance
                     display-prov
@@ -184,7 +183,6 @@
   (define (other-libfunc+prov? s)
     (contains? s '( 
                     mcmc-state->query-value
-                    combine-proposable-xrp-draws
                     ;; Debugging provenance
                     display-prov
                     
@@ -220,8 +218,9 @@
                    make-extended-state
                    extended-state->before
                    extended-state->after
-                   combine-proposable-xrp-draws
-                   which-state-to-perturb-and-new-proposal
+                   combine-xrp-draws
+
+                   xrp-in-state?
 
                    lookup-factor-and-update
                    update-f-plus-minus-common-scores

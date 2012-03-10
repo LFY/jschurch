@@ -487,6 +487,9 @@
                    (ind-bw (- (log (length (proposable-xrps proposal-state proposable?)))))
                    ;;(structural-change? (should-do-larj? proposal-state))
                    (structural-change? (xrp-draw-structural? chosen-xrp))
+                   ;; [v (begin
+                   ;;      (display '(debug-larj-selective))
+                   ;;      (display (list (xrp-draw-address chosen-xrp) 'structural? (xrp-draw-structural? chosen-xrp))))]
                    ;;(should-do-larj? proposal-state))
                    (larj-state-and-correction (if structural-change?
                                                 (do-larj-anneal-correction state proposal-state normal-form-proc num-temps power static-proposal)
@@ -508,7 +511,6 @@
 (define (extended-state-space-selective-proposal-distribution state1state2 normal-form-proc proposable?)
   (let* (
          (proposal-xrps (combine-proposable-xrp-draws state1state2 proposable?))
-         
          )
     (if (null? proposal-xrps)
         (list 0.0 state1state2)
@@ -519,15 +521,15 @@
                (id-state-and-proposed-val (which-state-to-perturb-and-new-proposal chosen-xrp state1state2))
                (id-state-to-perturb (first id-state-and-proposed-val))
                (proposed-val (first (second id-state-and-proposed-val)))
-               ;;(void (display 'id-state-to-perturb))
-               ;;(void2 (display id-state-to-perturb))
-               ;;(void3 (display 'chosen-xrp))
-               ;;(void3 (print-single-xrp chosen-xrp))
-               ;;(void3 (display 'state1-xrps))
-               ;;(void3 (print-mcmc-state-xrps state1))
-               ;;(void3 (display 'state2-xrps))
-               ;;(void3 (print-mcmc-state-xrps state2))
-               
+               ;; (void (display 'id-state-to-perturb))
+               ;; (void2 (display id-state-to-perturb))
+               ;; (void3 (display 'chosen-xrp))
+               ;; (void3 (print-single-xrp chosen-xrp))
+               ;; (void3 (display 'state1-xrps))
+               ;; (void3 (print-mcmc-state-xrps state1))
+               ;; (void3 (display 'state2-xrps))
+               ;; (void3 (print-mcmc-state-xrps state2))
+               ;; 
                (state1* (if (or (= STATE_SRC_BOTH id-state-to-perturb) (= STATE_SRC_1 id-state-to-perturb)) 
                             (first (counterfactual-update state1 normal-form-proc (pair chosen-xrp proposed-val)))
                             state1
@@ -539,7 +541,43 @@
                )
           (list 0 (make-extended-state state1* state2*))))))
 
+(define (combine-proposable-xrp-draws state1state2 proposable?)
+  (let* ((state1 (extended-state->before state1state2))
+         (state2 (extended-state->after state1state2))
+         ;; [v (display 'before-combine)]
+         (combined-xrp-draws (combine-xrp-draws state1 state2))
+         ;; [v (display 'after-combine)]
+         ;; [v (display (length combined-xrp-draws))];; 'after-combine)]
+         ;; [void (begin
+                 ;; (display '(all xrp-draws:))
+                 ;; (for-each (lambda (d) (begin (display (list (xrp-draw-address d) (xrp-draw-structural? d))))) combined-xrp-draws))]
+         (proposable-xrp-draws (filter proposable? combined-xrp-draws)))
+    ;; (display 'dimension-of-state1)
+    ;; (display (length (filter proposable? (addbox->values (mcmc-state->xrp-draws state1)))))
+    ;; (display 'dimension-of-state2)
+    ;; (display (length (filter proposable? (addbox->values (mcmc-state->xrp-draws state2)))))
+    ;; (display 'dimension-of-the-extended-state-space)
+    ;; (display (length proposable-xrp-draws))
+    proposable-xrp-draws))
 
+(define STATE_SRC_NONE 0)
+(define STATE_SRC_1 1)
+(define STATE_SRC_2 2)
+(define STATE_SRC_BOTH 3)
+
+
+(define (which-state-to-perturb-and-new-proposal chosen-xrp state1state2)
+  (let* ((state1 (extended-state->before state1state2))
+         (state2 (extended-state->after state1state2)))
+    (cond 
+     [(and (xrp-in-state? chosen-xrp state1) (xrp-in-state? chosen-xrp state2)) ;; the chosen-xrp belongs to both state1 and state2
+      (list STATE_SRC_BOTH ((xrp-draw-proposer chosen-xrp) state2))] 
+     [(xrp-in-state? chosen-xrp state2) ;; the chosen-xrp only belongs to state2
+      (list STATE_SRC_2 ((xrp-draw-proposer chosen-xrp) state2))] 
+     [(xrp-in-state? chosen-xrp state1) ;; the chosen-xrp only belongs to state1
+      (list STATE_SRC_1 ((xrp-draw-proposer chosen-xrp) state1))] 
+     [else
+      (error chosen-xrp "Error: chosen xrp not in any of the two states!")])))
 
 (define (get-larj-score state1state2 temp up-down-temp)
   (let* ((state1 (extended-state->before state1state2))
@@ -565,17 +603,11 @@
          ;;                                   (factor-must-not-anneal? f))) f-common))))
 
          (f-plus-no-anneal (apply + (map factor-value (filter factor-must-not-anneal? f-plus))))
-         (f-plus-anneal (apply + (map factor-value (filter (lambda (f)
-                                                             (or (factor-auto-anneal? f)
-                                                                 (factor-must-anneal? f))) f-plus))))
+         (f-plus-anneal (apply + (map factor-value (filter (lambda (f) (not (factor-must-not-anneal? f))) f-plus))))
          (f-minus-no-anneal (apply + (map factor-value (filter factor-must-not-anneal? f-minus))))
-         (f-minus-anneal (apply + (map factor-value (filter (lambda (f)
-                                                             (or (factor-auto-anneal? f)
-                                                                 (factor-must-anneal? f))) f-minus))))
+         (f-minus-anneal (apply + (map factor-value (filter (lambda (f) (not (factor-must-not-anneal? f))) f-minus))))
          (f-common-must-anneal (apply + (map factor-value (filter factor-must-anneal? f-common))))
-         (f-common-no-anneal (apply + (map factor-value (filter (lambda (f)
-                                       (or (factor-auto-anneal? f)
-                                           (factor-must-not-anneal? f))) f-common))))
+         (f-common-no-anneal (apply + (map factor-value (filter (lambda (f) (not (factor-must-anneal? f))) f-common))))
 
          (f-plus-score (+ f-plus-no-anneal (* f-plus-anneal (- 1.0 temp))))
          (f-minus-score (+ f-minus-no-anneal (* f-minus-anneal temp)))
@@ -630,6 +662,7 @@
              (accept (log-flip* (min 0.0 (+ local-alpha bw/fw))))
              ;;(void (display (list 'local-alpha local-alpha 'accept accept)))
              )
+        ;; (display 'one-anneal-step)
         (if accept
           (loop (+ total-correction (- local-alpha)) (cdr temp-list) (cdr up-down-temp-list) next-state) ;;if accept, accumulate alpha
           (loop total-correction (cdr temp-list) (cdr up-down-temp-list) curr-state))))))

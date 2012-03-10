@@ -508,55 +508,15 @@
 (define extended-state->before first)
 (define extended-state->after second)
 
-(define STATE_SRC_NONE 0)
-(define STATE_SRC_1 1)
-(define STATE_SRC_2 2)
-(define STATE_SRC_BOTH 3)
-
-(define church-STATE_SRC_NONE 0)
-(define church-STATE_SRC_1 1)
-(define church-STATE_SRC_2 2)
-(define church-STATE_SRC_BOTH 3)
-
 (define (xrp-in-state? xrp state)
   (not (eq? 'none (read-addbox (store->xrp-draws (mcmc-state->store state))
                                (xrp-draw-address xrp)))))
 
-(define (which-state-to-perturb-and-new-proposal chosen-xrp state1state2)
-  (let* ((state1 (extended-state->before state1state2))
-         (state2 (extended-state->after state1state2))
-         [void (display state1)])
-    (cond 
-     [(and (xrp-in-state? chosen-xrp state1) (xrp-in-state? chosen-xrp state2)) ;; the chosen-xrp belongs to both state1 and state2
-      (list STATE_SRC_BOTH ((xrp-draw-proposer chosen-xrp) 0 0 state2))] 
-     [(xrp-in-state? chosen-xrp state2) ;; the chosen-xrp only belongs to state2
-      (list STATE_SRC_2 ((xrp-draw-proposer chosen-xrp) 0 0 state2))] 
-     [(xrp-in-state? chosen-xrp state1) ;; the chosen-xrp only belongs to state1
-      (list STATE_SRC_1 ((xrp-draw-proposer chosen-xrp) 0 0 state1))] 
-     [else
-      (error chosen-xrp "Error: chosen xrp not in any of the two states!")])))
-
-;; tricky since proposable is a function P[xrp]+addr_store -> P[bool]
-(define (combine-proposable-xrp-draws+provenance state1state2+ proposable?+)
-  (let* ([state1state2 (erase state1state2+)]
-         [proposable? (lambda (addr store e) (erase ((erase proposable?+) addr store e)))])
-    (prov-init (combine-proposable-xrp-draws state1state2 proposable?))))
-
-(define (combine-proposable-xrp-draws state1state2 proposable?)
-  (let* ((state1 (extended-state->before state1state2))
-         (state2 (extended-state->after state1state2))
-         (combined-xrp-draws (fold (lambda (xrp xrps)
-                                     (update-addbox xrps (xrp-draw-address xrp) (lambda (xrp-draw) xrp)))
-                                   (copy-addbox (store->xrp-draws (mcmc-state->store state1))) 
-                                   (addbox->values (store->xrp-draws (mcmc-state->store state2)))))
-         (proposable-xrp-draws (filter (lambda (x) (proposable? 'addr 'store x)) (addbox->values combined-xrp-draws))))
-    ;;(display 'dimension-of-state1)
-    ;;(display (length (filter proposable? (addbox->values (mcmc-state->xrp-draws state1)))))
-    ;;(display 'dimension-of-state2)
-    ;;(display (length (filter proposable? (addbox->values (mcmc-state->xrp-draws state2)))))
-    ;;(display 'dimension-of-the-extended-state-space)
-    ;;(display (length proposable-xrp-draws))
-    proposable-xrp-draws))
+(define (combine-xrp-draws state1 state2)
+  (addbox->values (fold (lambda (xrp xrps)
+          (update-addbox xrps (xrp-draw-address xrp) (lambda (xrp-draw) xrp)))
+        (copy-addbox (store->xrp-draws (mcmc-state->store state1))) 
+        (addbox->values (store->xrp-draws (mcmc-state->store state2))))))
 
 (define (lookup-factor-and-update factors-addbox target-factor)
   (let ((lookup-factor (read-addbox factors-addbox (factor-address target-factor))))
