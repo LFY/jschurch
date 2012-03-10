@@ -1,0 +1,56 @@
+;; based on
+;; http://projects.csail.mit.edu/church/wiki/Occam's_Razor
+
+(define logprob-factor
+  (make-factor
+   (lambda (x) x)))
+
+(define (make-poly c)  
+  (lambda (x) (apply + (map (lambda (a b) (* a (expt x b)))
+                       c
+                       (iota (length c))))))
+
+(define x-vals
+  (map (lambda (x) (/ x 1)) (map (lambda (x) (- x 5)) (iota 10))))
+
+(define true-coeffs '(-.5 1 .5))
+
+(define true-y-vals
+  (map (make-poly true-coeffs) x-vals)) 
+
+(define obs-noise 0.2)
+
+(define obs-y-vals
+  (map (lambda (x) (gaussian x obs-noise))
+       true-y-vals))
+
+(define (noisy= x y noise)
+  (log-flip (- (* (/ 1.0 noise) (expt (- x y) 2)))))
+
+(define (noisy=* a b noise)
+  (if (and (list? a)
+           (list? b))
+      (all (map (lambda (i j) (noisy=* i j noise)) a b))
+      (noisy= a b noise)))
+
+
+(mh-query
+ 10 10
+
+ (define poly-order (sample-integer 4))  
+
+ (define coefficients
+   (repeat (+ poly-order 1)
+           (lambda () (gaussian 0 2))))
+
+ (define y-vals
+   (map (make-poly coefficients) x-vals))
+
+ (define factors
+   (map (lambda (y-val obs-y-val)
+          (logprob-factor (- (abs (- y-val obs-y-val)))))
+        y-vals obs-y-vals))
+ 
+ poly-order
+
+ true)
