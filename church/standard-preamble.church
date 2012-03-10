@@ -174,13 +174,14 @@
             (pair val (filter-map proc (rest lst)))
             (filter-map proc (rest lst))))))
 
-(define (list-index pred lst . i)
-  (if (null? lst)
-      false
-      (let ((i (if (null? i) 0 (first i))))
+(define (list-index pred lst)
+  (let loop ((lst lst)
+             (i 0))
+    (if (null? lst)
+        false        
         (if (pred (first lst))
             i
-            (list-index pred (rest lst) (+ i 1))))))
+            (loop (rest lst) (+ i 1))))))
 
 ; @desc
 ; Make a list of lists using the elements of the input lists.
