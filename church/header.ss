@@ -564,9 +564,10 @@
     (define MUST-ANNEAL 0)
     (define AUTO-ANNEAL 1)
     (define MUST-NOT-ANNEAL 2)
+    (define MUST-ANNEAL-F+- 2)
 
-    (define (make-factor-instance address args value factor-function ticks should-update? should-anneal?)
-      (list address args value factor-function ticks should-update? should-anneal?))
+    (define (make-factor-instance address args value factor-function ticks should-update? should-anneal? provenance)
+      (list address args value factor-function ticks should-update? should-anneal? provenance))
 
     (define factor-address first)
     (define factor-args second)
@@ -575,8 +576,10 @@
     (define factor-ticks fifth)
     (define factor-should-update? sixth)
     (define factor-should-anneal? seventh)
+    (define factor-provenance eighth)
 
     (define (factor-must-anneal? f) (eq? MUST-ANNEAL (factor-should-anneal? f)))
+    (define (factor-must-anneal-f+-? f) (eq? MUST-ANNEAL-F+- (factor-should-anneal? f)))
     (define (factor-must-not-anneal? f) (eq? MUST-NOT-ANNEAL (factor-should-anneal? f)))
     (define (factor-auto-anneal? f) (eq? AUTO-ANNEAL (factor-should-anneal? f)))
 
@@ -601,7 +604,8 @@
                                   address args val factor-function
                                   (cons (store->tick store) last-tick)
                                   should-update?
-                                  should-anneal)])
+                                  should-anneal
+                                  '())])
                            (set! new-val val)
                            (set-store-score! store (+ (store->score store) val))
                            new-factor-instance)))
@@ -624,12 +628,33 @@
                      (define args (extract-vals args+))
                      (define provs (extract-provs args+))
 
+
                      (define new-val '())
                      (update-addbox (store->factors store)
                                     address
                                     (lambda (factor-instance)
-                                      (let* (;;[sandbox-store (cons (make-addbox) (cdr store))]
+                                      (let* (
+                                            
+                                             ;; Using provenance to determine whether it should be annealed
+                                             [previous-prov (if (not (eq? trienone factor-instance)) (factor-provenance factor-instance) '())];;[sandbox-store (cons (make-addbox) (cdr store))]
+                                             [new-provenance (delete-duplicates (filter (lambda (x) (not (null? x))) (merge-provs provs)))]
+                                             [structure-change? (not (equal? previous-prov new-provenance))]
+                                             [v (if DEBUG-DEP
+                                                  (begin
+                                                    (display (list '(detected structural change?) structure-change?))
+                                                    (display (list 'factor-addr address))
+                                                    (display previous-prov)
+                                                    (display new-provenance)))]
+                                             [auto-should-anneal (if (eq? trienone factor-instance) ;; Definitely anneal, will suffice to AUTO-ANNEAL this
+                                                                   AUTO-ANNEAL
+                                                                   (if (eq? (factor-should-anneal? factor-instance) MUST-NOT-ANNEAL)
+                                                                     MUST-NOT-ANNEAL
+                                                                     (if structure-change? ;; if it is AUTO-ANNEAL or MUST-ANNEAL
+                                                                       MUST-ANNEAL-F+-
+                                                                       (factor-should-anneal? factor-instance))))]
+
                                              [sandbox-store (make-empty-store)]
+
                                              [should-update? #t];;(if (eq? trienone factor-instance) #t (not (equal? (factor-args factor-instance) args)))]
                                              [void (begin (display-debug "should-update:") (display-debug should-update?))]
                                              ;;(apply-fn+prov address sandbox-store sample+ (list (prov-init stats) hyperparams+ (extract-opt-arg val-provs)))
@@ -649,7 +674,8 @@
                                                address args val factor-function
                                                (cons (store->tick store) last-tick)
                                                should-update?
-                                               should-anneal)])
+                                               auto-should-anneal
+                                               new-provenance)])
                                         (set! new-val val)
                                         (set-store-score! store (+ (store->score store) val))
                                         new-factor-instance)))
@@ -1047,11 +1073,10 @@
               [else
                 (loop (cons (list (car xs) (car ys)) acc) (cdr xs) (cdr ys))])))
 
-    (define (print-diff-factor-addrs store)
-      (let* ([diff-factors (store->diff-factors store)]
-             [f+ (car diff-factors)]
-             [f- (cadr diff-factors)]
-             [fc (caddr diff-factors)])
+    (define (print-diff-factor-addrs fpmc)
+      (let* ([f+ (car fpmc)]
+             [f- (cadr fpmc)]
+             [fc (caddr fpmc)])
         (map (lambda (fs-l) 
                (begin
                  (display (cadr fs-l))
@@ -1086,11 +1111,12 @@
              ;;application of the nfqp happens with interv-store, which is a copy so won't mutate original state.
              ;;after application the store must be captured and put into the mcmc-state.
              (value (church-apply (mcmc-state->address state) interv-store nfqp '()))
+             (new-diff-factors (f-plus-minus-common interv-store))
              (void3 (update-xrp-draw-structural-fields interv-store))
              (void4 (if DEBUG-DEP (begin
                       (display 'counterfactual-update-start+static:)
                       (print-structural-addresses interv-store)
-                      (print-diff-factor-addrs interv-store))))
+                      (print-diff-factor-addrs new-diff-factors))))
              (cd-bw/fw (if (store->enumeration-flag interv-store)
                            0
                            (clean-store interv-store))) ;;FIXME!! need to clean out unused xrp-stats?
@@ -1144,7 +1170,7 @@
              (void4 (if DEBUG-DEP (begin
                       (display 'counterfactual-update-larj:)
                       (print-structural-addresses interv-store)
-                      (print-diff-factor-addrs interv-store))))
+                      (print-diff-factor-addrs (store->diff-factors interv-store)))))
              (proposal-state (make-mcmc-state interv-store value (mcmc-state->address state)))
              )
         (list proposal-state cd-bw/fw)))
@@ -1209,7 +1235,9 @@
                        (loop (cdr factors) f-plus (cons (car factors) f-minus) f-common)
                        (if (factor-new? (car factors))
                            (loop (cdr factors) (cons (car factors) f-plus) f-minus f-common)
-                           (loop (cdr factors) f-plus f-minus (cons (car factors) f-common))))))))
+                           (if (factor-must-anneal-f+-? (car factors))
+                             (loop (cdr factors) (cons (car factors) f-plus) (cons (car factors) f-minus) f-common)
+                             (loop (cdr factors) f-plus f-minus (cons (car factors) f-common)))))))))
 
         (begin
             ;;(display 'f-plus)
