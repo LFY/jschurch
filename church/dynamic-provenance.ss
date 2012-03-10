@@ -168,6 +168,8 @@
 
                     ;; Transparent lists
                     tr-list
+                    tr-list->list
+                    list->tr-list
                     tr-cons
                     tr-car
                     tr-cdr

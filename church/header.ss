@@ -122,7 +122,12 @@
       ;; (prov+
         ;; (list-ref (erase xs+) (erase i+))
         ;; (add-prov (prov i+) (prov (list-ref (
-    
+   
+    (define (list->tr-list+provenance xs+)
+      (make-prov
+        (map prov-init (erase xs+))
+        (prov xs+)))
+
     (define (tr-list->list+provenance xs+)
       (let* ([list-prov (prov xs+)]
              [vals (extract-vals (erase xs+))]
