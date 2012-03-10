@@ -1,0 +1,88 @@
+
+(define (tr-reverse xs)
+  (letrec ([loop (lambda (acc xs)
+                 (if (null? xs) acc
+                   (loop (tr-cons (tr-car xs) acc)
+                         (tr-cdr xs))))])
+    (loop '() xs)))
+
+(define (tr-iota n)
+  (list->tr-list (iota n)))
+
+(define (tr-repeat n f)
+  (tr-map (lambda (i) (f)) (tr-iota n)))
+
+(define (tr-map f xs)
+  (if (null? xs) '()
+    (tr-cons (f (tr-car xs)) (tr-map f (tr-cdr xs)))))
+
+(define (tr-zipN xss)
+  (if (null? (tr-car xss)) '()
+    (tr-cons (tr-map (lambda (x) (tr-car x)) xss)
+             (tr-zipN (tr-map (lambda (x) (tr-cdr x)) xss)))))
+
+(define (tr-zip xs ys)
+  (if (null? xs) '()
+    (tr-cons (tr-list (tr-car xs) (tr-car ys))
+             (tr-zip (tr-cdr xs) (tr-cdr ys)))))
+
+(define (tr-zip3 xs ys zs)
+  (tr-zipN (tr-list xs ys zs)))
+
+(define (tr-zip4 xs ys zs ws)
+  (tr-zipN (tr-list xs ys zs ws)))
+
+(define (tr-zip5 xs ys zs ws ss)
+  (tr-zipN (tr-list xs ys zs ws ss)))
+
+(define (tr-filter f xs)
+  (cond [(null? xs) '()]
+        [(f (tr-car xs)) (tr-cons (tr-car xs) (tr-filter f (tr-cdr xs)))]
+        [else (tr-filter f (tr-cdr xs))]))
+
+(define (tr-drop-last xs)
+  (if (null? (tr-cdr xs)) '()
+    (tr-cons (tr-car xs) (tr-drop-last (tr-cdr xs)))))
+
+(define (re-apply n f x)
+  (letrec ([loop (lambda (acc n)
+                   (if (= n 0) acc
+                     (loop (f acc) (- n 1))))])
+    (loop x n)))
+
+;; cddr, cadr, etc.
+
+(define (tr-cddr xs) (tr-cdr (tr-cdr xs)))
+(define (tr-cdddr xs) (tr-cdr (tr-cdr (tr-cdr xs))))
+(define (tr-cddddr xs) (tr-cddr (tr-cddr xs)))
+(define (tr-cdddddr xs) (tr-cddr (tr-cdddr xs)))
+
+(define (tr-cadr xs) (tr-car (tr-cdr xs)))
+(define (tr-caddr xs) (tr-car (tr-cddr xs)))
+(define (tr-cadddr xs) (tr-car (tr-cdddr xs)))
+(define (tr-caddddr xs) (tr-car (tr-cddddr xs)))
+(define (tr-cadddddr xs) (tr-car (tr-cdddddr xs)))
+
+(define tr-first tr-car)
+(define tr-second tr-cadr)
+(define tr-third tr-caddr)
+(define tr-fourth tr-cadddr)
+(define tr-fifth tr-caddddr)
+(define tr-sixth tr-cadddddr)
+(define (tr-seventh xs) (tr-list-ref xs 6))
+(define (tr-eighth xs) (tr-list-ref xs 7))
+(define (tr-ninth xs) (tr-list-ref xs 8))
+(define (tr-tenth xs) (tr-list-ref xs 9))
+
+;; Scope constructors
+
+(define (tr-bigram xs)
+  (tr-zip (tr-drop-last xs) (tr-cdr xs)))
+
+(define (tr-trigram xs)
+  (tr-zip3 (re-apply 2 tr-drop-last xs)
+           (tr-cdr (tr-drop-last xs))
+           (tr-cddr xs)))
+
+(define (tr-4gram xs)
+  (tr-zip4 (tr-cdddr xs) (tr-cddr xs) (tr-cdr xs) xs))

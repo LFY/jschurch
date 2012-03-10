@@ -62,6 +62,7 @@
 (define (compile top-list external-defs . lazy)
    (let* ((church-sexpr  `(begin
                             (load "standard-preamble.church")
+                            (load "standard-preamble-transparent.church")
                             (load "xrp-preamble.church")
                             (load "xrp-preamble-structural.church")
 
@@ -160,20 +161,23 @@
                     mcmc-state->query-value
                     combine-proposable-xrp-draws
                     display-prov
-                    
-                    ;; transparent lists
-                    tr-null?
-                    tr-list
-                    tr-list2
-                    tr-cons
-                    tr-car
-                    tr-cdr
-                    tr-list->list
-                    tr-list->list2
-                    
+                                   
                     ;; Manipulating provenance nesting level
                     inc-prov
                     dec-prov
+
+                    ;; Transparent lists
+                    tr-list
+                    tr-list->list
+                    list->tr-list
+                    tr-cons
+                    tr-car
+                    tr-cdr
+                    tr-list-ref
+
+                    
+
+
                     
                     )))
 
@@ -303,8 +307,10 @@
                  `(apply-fn+prov (cons ',(next-addr) address) store ,(re-addr-prov (first sexpr)) 
                                  (arglist ,@(map re-addr-prov (rest sexpr))))])]
 
-        [(and (symbol? sexpr) (lifted-constant-symbol? sexpr)) `(prov-init ,(church-rename sexpr))]
+        [(and (symbol? sexpr) (libfunc+prov? sexpr)) (provenance-rename sexpr)]
+        [(and (symbol? sexpr) (libfunc+prov+addr? sexpr)) (provenance-rename (church-rename sexpr))]
         [(and (symbol? sexpr) (threaded-constant? sexpr)) (provenance-rename (church-rename sexpr))]
+        [(and (symbol? sexpr) (lifted-constant-symbol? sexpr)) `(prov-init ,(church-rename sexpr))]
         [(symbol? sexpr) (church-rename sexpr)]
         [(number? sexpr) `(prov-init ,sexpr)]
         [else `(prov-init ,sexpr)] )))
