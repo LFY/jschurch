@@ -81,20 +81,25 @@
          ))
 
     ;; Transparent lists
+    ;; [a+] -> [b+]
 
-    (define tr-null+provenance 'null+provenance)
-
-    (define (tr-null?+provenance s+)
-      (eq? (erase s+) null+provenance))
+    (define church-tr-null+provenance '())
 
     (define (tr-cons+provenance x+ xs+)
       (cons x+ xs+))
+    
     (define (tr-car+provenance xs+)
       (car xs+))
+
     (define (tr-cdr+provenance xs+)
       (cdr xs+))
+
+    (define (tr-list+provenance . xs+) xs+)
+
     (define (tr-list->list+provenance xs+)
-      (apply-prim+prov list xs+))
+      (let* ([vals (extract-vals xs+)]
+             [provs (extract-provs xs+)])
+        (make-prov vals (merge-provs provs))))
 
     ;; `(apply proc (cons address (cons store args)))
 

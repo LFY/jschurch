@@ -1,0 +1,10 @@
+(define xs (tr-list (flip) (flip) (flip)))
+(define x1 (tr-car xs))
+(define x2 (tr-car (tr-cdr xs)))
+
+(begin
+  (display '(provenance of entire list)) (display-prov (tr-list->list xs))
+  (display '(provenance of x1)) (display-prov x1)
+  (display '(provenance of x2)) (display-prov x2)
+  (list x1 x2))
+
