@@ -89,32 +89,82 @@
     ;; Transparent lists
     ;; [a+] -> [b+]
 
-    (define church-tr-null+provenance '())
+    (define church-tr-null+provenance '(() ()))
+
+    ;; ;;(define (tr-list+provenance . xs+) xs+)
+
+    ;; the idea is to only affect the values within
+
+    (define (tr-list+provenance . xs+)
+      (make-prov xs+ '()))
 
     (define (tr-cons+provenance x+ xs+)
-      (cons x+ xs+))
-    
+      (make-prov
+        (cons x+ (erase xs+))
+        (prov xs+)))
+
     (define (tr-car+provenance xs+)
-      (car xs+))
+      (car (erase xs+)))
 
     (define (tr-cdr+provenance xs+)
-      (cdr xs+))
+      (make-prov
+        (cdr (erase xs+))
+        (prov xs+)))
 
-    (define (tr-list+provenance . xs+) xs+)
-
-    (define (tr-list2+provenance . xs+)
-      (apply-prim+prov list (map inc-prov+provenance xs+)))
-
-    (define (tr-list->list2+provenance xs+)
+    (define (tr-list-ref+provenance xs+ i+)
+      (let* ([i-prov (prov i+)]
+             [elt+ (list-ref (erase xs+) (erase i+))]
+             [elt-prov (prov elt+)]
+             [elt-val (erase elt+)])
+        (make-prov
+          elt-val
+          (merge-provs (list i-prov elt-prov)))))
+      ;; (prov+
+        ;; (list-ref (erase xs+) (erase i+))
+        ;; (add-prov (prov i+) (prov (list-ref (
+    
+    (define (tr-list->list+provenance xs+)
       (let* ([list-prov (prov xs+)]
              [vals (extract-vals (erase xs+))]
              [provs (extract-provs xs+)])
         (make-prov vals (merge-provs (cons list-prov provs)))))
 
-    (define (tr-list->list+provenance xs+)
-      (let* ([vals (extract-vals xs+)]
-             [provs (extract-provs xs+)])
-        (make-prov vals (merge-provs provs))))
+    ;; (define (church-tr-map+provenance add store f+ xs+)
+    ;;   (if (null? xs+) '()
+    ;;     (begin
+    ;;       (display xs+)
+    ;;       (display (car xs+))
+    ;;       (tr-cons (fn+prov add store f+ (car xs+))
+    ;;                (church-tr-map+provenance add store f+ (cdr xs+))))))
+
+
+    ;; ;; (define (tr-list->list+provenance xs+)
+    ;; ;;   (let* ([vals (extract-vals xs+)]
+    ;; ;;          [provs (extract-provs xs+)])
+    ;; ;;     (make-prov vals (merge-provs provs))))
+
+    ;; (define (tr-list-ref+provenance xs+ i)
+    ;;   (dec-prov+provenance (list-ref xs+ i)))
+
+    ;; (define (tr-map+provenance f xs)
+    ;;   (if (null? xs) '() 
+    ;;     (cons (f (dec-prov+provenance (car xs))) (tr-map+provenance (cdr xs)))))
+
+    ;; (define (tr-filter+provenance f xs)
+    ;;   (cond
+    ;;     [(null? xs) '()]
+    ;;     [(f (dec-prov+provenance (car xs))) (cons (car xs) (tr-filter+provenance f (cdr xs)))]
+    ;;     [else (tr-filter+provenance f (cdr xs))]))
+
+    ;; (define (tr-zip+provenance . xss)
+    ;;   (if (null? (car xss)) '()
+    ;;     (cons (map car xss)
+    ;;           (tr-zip+provenance (map cdr xss)))))
+
+    ;; (define (tr-fold f z xs)
+    ;;   (if (null? xs) z
+    ;;     (tr-fold f (f (dec-prov+provenance (car xs)) z) (cdr xs))))
+
 
     ;; `(apply proc (cons address (cons store args)))
 
