@@ -1,25 +1,70 @@
 
+(define Z 108.83380215966979)
+
+(define (P x c m p)
+  (let* ([f (if c f1* f2*)]
+         [s (f x m p)])
+    (- (+ s (- (log (* 2 2 2 2))) Z))))
+
 (define f1
   (make-factor 
     (lambda (x y z) 
-      (log (if (apply and (list x y z)) 1.0 0.01)))))
+      (log (if (apply and (list x y z)) 1.0 0.0000001)))))
+
+(define f1*
+  (lambda (x y z) 
+    (log (if (apply and (list x y z)) 1.0 0.0000001))))
 
 (define f2
   (make-factor 
     (lambda (x y z) 
-      (log (if (not (apply or (list x y z))) 1.0 0.01)))))
+      (log (if (not (apply or (list x y z))) 1.0 0.0000001)))))
+
+(define f2*
+  (lambda (x y z) 
+    (log (if (not (apply or (list x y z))) 1.0 0.0000001))))
 
 (define (which-f f)
   (if (eq? f1 f) 'f1 'f2))
 
-(for-each display (mh-query 100 1
-  (define res
-    (letrec ([x (flip)]
-             [c-gate (flipS)] 
-             [m (flip)]
-             [p (flip)]
-             [factor (if c-gate f1 f2)]
-             [constr (factor x m p)])
-      (list x m p (which-f factor))))
-  res
-  true))
+(define (display-state xs)
+  (let* ([str-rep (reverse (map (lambda (x) 
+                                  (cond [(symbol? x) (symbol->string x)]
+                                        [(number? x) (number->string x)]
+                                        [else (number->string (if x 1 0))]))
+                                xs))])
+    (display (fold (lambda (n a) (string-append n " "a)) (car str-rep) (cdr str-rep)))))
+
+(define (count-changes lst)
+  (let loop ([start (first lst)]
+             [lst (rest lst)])
+    (if (null? lst)
+        0
+        (if (eq? start (first lst))
+            (loop start (rest lst))
+            (+ 1 (loop (first lst) (rest lst)))))))
+
+;;(count-changes (larj-mh-query-proposal-count 10000 1 20
+;; (count-changes (mh-query 10000 1
+;;   (define res
+;;     (letrec ([x (flip)]
+;;              [c-gate (flipS)] 
+;;              [m (flip)]
+;;              [p (flip)]
+;;              [factor (if c-gate f1 f2)]
+;;              [constr (factor x m p)])
+;;       c-gate))
+;;   res
+;;   true))
+
+;; (for-each display-state (larj-mh-query-proposal-count 10000 1 20
+;;   (define res
+;;     (letrec ([x (flip)]
+;;              [c-gate (flipS)] 
+;;              [m (flip)]
+;;              [p (flip)]
+;;              [factor (if c-gate f1 f2)]
+;;              [constr (factor x m p)])
+;;       (list 'state x c-gate m p 'score (P x c-gate m p))))
+;;   res
+;;   true))

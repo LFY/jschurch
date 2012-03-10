@@ -33,8 +33,8 @@
 
 (define bi-gram-skip-1 (lambda (xs) (bi-gram-skip 1 xs)))
 
-(for-each display (larj-mh-query 100 1 200
-;;(for-each display (mh-query 100 200
+;; (for-each display (larj-mh-query-proposal-count 100000 1 500
+(for-each display (mh-query 100 200
   (define res
     (let* ([num-elts 10]
            [elts (repeat num-elts (lambda () (if (flip) 0 1)))]

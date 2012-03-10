@@ -147,6 +147,7 @@
   ;; lifting a + addr_store -> b (defined in header.ss)
   (define (primitive+addr? s)
     (contains? s '(and or
+
                    reset-store-xrp-draws
                     reset-store-factors
                     reset-store-structural-addrs
@@ -161,12 +162,20 @@
                     display-prov
                     
                     ;; transparent lists
-                    tr-null
                     tr-null?
+                    tr-list
+                    tr-list2
                     tr-cons
                     tr-car
                     tr-cdr
-                    tr-list->list)))
+                    tr-list->list
+                    tr-list->list2
+                    
+                    ;; Manipulating provenance nesting level
+                    inc-prov
+                    dec-prov
+                    
+                    )))
 
   ;; lifting P[a] + a -> P[b]
   ;; (no lifting, merely church- rename and +provenance rename)
@@ -229,6 +238,8 @@
   ;; lifted constant symbols like and, or, +-\infty
   (define (lifted-constant-symbol? s)
     (contains? s '(true false infinity minus-infinity nan pi)))
+  (define (threaded-constant? s)
+    (contains? s '(tr-null)))
   
 
   (define (addr-prov sexpr re-init)
@@ -293,6 +304,7 @@
                                  (arglist ,@(map re-addr-prov (rest sexpr))))])]
 
         [(and (symbol? sexpr) (lifted-constant-symbol? sexpr)) `(prov-init ,(church-rename sexpr))]
+        [(and (symbol? sexpr) (threaded-constant? sexpr)) (provenance-rename (church-rename sexpr))]
         [(symbol? sexpr) (church-rename sexpr)]
         [(number? sexpr) `(prov-init ,sexpr)]
         [else `(prov-init ,sexpr)] )))
