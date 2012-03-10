@@ -1,10 +1,17 @@
-(define xs (tr-list (flip) (flip) (flip)))
-(define x1 (tr-car xs))
-(define x2 (tr-car (tr-cdr xs)))
+;;(define xs (list (map inc-prov (list (flip) (flip) (flip)))
+;; using inc-prov / dec-prov primitives to implement transparent lists
+
+(define xs (tr-list2 (flip) (flip) (flip)))
+(define x1 (car xs))
+(define x2 (cadr xs))
+
+(define ys (reverse xs))
+(define y1 (car ys))
 
 (begin
-  (display '(provenance of entire list)) (display-prov (tr-list->list xs))
-  (display '(provenance of x1)) (display-prov x1)
-  (display '(provenance of x2)) (display-prov x2)
+  (display '(provenance of entire list)) (display-prov xs)
+  (display '(provenance of x1)) (display-prov (dec-prov x1))
+  (display '(provenance of x2)) (display-prov (dec-prov x2))
+  (display '(provenance of y1)) (display-prov (dec-prov y1))
   (list x1 x2))
 

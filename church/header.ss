@@ -80,6 +80,12 @@
          `(apply (church-force address store proc) address store (church-force address store args))
          ))
 
+    (define (inc-prov+provenance v+)
+      (make-prov v+ '()))
+
+    (define (dec-prov+provenance v++)
+      (erase v++))
+
     ;; Transparent lists
     ;; [a+] -> [b+]
 
@@ -95,6 +101,15 @@
       (cdr xs+))
 
     (define (tr-list+provenance . xs+) xs+)
+
+    (define (tr-list2+provenance . xs+)
+      (apply-prim+prov list (map inc-prov+provenance xs+)))
+
+    (define (tr-list->list2+provenance xs+)
+      (let* ([list-prov (prov xs+)]
+             [vals (extract-vals (erase xs+))]
+             [provs (extract-provs xs+)])
+        (make-prov vals (merge-provs (cons list-prov provs)))))
 
     (define (tr-list->list+provenance xs+)
       (let* ([vals (extract-vals xs+)]

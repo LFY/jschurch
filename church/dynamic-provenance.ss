@@ -164,10 +164,18 @@
                     ;; transparent lists
                     tr-null?
                     tr-list
+                    tr-list2
                     tr-cons
                     tr-car
                     tr-cdr
-                    tr-list->list)))
+                    tr-list->list
+                    tr-list->list2
+                    
+                    ;; Manipulating provenance nesting level
+                    inc-prov
+                    dec-prov
+                    
+                    )))
 
   ;; lifting P[a] + a -> P[b]
   ;; (no lifting, merely church- rename and +provenance rename)
