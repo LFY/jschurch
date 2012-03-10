@@ -158,7 +158,15 @@
     (contains? s '(mcmc-state->score 
                     mcmc-state->query-value
                     combine-proposable-xrp-draws
-                    display-prov)))
+                    display-prov
+                    
+                    ;; transparent lists
+                    tr-null
+                    tr-null?
+                    tr-cons
+                    tr-car
+                    tr-cdr
+                    tr-list->list)))
 
   ;; lifting P[a] + a -> P[b]
   ;; (no lifting, merely church- rename and +provenance rename)

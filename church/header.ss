@@ -80,6 +80,22 @@
          `(apply (church-force address store proc) address store (church-force address store args))
          ))
 
+    ;; Transparent lists
+
+    (define tr-null+provenance 'null+provenance)
+
+    (define (tr-null?+provenance s+)
+      (eq? (erase s+) null+provenance))
+
+    (define (tr-cons+provenance x+ xs+)
+      (cons x+ xs+))
+    (define (tr-car+provenance xs+)
+      (car xs+))
+    (define (tr-cdr+provenance xs+)
+      (cdr xs+))
+    (define (tr-list->list+provenance xs+)
+      (apply-prim+prov list xs+))
+
     ;; `(apply proc (cons address (cons store args)))
 
     ;; ;;requires compile, eval, and environment to be available from underlying scheme....
