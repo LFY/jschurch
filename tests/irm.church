@@ -37,7 +37,7 @@
        objects))
 
 (define (generate-irm-data num-objects)
-  (let* ([class-distribution (DPmem 1.0 gensym)]
+  (let* ([class-distribution (DPmemS 1.0 gensym)]
          [object->class (mem (lambda (object) (class-distribution)))]
          [classes->parameters (mem (lambda (class1 class2) (first (beta 0.5 0.5))))]
          [related (lambda (obj1 obj2) (flip (classes->parameters (object->class obj1)
@@ -89,7 +89,7 @@
 
    (define objects (iota num-objects))
    
-   (define class-distribution (DPmem 1.0 gensym))
+   (define class-distribution (DPmemS 1.0 gensym))
    
    (define object->class
      (mem (lambda (object) (class-distribution))))
@@ -112,7 +112,7 @@
 
    (define objects (iota num-objects))
    
-   (define class-distribution (DPmem 1.0 gensym))
+   (define class-distribution (DPmemS 1.0 gensym))
    
    (define object->class
      (mem (lambda (object) (class-distribution))))
