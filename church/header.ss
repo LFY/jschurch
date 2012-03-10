@@ -1030,7 +1030,7 @@
         (xrp-draw-ticks draw)
         (xrp-draw-score draw)
         (xrp-draw-support draw)
-        new-str)))
+        new-str))
 
     
     (define (update-xrp-draw-structural-fields store)
