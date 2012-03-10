@@ -1023,22 +1023,26 @@
     ;; We'd like to update the structural? field of each xrp draw according to structural-addrs in interv-store. This can probably be a separate function.
     (define (xrp-draw-set-structural draw new-str)
       (make-xrp-draw
-       (xrp-draw-address draw)
-       (xrp-draw-value draw)
-       (xrp-draw-name draw)
-       (xrp-draw-proposer draw)
-       (xrp-draw-ticks draw)
-       (xrp-draw-score draw)
-       (xrp-draw-support draw)
-       new-str))
+        (xrp-draw-address draw)
+        (xrp-draw-value draw)
+        (xrp-draw-name draw)
+        (xrp-draw-proposer draw)
+        (xrp-draw-ticks draw)
+        (xrp-draw-score draw)
+        (xrp-draw-support draw)
+        new-str)))
 
     
     (define (update-xrp-draw-structural-fields store)
       (let ([draws (store->xrp-draws store)])
         (for-each (lambda (addr)
-                    (update-addbox draws
-                                   addr 
-                                   (lambda (draw) (xrp-draw-set-structural draw #t))))
+                    (if (eq? trienone (read-addbox draws addr))
+                      '() ;; Somehow these can be *missing*...
+                      (update-addbox draws
+                                     addr 
+                                     (lambda (draw) 
+                                       (begin 
+                                         (xrp-draw-set-structural draw #t))))))
                   (store->structural-addrs store))))
 
     (define (store->structural-draws store)
