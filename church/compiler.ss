@@ -164,7 +164,11 @@
 
   ;; lifting P[a] -> P[b] (defined in header.ss so needs +provenance rename)
   (define (libfunc+prov? s)
-    (contains? s '(mcmc-state->score mcmc-state->query-value)))
+    (contains? s '(mcmc-state->score 
+                    mcmc-state->query-value
+
+                    update-addbox
+                    )))
 
   ;; lifting P[a] + a
   (define (libfunc+prov+addr? s)
@@ -178,10 +182,11 @@
   (define (threaded-primitive-libfunc? s)
     (contains? s '(;; counterfactual-updates
                    counterfactual-update
+                   counterfactual-update-larj
 
                    ;; addbox
                    read-addbox
-                   update-addbox
+                   copy-addbox
                    addbox->values
 
                    mcmc-state->store
