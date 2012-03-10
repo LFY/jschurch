@@ -16,7 +16,8 @@
 (define (randint low high)
   (+ low (sample-integer (- high low))))
 
-(larj-mh-query 5 5 10
+(larj-mh-query 2 1 100
+;;(mh-query 5 1
           (define res
             (let* ([xs (tr-map (lambda (i) 
                                  (if (flip) 
