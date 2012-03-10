@@ -1022,7 +1022,7 @@
              ;;application of the nfqp happens with interv-store, which is a copy so won't mutate original state.
              ;;after application the store must be captured and put into the mcmc-state.
              (value (church-apply (mcmc-state->address state) interv-store nfqp '()))
-             [asdf (begin (display (list '(value in counterfactual-update:) value)))]
+             ;; [asdf (begin (display (list '(value in counterfactual-update:) value)))]
              (void3 (update-xrp-draw-structural-fields interv-store))
              (void4 (if DEBUG-DEP (begin
                       (display 'counterfactual-update:)
