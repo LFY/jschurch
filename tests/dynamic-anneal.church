@@ -1,0 +1,45 @@
+
+(define my-eq
+  (make-factor (lambda (x y)
+                 (if (eq? x y) 0.0 -10.0))))
+
+(define f-<5
+  (make-factor (lambda (x y)
+                 (+ (if (< x 5) 0.0 -10.0)
+                    (if (< y 5) 0.0 -10.0)))))
+(define f-=5
+  (make-factor (lambda (x y)
+                 (+ (if (= x 5) 0.0 -10.0)
+                    (if (= y 5) 0.0 -10.0)))))
+
+(define (all p xs)
+  (= (length xs) 
+     (length (filter p xs))))
+
+(define (randint low high)
+  (+ low (sample-integer (- high low))))
+(mh-query 1 1
+               (define res
+                 (let* ([xs (map (lambda (i) ;; List[v+]
+                                   (if (flipS) (randint 0 6) (randint 5 10)))
+                                 (iota 3))] ;; List[v]+ 
+                        ;; List[v+] -> List[v]+
+                        [bg (bi-gram xs)]
+                        [x1 (if (flipS) (randint 0 6) (randint 5 10))]
+                        [x2 (if (flipS) (randint 0 6) (randint 5 10))]
+                        [x3 (if (flipS) (randint 0 6) (randint 5 10))]
+                        [x4 (if (flipS) (randint 0 6) (randint 5 10))]
+                        [constr (begin
+                                  (f-<5 x1 x2)
+                                  (f-<5 x2 x3))]
+                        [constr (map (lambda (vs) 
+                                       (begin
+                                         (display-prov vs)
+                                         (apply f-<5 vs))) bg)]
+                                       ;;(if (all (lambda (x) (< x 5)) vs)
+                                         ;;(apply f-<5 vs)
+                                         ;;(apply f-=5 vs))) bg)]
+                        )
+                   xs))
+               res
+               true)
