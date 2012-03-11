@@ -1,3 +1,40 @@
+(define all-citations '(((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate versus univariate decision trees")     )
+  ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate versus univariate decision trees")     )
+  ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate versus univariate decision trees,   (Coins")     )
+  ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate versus univariate decision trees,   (Coins")     )
+  ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate versus univariate decision trees")    )
+  ((("Brodley" "C E") ("Ut-goff" "P E")) ("Multivariate versus univariate decision trees")     )
+  ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate Versus Univariate Decision Trees")    )
+  ((("Brodley" "Carla E") ("Utgoff" "Paul E")) ("Multivariate versus univariate decision trees")     )
+  ((("Brodley" "Carla E") ("Utgoff" "Paul E")) ("Multivariate versus univariate decision trees")     )
+  ((("Brodley" "Carla E") ("Utgoff" "Paul E")) ("Multivariate versus univariate decision trees")     )
+  ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate Versus Univariate Decision Trees")    )
+  ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate decision trees")      )
+  ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate decision trees")      )
+  ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate versus univariate decision trees")    )
+  ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate versus univariate decision trees")    )
+  ((("Brodley" "Carla E") ("Utgoff" "Paul")) ("Multivariate decision trees")     )
+  ((("Brodley" "Carla E") ("Utgoff" "Paul")) ("Multivariate decision trees")     )
+  ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate versus univariate decision trees")    )
+  ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate versus univariate decision trees")    )
+  ((("Brodley" "C E") ("Utgoff" "P E")) ("Goal-directed Classification Using Linear Machine Decision Trees")   )
+  ((("Brodley" "C E") ("Ut-goff" "P E")) ("Goal-directed Classification Using Linear Machine Decision Trees")    )
+  ((("Draper" "B") ("Brodley" "C E") ("Utgoff" "P")) ("Goal-directed Classification Using Linear Machine Decision Trees")   )
+  ((("Brodley" "C E") ("Utgoff" "P E")) ("Goal-directed Classification Using Linear Machine Decision Trees")   )
+  ((("Brodley" "Carla E") ("Utgoff" "Paul E")) ("Multivariate decision trees")     )
+  ((("Brodley" "Carla E") ("Utgoff" "Paul E")) ("Multivariate decision trees")     )
+  ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate decision trees")  )
+  ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate decision trees")     )
+  ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate decision trees,   Machine Learning 19")   )
+  ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate decision trees,   Machine Learning 19")   )
+  ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate decision trees")   )
+  ((("Brodley" "Carla") ("Utgoff" "Paul")) ("Linear Machine Decision Trees")  )
+  ((("Brodley" "Carla E") ("Utgoff" "Paul E")) ("Multivariate decision trees")     )
+  ((("Brodley" "Carla E") ("Utgoff" "Paul E")) ("Multivariate decision trees")     )
+  ((("Brodley" "Carla E") ("Utgoff" "Paul E")) ("Multivariate decision trees")     )
+ ))
+
+
 ;;; @Package     levenshtein
 ;;; @Subtitle    Levenshtein Distance Metric in Scheme
 ;;; @HomePage    http://www.neilvandyke.org/levenshtein-scheme/
@@ -316,46 +353,6 @@
 ;;;
 ;;; @end table
 
-;;
-;;;;;things needed only for r5rs (?)
-;;(define first car)
-;;(define second cadr)
-;;(define third caddr)
-;;(define fourth cadddr)
-;;(define (fifth lst) (list-ref lst 4))
-;;(define (sixth lst) (list-ref lst 5))
-;;(define (seventh lst) (list-ref lst 6))
-;;(define (eighth lst) (list-ref lst 7))
-;;(define (ninth lst) (list-ref lst 8))
-;;(define (tenth lst) (list-ref lst 9))
-;;
-;;;; (define (fold f z xs)
-;;;;   (if (null? xs)
-;;;;       z
-;;;;       (fold f (f (first xs) z) (rest xs))))
-;;
-;;
-;;;;;other things
-;;(define rest cdr)
-;;(define pair cons)
-;;
-;;(define true #t)
-;;(define false #f)
-;;
-;;(define (true? x)
-;;  (not (eq? x false)))
-;;
-;;(define (false? x)
-;;  (eq? x false))
-;;
-;;(define (pairs xs)
-;;  (cond [(null? xs) '()]
-;;        [(null? (cdr xs)) '()]
-;;        [else
-;;          (append (map (lambda (i) (list (car xs) i)) (cdr xs))
-;;                  (pairs (cdr xs)))]))
-;;
-
 
 (define make-author list)
 (define author->surname first)      ;; last name
@@ -367,6 +364,8 @@
 (define paper->authors second) 
 (define paper->title third)      
 (define paper->pub-type fourth)
+(define paper->text fifth)
+(define paper->paper-id sixth)
 
 (define (parse-author author)
   (let* (
@@ -385,12 +384,11 @@
   (let* (
          (obs-authors (parse-authors (first obs-citation)))
          (obs-title (second obs-citation))
-         (obs-pub-type (third obs-citation))
+         (obs-pub-type '("default"))
          (num-obs-authors (length obs-authors))
-         (paper (make-paper num-obs-authors obs-authors obs-title obs-pub-type))
          (paper-id default-id)
          )
-    (make-citation num-obs-authors obs-authors obs-title obs-pub-type paper '() paper-id)
+    (make-citation num-obs-authors obs-authors obs-title obs-pub-type '() paper-id)
     ))
 
 (define make-citation list)
@@ -398,23 +396,14 @@
 (define citation->obs-authors second) 
 (define citation->obs-title third)      
 (define citation->obs-pub-type fourth)      
-(define citation->paper fifth)
-(define citation->text sixth)
-(define citation->paper-id seventh)
+(define citation->text fifth)
+(define citation->paper-id sixth)
 
 (define make-author-as-cited list)              ;;not actual authors, this is the author name appeared in citation
 (define author-as-cited->surname first)
 (define author-as-cited->num-f-names second)
 (define author-as-cited->f-names third)
 (define author-as-cited->author fourth)
-
-(define all-citations '(((("Brodley" "C. E.") ("Utgoff" "P. E.") )( "Multivariate versus univariate decision trees," )( "Tech--nical Report COINS TR 92-8," ))
-                        ((("Brodley" "C. E.") ("Utgoff" "P. E.") )( "Multivariate versus univariate decision trees," )( "Technical Report COINS TR 92-8," ))
-                        ((("Brodley" "Carla E.") ("Utgoff" "Paul E.")) ("Multivariate versus univariate decision trees.") ("Technical Report COINS-CR-92-8,"))
-                        ((("Brodley" "C.E.") ("Ut-goff" "P.E.")) ("Multivariate versus univariate decision trees.")("COINS Technical Report 92-8,")) 
-                        ((("Cardie" "C.")) ("Using Decision Trees to Improve Case-Based Learning.") (""))
-                        ))
-
 
 
    
@@ -476,7 +465,6 @@
                                       (citation->obs-authors citation)
                                       (citation->obs-title citation)
                                       (citation->obs-pub-type citation)
-                                      (citation->paper citation)
                                       (citation->text citation)
                                       new-paper-id
                                       )))
@@ -487,17 +475,63 @@
     (display 'paper-id)
     (display (citation->paper-id citation))))
 
-(display (length
+(define (sample-paper-title citations)
+  (let*((total-length (length citations))
+        (sampled-id (sample-integer total-length))
+        (selected-citation (list-ref citations sampled-id))
+        (obs-citation-title (citation->obs-title selected-citation)))
+    obs-citation-title
+    )
+  )
+
+(define (sample-paper-authors citations)
+  (let*((total-length (length citations))
+        (sampled-id (sample-integer total-length))
+        (selected-citation (list-ref citations sampled-id))
+        (obs-citation-authors (citation->obs-authors selected-citation)))
+    obs-citation-authors
+    )
+  )
+
+(define (sample-paper i citations)
+  (let* (
+         (authors (sample-paper-authors citations))
+         (title (sample-paper-title citations))
+         (pub-type '("default"))
+         (num-authors (length authors))
+         )
+    (make-paper num-authors authors title pub-type '() i)
+    )  
+  )
+
+(define factor-citation-paper
+  (make-factor (lambda (c1 p1)
+                   (score-affinity c1 p1)
+                  )))
+
+(length
 ;;(for-each display
-          (mh-query 100 10
+          (mh-query 1 1
+                    (define num-papers (randintS 1 10))
+                    (define citation-assignment 
+                      (tr-map (lambda (citation) (sample-paper-id! num-papers citation)) citations)
+                      )
+                    (define paper-assignment
+                      (tr-map (lambda (i) (sample-paper i citations)) (tr-iota num-papers)))
                     (define x
-                      (let* ([num-papers (randintS 1 5)]
+                      (let* (
                              [voidprint0 (display 'num-papers)]
                              [voidprint1 (display num-papers)]
-                             [citation-assignment (map (lambda (citation) (sample-paper-id! num-papers citation)) citations)]
+                             [voidprint4 (display 'got-paper-assignment)]
+                             [voidprint5 (display 'got-citation-assignment)]
                              [voidprint2 (map print-citation-cluster citation-assignment)]
-                             [constraints (map (lambda (c1c2) (factor-repulsion-affinity (first c1c2) (second c1c2))) (pairs citation-assignment))]
+                             [constraints (tr-map (lambda (c1c2) (factor-repulsion-affinity (tr-first c1c2) (tr-second c1c2))) (tr-pairs citation-assignment))]
+                             [voidprint3 (display 'voidprint3)]
+                             ;;[paper-citation-factors (map 
+                             ;;                          (lambda (c1) (factor-citation-paper c1 (list-ref papers (citation->paper-id c1)))) 
+                             ;;                          citation-assignment)]
                              )
-                       citation-assignment))
+                       (list num-papers citation-assignment)))
                     x
-                    true)));;)
+                    (= (length (tr-filter (lambda (cpid) (>= cpid num-papers)) (tr-map citation->paper-id citation-assignment))) 0)
+                    ));;)

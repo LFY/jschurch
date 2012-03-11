@@ -7,6 +7,7 @@
 
 (define xs1 (tr-list (flip) (flip) (flip)))
 (define ys1 (tr-list (flip) (flip) (flip)))
+(define ys1_old (list (flip) (flip) (flip)))
 
 (define id (lambda (x) x))
 
@@ -18,6 +19,10 @@
   (display-prov xs1)
   (display '(the second element (depends only on one xrp)))
   (display-prov (tr-list-ref xs1 1))
+  (display '(the first element of tr-list using car))
+  (display-prov (car xs1))
+  (display '(the first element of list using car))
+  (display-prov (car ys1_old))
   (display '(car and cdr work too))
   (display-prov (tr-car xs1))
   (display-prov (tr-cdr xs1))

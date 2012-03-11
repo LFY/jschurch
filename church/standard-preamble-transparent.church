@@ -86,3 +86,16 @@
 
 (define (tr-4gram xs)
   (tr-zip4 (tr-cdddr xs) (tr-cddr xs) (tr-cdr xs) xs))
+
+(define (tr-pairs xs)
+  (cond [(null? xs) '()]
+        [(null? (tr-cdr xs)) '()]
+        [else
+          (tr-append (tr-map (lambda (i) (tr-list (tr-car xs) i)) (tr-cdr xs))
+                  (tr-pairs (tr-cdr xs)))]))
+
+(define tr-append
+  (lambda (ls1 ls2)
+    (if (null? ls1)
+      ls2
+      (tr-cons (tr-car ls1) (tr-append (tr-cdr ls1) ls2)))))
