@@ -1,16 +1,16 @@
 
+;; type Literal = (Symbol Int)
+;; type Head = Literal
+;; type Call = (Literal [Int])
+;; type Body = [Call]
+;; type Clause = (Head Scope Body)
+
 (define (var-sym i) 
   (string->symbol (string-append "F" (number->string i))))
 
 (define (uniform-select xs)
   (let* ([idx (sample-integerS (length xs))])
     (list-ref xs idx)))
-
-;; type Literal = (Symbol Int)
-;; type Head = Literal
-;; type Call = (Literal [Int])
-;; type Body = [Call]
-;; type Clause = (Head Body)
 
 (define make-literal list)
 (define literal->sym car)
@@ -40,12 +40,17 @@
          [new-literal (make-literal new-sym num-vars)]
          [body (repeat num-literals (lambda () (gen-call num-vars literals)))]
          [new-literals (cons new-literal literals)])
-    (list (make-clause new-literal body) (+ 1 counter))))
+    (list (make-clause new-literal (gen-scope) body) (+ 1 counter))))
+
+(define (gen-scope)
+  (uniform-select (list 'bi-gram 'bi-gram-skip-1)))
 
 (define start-literals 
   (list 
     (make-literal 'eq 2)
-    (make-literal 'offby1 2)))
+    (make-literal 'offby1 2)
+    (make-literal 'neg 2)
+    ))
 
 (define (explode-cl-b-ctr clsctr k)
   (k (car clsctr)
@@ -53,7 +58,7 @@
 
 (define (gen-theory)
   (letrec ([loop (lambda (literals clauses counter)
-                   (cond [(flipS) clauses]
+                   (cond [(flipS 0.2) clauses]
                          [else
                            (let* ([next-clause-counter (gen-clause literals counter)])
                              (explode-cl-b-ctr next-clause-counter
@@ -63,6 +68,10 @@
                                         counter))))]))])
     (loop start-literals '() 0)))
 
-(repeat 10 (lambda () (begin
-                        (display 'theory:)
-                        (for-each display (gen-theory)))))
+(define test (repeat 20 gen-theory))
+
+(for-each (lambda (th)
+            (begin
+              (display 'theory:)
+              (for-each display th)))
+          test)

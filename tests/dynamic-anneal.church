@@ -1,0 +1,33 @@
+
+(define my-eq
+  (make-factor (lambda (x y)
+                 (if (eq? x y) 0.0 -10.0))))
+
+(define f-<5
+  (make-factor (lambda (x y)
+                 (+ (if (< x 5) 0.0 -10.0)
+                    (if (< y 5) 0.0 -10.0)))))
+(define f-=5
+  (make-factor (lambda (x y)
+                 (+ (if (= x 5) 0.0 -10.0)
+                    (if (= y 5) 0.0 -10.0)))))
+
+
+(define (randint low high)
+  (+ low (sample-integer (- high low))))
+
+(larj-mh-query 2 1 100
+;;(mh-query 5 1
+          (define res
+            (let* ([xs (tr-map (lambda (i) 
+                                 (if (flip) 
+                                   (randint 0 6) 
+                                   (randint 5 10)))
+                               (tr-iota 3))]
+                   [constr (tr-map (lambda (vs)
+                                     (f-<5 (tr-list-ref vs 0)
+                                           (tr-list-ref vs 1))) (tr-bigram xs))]
+                   )
+              (tr-list->list xs)))
+          res
+          true)

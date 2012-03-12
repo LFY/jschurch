@@ -80,6 +80,97 @@
          `(apply (church-force address store proc) address store (church-force address store args))
          ))
 
+    (define (inc-prov+provenance v+)
+      (make-prov v+ '()))
+
+    (define (dec-prov+provenance v++)
+      (erase v++))
+
+    ;; Transparent lists
+    ;; [a+] -> [b+]
+
+    (define church-tr-null+provenance '(() ()))
+
+    ;; ;;(define (tr-list+provenance . xs+) xs+)
+
+    ;; the idea is to only affect the values within
+
+    (define (tr-list+provenance . xs+)
+      (make-prov xs+ '()))
+
+    (define (tr-cons+provenance x+ xs+)
+      (make-prov
+        (cons x+ (erase xs+))
+        (prov xs+)))
+
+    (define (tr-car+provenance xs+)
+      (car (erase xs+)))
+
+    (define (tr-cdr+provenance xs+)
+      (make-prov
+        (cdr (erase xs+))
+        (prov xs+)))
+
+    (define (tr-list-ref+provenance xs+ i+)
+      (let* ([i-prov (prov i+)]
+             [elt+ (list-ref (erase xs+) (erase i+))]
+             [elt-prov (prov elt+)]
+             [elt-val (erase elt+)])
+        (make-prov
+          elt-val
+          (merge-provs (list i-prov elt-prov)))))
+      ;; (prov+
+        ;; (list-ref (erase xs+) (erase i+))
+        ;; (add-prov (prov i+) (prov (list-ref (
+   
+    (define (list->tr-list+provenance xs+)
+      (make-prov
+        (map prov-init (erase xs+))
+        (prov xs+)))
+
+    (define (tr-list->list+provenance xs+)
+      (let* ([list-prov (prov xs+)]
+             [vals (extract-vals (erase xs+))]
+             [provs (extract-provs xs+)])
+        (make-prov vals (merge-provs (cons list-prov provs)))))
+
+    ;; (define (church-tr-map+provenance add store f+ xs+)
+    ;;   (if (null? xs+) '()
+    ;;     (begin
+    ;;       (display xs+)
+    ;;       (display (car xs+))
+    ;;       (tr-cons (fn+prov add store f+ (car xs+))
+    ;;                (church-tr-map+provenance add store f+ (cdr xs+))))))
+
+
+    ;; ;; (define (tr-list->list+provenance xs+)
+    ;; ;;   (let* ([vals (extract-vals xs+)]
+    ;; ;;          [provs (extract-provs xs+)])
+    ;; ;;     (make-prov vals (merge-provs provs))))
+
+    ;; (define (tr-list-ref+provenance xs+ i)
+    ;;   (dec-prov+provenance (list-ref xs+ i)))
+
+    ;; (define (tr-map+provenance f xs)
+    ;;   (if (null? xs) '() 
+    ;;     (cons (f (dec-prov+provenance (car xs))) (tr-map+provenance (cdr xs)))))
+
+    ;; (define (tr-filter+provenance f xs)
+    ;;   (cond
+    ;;     [(null? xs) '()]
+    ;;     [(f (dec-prov+provenance (car xs))) (cons (car xs) (tr-filter+provenance f (cdr xs)))]
+    ;;     [else (tr-filter+provenance f (cdr xs))]))
+
+    ;; (define (tr-zip+provenance . xss)
+    ;;   (if (null? (car xss)) '()
+    ;;     (cons (map car xss)
+    ;;           (tr-zip+provenance (map cdr xss)))))
+
+    ;; (define (tr-fold f z xs)
+    ;;   (if (null? xs) z
+    ;;     (tr-fold f (f (dec-prov+provenance (car xs)) z) (cdr xs))))
+
+
     ;; `(apply proc (cons address (cons store args)))
 
     ;; ;;requires compile, eval, and environment to be available from underlying scheme....
@@ -417,55 +508,15 @@
 (define extended-state->before first)
 (define extended-state->after second)
 
-(define STATE_SRC_NONE 0)
-(define STATE_SRC_1 1)
-(define STATE_SRC_2 2)
-(define STATE_SRC_BOTH 3)
-
-(define church-STATE_SRC_NONE 0)
-(define church-STATE_SRC_1 1)
-(define church-STATE_SRC_2 2)
-(define church-STATE_SRC_BOTH 3)
-
 (define (xrp-in-state? xrp state)
   (not (eq? 'none (read-addbox (store->xrp-draws (mcmc-state->store state))
                                (xrp-draw-address xrp)))))
 
-(define (which-state-to-perturb-and-new-proposal chosen-xrp state1state2)
-  (let* ((state1 (extended-state->before state1state2))
-         (state2 (extended-state->after state1state2))
-         [void (display state1)])
-    (cond 
-     [(and (xrp-in-state? chosen-xrp state1) (xrp-in-state? chosen-xrp state2)) ;; the chosen-xrp belongs to both state1 and state2
-      (list STATE_SRC_BOTH ((xrp-draw-proposer chosen-xrp) 0 0 state2))] 
-     [(xrp-in-state? chosen-xrp state2) ;; the chosen-xrp only belongs to state2
-      (list STATE_SRC_2 ((xrp-draw-proposer chosen-xrp) 0 0 state2))] 
-     [(xrp-in-state? chosen-xrp state1) ;; the chosen-xrp only belongs to state1
-      (list STATE_SRC_1 ((xrp-draw-proposer chosen-xrp) 0 0 state1))] 
-     [else
-      (error chosen-xrp "Error: chosen xrp not in any of the two states!")])))
-
-;; tricky since proposable is a function P[xrp]+addr_store -> P[bool]
-(define (combine-proposable-xrp-draws+provenance state1state2+ proposable?+)
-  (let* ([state1state2 (erase state1state2+)]
-         [proposable? (lambda (addr store e) (erase ((erase proposable?+) addr store e)))])
-    (prov-init (combine-proposable-xrp-draws state1state2 proposable?))))
-
-(define (combine-proposable-xrp-draws state1state2 proposable?)
-  (let* ((state1 (extended-state->before state1state2))
-         (state2 (extended-state->after state1state2))
-         (combined-xrp-draws (fold (lambda (xrp xrps)
-                                     (update-addbox xrps (xrp-draw-address xrp) (lambda (xrp-draw) xrp)))
-                                   (copy-addbox (store->xrp-draws (mcmc-state->store state1))) 
-                                   (addbox->values (store->xrp-draws (mcmc-state->store state2)))))
-         (proposable-xrp-draws (filter (lambda (x) (proposable? 'addr 'store x)) (addbox->values combined-xrp-draws))))
-    ;;(display 'dimension-of-state1)
-    ;;(display (length (filter proposable? (addbox->values (mcmc-state->xrp-draws state1)))))
-    ;;(display 'dimension-of-state2)
-    ;;(display (length (filter proposable? (addbox->values (mcmc-state->xrp-draws state2)))))
-    ;;(display 'dimension-of-the-extended-state-space)
-    ;;(display (length proposable-xrp-draws))
-    proposable-xrp-draws))
+(define (combine-xrp-draws state1 state2)
+  (addbox->values (fold (lambda (xrp xrps)
+          (update-addbox xrps (xrp-draw-address xrp) (lambda (xrp-draw) xrp)))
+        (copy-addbox (store->xrp-draws (mcmc-state->store state1))) 
+        (addbox->values (store->xrp-draws (mcmc-state->store state2))))))
 
 (define (lookup-factor-and-update factors-addbox target-factor)
   (let ((lookup-factor (read-addbox factors-addbox (factor-address target-factor))))
@@ -513,9 +564,10 @@
     (define MUST-ANNEAL 0)
     (define AUTO-ANNEAL 1)
     (define MUST-NOT-ANNEAL 2)
+    (define MUST-ANNEAL-F+- 2)
 
-    (define (make-factor-instance address args value factor-function ticks should-update? should-anneal?)
-      (list address args value factor-function ticks should-update? should-anneal?))
+    (define (make-factor-instance address args value factor-function ticks should-update? should-anneal? provenance)
+      (list address args value factor-function ticks should-update? should-anneal? provenance))
 
     (define factor-address first)
     (define factor-args second)
@@ -524,8 +576,10 @@
     (define factor-ticks fifth)
     (define factor-should-update? sixth)
     (define factor-should-anneal? seventh)
+    (define factor-provenance eighth)
 
     (define (factor-must-anneal? f) (eq? MUST-ANNEAL (factor-should-anneal? f)))
+    (define (factor-must-anneal-f+-? f) (eq? MUST-ANNEAL-F+- (factor-should-anneal? f)))
     (define (factor-must-not-anneal? f) (eq? MUST-NOT-ANNEAL (factor-should-anneal? f)))
     (define (factor-auto-anneal? f) (eq? AUTO-ANNEAL (factor-should-anneal? f)))
 
@@ -550,7 +604,8 @@
                                   address args val factor-function
                                   (cons (store->tick store) last-tick)
                                   should-update?
-                                  should-anneal)])
+                                  should-anneal
+                                  '())])
                            (set! new-val val)
                            (set-store-score! store (+ (store->score store) val))
                            new-factor-instance)))
@@ -573,12 +628,33 @@
                      (define args (extract-vals args+))
                      (define provs (extract-provs args+))
 
+
                      (define new-val '())
                      (update-addbox (store->factors store)
                                     address
                                     (lambda (factor-instance)
-                                      (let* (;;[sandbox-store (cons (make-addbox) (cdr store))]
+                                      (let* (
+                                            
+                                             ;; Using provenance to determine whether it should be annealed
+                                             [previous-prov (if (not (eq? trienone factor-instance)) (factor-provenance factor-instance) '())];;[sandbox-store (cons (make-addbox) (cdr store))]
+                                             [new-provenance (delete-duplicates (filter (lambda (x) (not (null? x))) (merge-provs provs)))]
+                                             [structure-change? (not (equal? previous-prov new-provenance))]
+                                             [v (if DEBUG-DEP
+                                                  (begin
+                                                    (display (list '(detected structural change?) structure-change?))
+                                                    (display (list 'factor-addr address))
+                                                    (display previous-prov)
+                                                    (display new-provenance)))]
+                                             [auto-should-anneal (if (eq? trienone factor-instance) ;; Definitely anneal, will suffice to AUTO-ANNEAL this
+                                                                   AUTO-ANNEAL
+                                                                   (if (eq? (factor-should-anneal? factor-instance) MUST-NOT-ANNEAL)
+                                                                     MUST-NOT-ANNEAL
+                                                                     (if structure-change? ;; if it is AUTO-ANNEAL or MUST-ANNEAL
+                                                                       MUST-ANNEAL-F+-
+                                                                       (factor-should-anneal? factor-instance))))]
+
                                              [sandbox-store (make-empty-store)]
+
                                              [should-update? #t];;(if (eq? trienone factor-instance) #t (not (equal? (factor-args factor-instance) args)))]
                                              [void (begin (display-debug "should-update:") (display-debug should-update?))]
                                              ;;(apply-fn+prov address sandbox-store sample+ (list (prov-init stats) hyperparams+ (extract-opt-arg val-provs)))
@@ -598,7 +674,8 @@
                                                address args val factor-function
                                                (cons (store->tick store) last-tick)
                                                should-update?
-                                               should-anneal)])
+                                               auto-should-anneal
+                                               new-provenance)])
                                         (set! new-val val)
                                         (set-store-score! store (+ (store->score store) val))
                                         new-factor-instance)))
@@ -932,22 +1009,26 @@
     ;; We'd like to update the structural? field of each xrp draw according to structural-addrs in interv-store. This can probably be a separate function.
     (define (xrp-draw-set-structural draw new-str)
       (make-xrp-draw
-       (xrp-draw-address draw)
-       (xrp-draw-value draw)
-       (xrp-draw-name draw)
-       (xrp-draw-proposer draw)
-       (xrp-draw-ticks draw)
-       (xrp-draw-score draw)
-       (xrp-draw-support draw)
-       new-str))
+        (xrp-draw-address draw)
+        (xrp-draw-value draw)
+        (xrp-draw-name draw)
+        (xrp-draw-proposer draw)
+        (xrp-draw-ticks draw)
+        (xrp-draw-score draw)
+        (xrp-draw-support draw)
+        new-str))
 
     
     (define (update-xrp-draw-structural-fields store)
       (let ([draws (store->xrp-draws store)])
         (for-each (lambda (addr)
-                    (update-addbox draws
-                                   addr 
-                                   (lambda (draw) (xrp-draw-set-structural draw #t))))
+                    (if (eq? trienone (read-addbox draws addr))
+                      '() ;; Somehow these can be *missing*...
+                      (update-addbox draws
+                                     addr 
+                                     (lambda (draw) 
+                                       (begin 
+                                         (xrp-draw-set-structural draw #t))))))
                   (store->structural-addrs store))))
 
     (define (store->structural-draws store)
@@ -992,11 +1073,10 @@
               [else
                 (loop (cons (list (car xs) (car ys)) acc) (cdr xs) (cdr ys))])))
 
-    (define (print-diff-factor-addrs store)
-      (let* ([diff-factors (store->diff-factors store)]
-             [f+ (car diff-factors)]
-             [f- (cadr diff-factors)]
-             [fc (caddr diff-factors)])
+    (define (print-diff-factor-addrs fpmc)
+      (let* ([f+ (car fpmc)]
+             [f- (cadr fpmc)]
+             [fc (caddr fpmc)])
         (map (lambda (fs-l) 
                (begin
                  (display (cadr fs-l))
@@ -1031,11 +1111,12 @@
              ;;application of the nfqp happens with interv-store, which is a copy so won't mutate original state.
              ;;after application the store must be captured and put into the mcmc-state.
              (value (church-apply (mcmc-state->address state) interv-store nfqp '()))
+             (new-diff-factors (f-plus-minus-common interv-store))
              (void3 (update-xrp-draw-structural-fields interv-store))
              (void4 (if DEBUG-DEP (begin
                       (display 'counterfactual-update-start+static:)
                       (print-structural-addresses interv-store)
-                      (print-diff-factor-addrs interv-store))))
+                      (print-diff-factor-addrs new-diff-factors))))
              (cd-bw/fw (if (store->enumeration-flag interv-store)
                            0
                            (clean-store interv-store))) ;;FIXME!! need to clean out unused xrp-stats?
@@ -1089,7 +1170,7 @@
              (void4 (if DEBUG-DEP (begin
                       (display 'counterfactual-update-larj:)
                       (print-structural-addresses interv-store)
-                      (print-diff-factor-addrs interv-store))))
+                      (print-diff-factor-addrs (store->diff-factors interv-store)))))
              (proposal-state (make-mcmc-state interv-store value (mcmc-state->address state)))
              )
         (list proposal-state cd-bw/fw)))
@@ -1154,7 +1235,9 @@
                        (loop (cdr factors) f-plus (cons (car factors) f-minus) f-common)
                        (if (factor-new? (car factors))
                            (loop (cdr factors) (cons (car factors) f-plus) f-minus f-common)
-                           (loop (cdr factors) f-plus f-minus (cons (car factors) f-common))))))))
+                           (if (factor-must-anneal-f+-? (car factors))
+                             (loop (cdr factors) (cons (car factors) f-plus) (cons (car factors) f-minus) f-common)
+                             (loop (cdr factors) f-plus f-minus (cons (car factors) f-common)))))))))
 
         (begin
             ;;(display 'f-plus)

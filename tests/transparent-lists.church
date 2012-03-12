@@ -1,0 +1,64 @@
+;; using inc-prov / dec-prov primitives to implement transparent lists
+
+;; transparent lists are ones that themselves contain annotated values, and
+;; attempt to minimize the propagation of annotations to the values inside the
+;; lists---e.g., tr-list-ref xs i has only provenance of the i-th element, not
+;; the whole list as before.
+
+(define xs1 (tr-list (flip) (flip) (flip)))
+(define ys1 (tr-list (flip) (flip) (flip)))
+(define ys1_old (list (flip) (flip) (flip)))
+
+(define id (lambda (x) x))
+
+(define my-eq
+  (make-factor (lambda (x y)
+                 (if (eq? x y) 0.0 -10.0))))
+(begin
+  (display '(the transparent list:))
+  (display-prov xs1)
+  (display '(the second element (depends only on one xrp)))
+  (display-prov (tr-list-ref xs1 1))
+  (display '(the first element of tr-list using car))
+  (display-prov (car xs1))
+  (display '(the first element of list using car))
+  (display-prov (car ys1_old))
+  (display '(car and cdr work too))
+  (display-prov (tr-car xs1))
+  (display-prov (tr-cdr xs1))
+  (display '(so does cons))
+  (display-prov (tr-cons (flip) xs1))
+  (display '(so does this version of map))
+  (display-prov (tr-map (lambda (x) (not x)) xs1))
+  (display '(vs normal map:))
+  (display-prov (map (lambda (x) (not (dec-prov x))) xs1))
+  (display '(same for filter:))
+  (display-prov (filter (lambda (x) (dec-prov x)) xs1))
+  (display-prov (tr-filter id xs1))
+  (display '(Nesting also works---the dependency information is preserved through zip patterns))
+  (display-prov (tr-zip xs1 ys1))
+  (display-prov (tr-zipN (tr-list xs1 ys1)))
+  (display-prov (tr-zip3 xs1 ys1 xs1))
+  (display-prov (tr-list xs1 ys1))
+  (display '(Reverse:))
+  (display-prov (tr-reverse xs1))
+  (display '(Iota:))
+  (display-prov (tr-iota (sample-integer 5)))
+  (display-prov (tr-drop-last (tr-iota (sample-integer 5))))
+  (display '(Repeat:))
+  (display-prov (tr-repeat (sample-integer 10) flip))
+  (display '(Bigram:))
+  (display-prov (tr-bigram (tr-iota 10)))
+  (display-prov (tr-bigram (tr-repeat 5 flip)))
+  (display '(Trigram:))
+  (display-prov (tr-trigram (tr-iota 10)))
+  (display '(The right information flows to factors:))
+  (tr-map (lambda (xy) 
+            (begin
+              (display '(dependencies of one factor:))
+              (display-prov (tr-list-ref xy 0))
+              (display-prov (tr-list-ref xy 1))
+              (my-eq (tr-list-ref xy 0)
+                     (tr-list-ref xy 1)))) (tr-bigram (tr-repeat 5 flip)))
+  'done)
+

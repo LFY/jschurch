@@ -62,6 +62,7 @@
 (define (compile top-list external-defs . lazy)
    (let* ((church-sexpr  `(begin
                             (load "standard-preamble.church")
+                            (load "standard-preamble-transparent.church")
                             (load "xrp-preamble.church")
                             (load "xrp-preamble-structural.church")
 
@@ -147,6 +148,7 @@
   ;; lifting a + addr_store -> b (defined in header.ss)
   (define (primitive+addr? s)
     (contains? s '(and or
+
                    reset-store-xrp-draws
                     reset-store-factors
                     reset-store-structural-addrs
@@ -155,10 +157,49 @@
 
   ;; lifting P[a] -> P[b] (defined in header.ss so needs +provenance rename)
   (define (libfunc+prov? s)
-    (contains? s '(mcmc-state->score 
+    (contains? s '(
+                   mcmc-state->score 
                     mcmc-state->query-value
-                    combine-proposable-xrp-draws
-                    display-prov)))
+
+                    ;; Debugging provenance
+                    display-prov
+                    
+                    ;; Manipulating provenance nesting level
+                    inc-prov
+                    dec-prov
+
+                    ;; Transparent lists
+                    tr-list
+                    tr-list->list
+                    list->tr-list
+                    tr-cons
+                    tr-car
+                    tr-cdr
+                    tr-list-ref
+                    
+                    )))
+                                   
+  
+  (define (other-libfunc+prov? s)
+    (contains? s '( 
+                    mcmc-state->query-value
+                    ;; Debugging provenance
+                    display-prov
+                    
+                    ;; Manipulating provenance nesting level
+                    inc-prov
+                    dec-prov
+
+                    ;; Transparent lists
+                    tr-list
+                    tr-list->list
+                    list->tr-list
+                    tr-cons
+                    tr-car
+                    tr-cdr
+                    tr-list-ref
+                    )))
+
 
   ;; lifting P[a] + a -> P[b]
   ;; (no lifting, merely church- rename and +provenance rename)
@@ -177,8 +218,9 @@
                    make-extended-state
                    extended-state->before
                    extended-state->after
-                   combine-proposable-xrp-draws
-                   which-state-to-perturb-and-new-proposal
+                   combine-xrp-draws
+
+                   xrp-in-state?
 
                    lookup-factor-and-update
                    update-f-plus-minus-common-scores
@@ -221,6 +263,8 @@
   ;; lifted constant symbols like and, or, +-\infty
   (define (lifted-constant-symbol? s)
     (contains? s '(true false infinity minus-infinity nan pi)))
+  (define (threaded-constant? s)
+    (contains? s '(tr-null)))
   
 
   (define (addr-prov sexpr re-init)
@@ -284,6 +328,9 @@
                  `(apply-fn+prov (cons ',(next-addr) address) store ,(re-addr-prov (first sexpr)) 
                                  (arglist ,@(map re-addr-prov (rest sexpr))))])]
 
+        [(and (symbol? sexpr) (other-libfunc+prov? sexpr)) (provenance-rename sexpr)]
+        [(and (symbol? sexpr) (libfunc+prov+addr? sexpr)) (provenance-rename (church-rename sexpr))]
+        [(and (symbol? sexpr) (threaded-constant? sexpr)) (provenance-rename (church-rename sexpr))]
         [(and (symbol? sexpr) (lifted-constant-symbol? sexpr)) `(prov-init ,(church-rename sexpr))]
         [(symbol? sexpr) (church-rename sexpr)]
         [(number? sexpr) `(prov-init ,sexpr)]
