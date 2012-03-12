@@ -1,3 +1,7 @@
+;; This example illustrates how larj (with auxiliary structural
+;; variable) results in a kind of delayed rejection that allows mixing
+;; in situations where plain mh does not mix.
+
 (define (xor x y)
   (or (and x (not y))
       (and (not x) y)))
