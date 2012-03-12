@@ -1,0 +1,29 @@
+(define (frac lst)
+  (/ (length (filter (lambda (x) x) lst))
+     (length lst)))
+
+(define factor-true
+  (make-factor (lambda (z) (if z 0.0 -10.0))))
+
+(define f1
+  (frac
+   (mh-query 100 10
+             (define x (flipS))
+             (define y (factor-true x))
+             x
+             true)))
+
+(define f2
+  (frac
+   (mh-query 100 10
+             (define x (flipS))
+             (define y (factor-true x))
+             x
+             (begin
+               y
+               true))))
+
+(list f1 f2)
+
+;; expected:
+;; ~> (1.0 1.0)
