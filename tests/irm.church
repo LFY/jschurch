@@ -106,7 +106,7 @@
                                  (generate-square-matrix related objects)))))
 
 
-(define (irm-larj-inference num-samples lag anneal-steps observation-matrix true-classes)
+(define (irm-larj-inference num-samples lag anneal-steps num-objects observation-matrix true-classes)
   (larj-mh-query-proposal-count
    num-samples lag anneal-steps
 
@@ -125,15 +125,19 @@
 
    (score-classes true-classes (map object->class objects))
 
-   (prob-factor (matrix-fraction-equal? observation-matrix
-                                        (generate-square-matrix related objects)))))
+   (begin
+     (prob-factor (matrix-fraction-equal? observation-matrix
+                                          (generate-square-matrix related objects)))
+     true)))
 
 
-(let* ([num-objects 10]
-       [num-steps 1000]
-       [anneal-steps 50]
+(let* ([num-objects 3]
+       [num-steps 5000]
+       [anneal-steps 20]
        [data (generate-irm-data num-objects)])
-  (let ([mh-scores (irm-mh-inference num-steps 1
+  (display "baseline score:")
+  (display (baseline-score num-objects))
+  (let ([mh-scores (irm-mh-inference (/ num-steps anneal-steps) anneal-steps
                                      num-objects
                                      (data->matrix data)
                                      (data->classes data))])
@@ -142,6 +146,7 @@
     (display (mean mh-scores))
     (let ([larj-scores (irm-larj-inference num-steps 1
                                            anneal-steps
+                                           num-objects
                                            (data->matrix data)
                                            (data->classes data))])
       (display "larj-scores:")
