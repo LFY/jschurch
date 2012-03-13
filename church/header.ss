@@ -64,9 +64,9 @@
     `(define ,symb (list (lambda (address store . args) 
                            (list
                              (apply ,(un-prefix-church symb) (extract-vals args))
-                             (merge-provs (extract-provs args))
+                             (apply merge-provs (extract-provs args))
                              ))
-                         '()))
+                         (lambda (xs) xs)))
     `(define ,symb (lambda (address store . args) (apply ,(un-prefix-church symb) (map (lambda (a) (church-force address store a)) args))))))
 
 
@@ -81,7 +81,7 @@
          ))
 
     (define (inc-prov+provenance v+)
-      (make-prov v+ '()))
+      (make-prov v+ empty-prov))
 
     (define (dec-prov+provenance v++)
       (erase v++))
@@ -96,7 +96,7 @@
     ;; the idea is to only affect the values within
 
     (define (tr-list+provenance . xs+)
-      (make-prov xs+ '()))
+      (make-prov xs+ empty-prov))
 
     (define (tr-cons+provenance x+ xs+)
       (make-prov
@@ -107,9 +107,10 @@
       (car (erase xs+)))
 
     (define (tr-cdr+provenance xs+)
-      (make-prov
-        (cdr (erase xs+))
-        (prov xs+)))
+      (if (null? xs+) (error "tr-cdr on null tr-list")
+        (make-prov
+          (cdr (erase xs+))
+          (prov xs+))))
 
     (define (tr-list-ref+provenance xs+ i+)
       (let* ([i-prov (prov i+)]
@@ -118,10 +119,7 @@
              [elt-val (erase elt+)])
         (make-prov
           elt-val
-          (merge-provs (list i-prov elt-prov)))))
-      ;; (prov+
-        ;; (list-ref (erase xs+) (erase i+))
-        ;; (add-prov (prov i+) (prov (list-ref (
+          (merge-provs i-prov elt-prov))))
    
     (define (list->tr-list+provenance xs+)
       (make-prov
@@ -131,8 +129,8 @@
     (define (tr-list->list+provenance xs+)
       (let* ([list-prov (prov xs+)]
              [vals (extract-vals (erase xs+))]
-             [provs (extract-provs xs+)])
-        (make-prov vals (merge-provs (cons list-prov provs)))))
+             [provs (extract-provs (erase xs+))])
+        (make-prov vals (merge-provs list-prov (apply merge-provs provs)))))
 
     ;; (define (church-tr-map+provenance add store f+ xs+)
     ;;   (if (null? xs+) '()
@@ -210,32 +208,72 @@
                                                  val))
 
     ;; provenance Stuff
+
+    ;; difference lists
+    
+    ;; utility functions
+    
+    (define (const x y) x)
+    
+    (define (compose . fs)
+      (let loop ([acc (lambda (x) x)]
+                 [rest (reverse fs)])
+        (if (null? rest) acc
+          (loop (lambda (x) 
+                  ((car rest) (acc x))
+                  ) (cdr rest)))))
+    
+    ;; constructors
+    
+    (define (list->dlist xs)
+      (lambda (rest) (append xs rest)))
+    
+    (define (dlist->list dxs) (dxs '()))
+    
+    (define dl-null (lambda (xs) xs))
+    
+    (define (dl-unit x) (lambda (rest) (cons x rest)))
+    
+    (define (dl-cons x dl)
+      (let* ([f1 (lambda (xs) (cons x xs))])
+        (compose f1 dl)))
+    
+    (define (dl-snoc dl x)
+      (let* ([f1 (lambda (xs) (cons x xs))])
+        (compose dl f1)))
+    
+    (define dl-append compose)
+
     ;; argument lists
 
     (define arglist list)
 
+    ;; empty annotation
+    (define empty-prov dl-null)
+
     ;; initialize an annotated value
     (define (make-prov v p)
       (list v p))
+
     ;; prov-init/erase are lift/extract
+    
     (define (prov-init sexpr)
-      (list sexpr '()))
+      (list sexpr empty-prov))
     (define (clear-prov v+)
-      (list (car v+) '()))
+      (list (car v+) empty-prov))
+
     (define erase first)
+
     ;; get the dependencies of a value
+    
     (define prov second)
     ;; add a set of dependencies to a value's dependencies
     (define (prov+ e p)
-      (list (erase e) (append (prov e) p)))
+      (list (erase e) (merge-provs (prov e) p)))
 
     (define (add-prov p ps) (cons p ps))
 
     (define provs->list (lambda (x) x))
-    
-    (define (union-provs xs ys)
-      (append xs ys))
-
     
     (define church-apply+prov
       (prov-init
@@ -271,18 +309,24 @@
     
     (define (extract-provs xs) (map (lambda (x) (if (null? x) '() (cadr x))) xs))
 
-    (define (merge-provs xs)
-      (apply append xs))
+    (define (addr->prov addr) (dl-unit addr))
+
+    (define merge-provs dl-append)
+    ;; (define (merge-provs . xs)
+    ;;   (begin
+    ;;     (display 'merge-provs)
+    ;;     (display xs)
+    ;;     (apply dl-append xs)))
 
     (define (extract-opt-arg pr-pvs)
       (begin
         (display-debug "extract-opt-arg:")
         (display-debug pr-pvs)        
         (make-prov (extract-vals pr-pvs) 
-                   (merge-provs (extract-provs pr-pvs)))))
+                   (apply merge-provs (extract-provs pr-pvs)))))
 
     (define (display-prov+provenance x+)
-      (display (list 'val (erase x+) 'prov (prov x+))))
+      (display (list 'val (erase x+) 'prov (dlist->list (prov x+)))))
 
     (define (church-display-structural-addrs address store)
       (print-structural-addresses store))
@@ -312,12 +356,12 @@
         (display-debug "end-apply-prim:")
         (make-prov
          (apply proc (extract-vals args))
-         (merge-provs (extract-provs args)))))
+         (apply merge-provs (extract-provs args)))))
 
     (define (apply-prim+prov+addressing address store proc args)
       (make-prov
        (apply proc address store (extract-vals args))
-       (merge-provs (extract-provs args))))
+       (apply merge-provs (extract-provs args))))
 
     (define (my-last xs)
       (cond [(null? (cdr xs)) (car xs)]
@@ -338,50 +382,26 @@
           (map (lambda (arg) (list arg prov)) (erase args-prov)))))
 
     (define (lifted-apply address store proc+ . args+s)
-      (let* ([all-vals (extract-vals args+s)]
-             [all-provs (extract-provs args+s)]
-             [void (begin
-                     (display-debug '(in lifted apply:))
-                     (display-debug args+s))]
-             [split-args+s (if (= (length args+s) 1) 
-                               (split-share-prov (car args+s))
-                               (append (my-take args+s (- (length args+s) 1))
-                                       (split-share-prov (my-last args+s))))]
-
-             [db (begin
-                   (display-debug "in-lifted-apply:")
-                   (display-debug args+s)
-                   (display-debug all-vals))]
-             [flattened-vals (if (null? all-vals) '()
-                                 (if (= (length all-vals) 1) all-vals
-                                     (append (my-take all-vals (- (length all-vals) 1)) 
-                                             (my-last all-vals))))]
-             [new-provs (merge-provs all-provs)]
-
-             [db (begin
-                   (display-debug "lifted-apply:")
-                   (display-debug args+s)
-                   (display-debug all-vals)
-                   (display-debug flattened-vals)
-                   (display-debug new-provs)
-                   (display-debug split-args+s)
-                   (display-debug "end-lifted-apply:")
-                   )])
+      (let* ([split-args+s (if (= (length args+s) 1) 
+                             (split-share-prov (car args+s))
+                             (append (my-take args+s (- (length args+s) 1))
+                                     (split-share-prov (my-last args+s))))])
         (apply (erase proc+) address store split-args+s)))
 
     (define (apply-fn+prov address store proc val-provs)
       (begin
-        (display-debug "apply-fn:")
-        (display-debug proc)
-        (display-debug val-provs)
-        (display-debug "end-apply-fn:")
+        (if DEBUG (begin
+                    (display "apply-fn:")
+                    (display proc)
+                    (display val-provs)
+                    (display "end-apply-fn:")) '())
         (church-apply address store (erase proc) val-provs)))
 
     ;;;
     ;;stuff for xrps (and dealing with stores):
     (define (make-store xrp-draws xrp-stats score tick enumeration-flag factors diff-factors structural-addrs) 
       (list xrp-draws xrp-stats score tick enumeration-flag factors diff-factors structural-addrs))
-    (define (make-empty-store) (make-store (make-addbox) (make-addbox) 0.0 0 #f (make-addbox) '(() () ()) '()))
+    (define (make-empty-store) (make-store (make-addbox) (make-addbox) 0.0 0 #f (make-addbox) '(() () ()) empty-prov))
 
     (define store->xrp-draws first)
     (define set-store-xrp-draws! set-car!)
@@ -404,15 +424,16 @@
     (define (store->structural-addrs store) (list-ref store 7))
     (define (store-add-structural-dep! store new-deps)
       (begin 
-        (display-debug "store-add-structural-dep:")
-        (display-debug (length store))
-        (display-debug new-deps)
-        (display-debug (store->structural-addrs store))
-        (set-store-structural-addrs! store (append (store->structural-addrs store)
-                                                   (filter (lambda (addr) (not (null? addr))) (provs->list new-deps))))
-        (display-debug (store->structural-addrs store))
-        ))
-
+        (if DEBUG (begin
+                    (display-debug "store-add-structural-dep:")
+                    (display-debug (length store))
+                    (display-debug new-deps)
+                    (display-debug (store->structural-addrs store))
+                    (display-debug (store->structural-addrs store))
+                    ) '())
+        (set-store-structural-addrs! store (merge-provs (store->structural-addrs store) new-deps))
+                                                   ))
+        
     (define store->xrp-stats second)
     (define store->score third)
     (define (set-store-score! store score) (cons (car store) (cons (cadr store) (set-car! (cddr store) score))))
@@ -421,8 +442,9 @@
 
     (define (church-reset-store-xrp-draws address store)
       (begin
-        (display-debug '(in church reset store xrp draws))
-        (display-debug (list address store))
+        (if DEBUG (begin
+                    (display-debug '(in church reset store xrp draws))
+                    (display-debug (list address store))) '())
         (set-store-xrp-draws! store (make-addbox))))
 
     (define church-reset-store-xrp-draws+provenance church-reset-store-xrp-draws)
@@ -636,15 +658,15 @@
                                       (let* (
                                             
                                              ;; Using provenance to determine whether it should be annealed
-                                             [previous-prov (if (not (eq? trienone factor-instance)) (factor-provenance factor-instance) '())];;[sandbox-store (cons (make-addbox) (cdr store))]
-                                             [new-provenance (delete-duplicates (filter (lambda (x) (not (null? x))) (merge-provs provs)))]
+                                             [previous-prov (if (not (eq? trienone factor-instance)) (factor-provenance factor-instance) empty-prov)];;[sandbox-store (cons (make-addbox) (cdr store))]
+                                             [new-provenance (apply merge-provs provs)]
                                              [structure-change? (not (equal? previous-prov new-provenance))]
                                              [v (if DEBUG-DEP
                                                   (begin
                                                     (display (list '(detected structural change?) structure-change?))
                                                     (display (list 'factor-addr address))
-                                                    (display previous-prov)
-                                                    (display new-provenance)))]
+                                                    (display (dlist->list previous-prov))
+                                                    (display (dlist->list new-provenance))))]
                                              [auto-should-anneal (if (eq? trienone factor-instance) ;; Definitely anneal, will suffice to AUTO-ANNEAL this
                                                                    AUTO-ANNEAL
                                                                    (if (eq? (factor-should-anneal? factor-instance) MUST-NOT-ANNEAL)
@@ -679,7 +701,7 @@
                                         (set! new-val val)
                                         (set-store-score! store (+ (store->score store) val))
                                         new-factor-instance)))
-                     (list new-val '())))))
+                     (list new-val empty-prov)))))
 
     (define (church-make-factor+provenance address store factor-function+)
       (church-make-factor-generic+provenance address store factor-function+ AUTO-ANNEAL))
@@ -832,11 +854,6 @@
                              (prov-init
                               (lambda (address store operands old-value) ;;--> proposed-value forward-log-prob backward-log-prob
                                 (let* (
-                                       [void 
-                                        (begin
-                                          (display-debug '(in churchmakexrpwithprovenance calling decrstats:))
-                                          (display-debug (list address store old-value (car (read-addbox (store->xrp-stats store) xrp-address)) hyperparams operands)))]
-                                       ;; (dec (decr-stats address store old-value (car (read-addbox (store->xrp-stats store) xrp-address)) hyperparams operands))
                                        [dec (erase (decr-stats address store
                                                                (prov-init old-value)
                                                                (prov-init (car (read-addbox (store->xrp-stats store) xrp-address)))
@@ -856,37 +873,22 @@
           ;;the xrp itself: we update the xrp-draw at call address and return the new value.
           (prov-init (lambda (address store . val-provs)
 
-                       (define void (begin (display-debug "church-make-xrp-start:")
-                                           (display-debug val-provs)))
                        (define provs (extract-provs val-provs))
                        (define args (extract-vals val-provs))
-                       (define void2 (begin (display-debug "church-make-xrp-after-extract:")))
                        (define new-val '())
                        (update-addbox (store->xrp-draws store)
                                       address
                                       (lambda (xrp-draw)
                                         (begin 
-                                          (display-debug "in-actual-update:")
                                           ;;FIXME!! check if this is same xrp (ie. if xrp-address has changed)?
                                           ;;if this xrp-draw exists and has been touched on this tick, as in mem, don't change score or stats.
                                           (if (and (not (eq? trienone xrp-draw)) (equal? (store->tick store) (car (xrp-draw-ticks xrp-draw))))
                                               (begin (set! new-val (xrp-draw-value xrp-draw))
                                                      xrp-draw)
                                               (let* ((stats (car (read-addbox (store->xrp-stats store) xrp-address))) ;;FIXME: should only need to find the stats once, then do mutable update...
-                                                     [db (display-debug "stats:")]
-                                                     [db (begin
-                                                           (display-debug "print-support:")
-                                                           (display-debug support)
-                                                           (display-debug (list (prov-init stats) hyperparams+ (extract-opt-arg val-provs)))
-                                                           (display-debug (apply-fn+prov address store support+ (list (prov-init stats) hyperparams+ (extract-opt-arg val-provs))))
-                                                           (display-debug "end-print-support:"))]
                                                      (support-vals (if (null? support) '() (erase (apply-fn+prov address store support+ (list (prov-init stats) hyperparams+ (extract-opt-arg val-provs))))))
-                                                     [db (display-debug "support-vals")]
                                                      (sandbox-store (cons (make-addbox) (cdr store)));;FIXME: this is a hack to need to isolate random choices in sampler from MH.
-                                                     [db (display-debug "sandbox-store:")]
-                                                     [db (display-debug (length sandbox-store))]
                                                      (structural? structural)
-                                                     [db (display-debug "structural:")]
                                                      [tmp (if (eq? trienone xrp-draw)
                                                               (begin 
                                                                 (display-debug '(in make-xrp+provenance calling sampler))
@@ -894,12 +896,7 @@
                                                                 (erase (apply-fn+prov address sandbox-store sample+ (list (prov-init stats) hyperparams+ (extract-opt-arg val-provs)))))
                                                               ;;(sample address sandbox-store stats hyperparams args) 
                                                               (erase (apply-fn+prov address sandbox-store incr-stats+ (list (prov-init (xrp-draw-value xrp-draw)) (prov-init stats) hyperparams+ (extract-opt-arg val-provs)))))]
-                                        ;(value ,(if *AD* '(if (continuous? (first tmp)) (tapify (first tmp)) (first tmp)) '(first tmp)))
-                                                     [db (begin
-                                                           (display-debug "tmp:")
-                                                           (display-debug tmp))]
                                                      [value (first tmp)]
-                                                     [db (begin (display-debug "sampled-val:") (display-debug value))]
                                                      (new-stats (list (second tmp) (store->tick store)))
                                                      (incr-score (third tmp)) ;;FIXME: need to catch measure zero xrp situation?
                                                      (last-tick (if (eq? trienone xrp-draw)
@@ -923,9 +920,9 @@
                                                 new-xrp-draw)))))
                        (begin 
                          (display-debug "Thingreturnedfrommakexrpwithprov:")
-                         (display-debug (list new-val (add-prov address (union-provs hyperprovs provs))))
-                         (list new-val (add-prov address (union-provs hyperprovs provs))))
-                       )))))
+                         ;;(display-debug (list new-val (merge-pro address (merge-provs hyperprovs provs))))
+                         (list new-val (merge-provs (addr->prov address) hyperprovs (apply merge-provs provs)))))))))
+
     (define (print-single-xrp xrp)
       (display (list (xrp-draw-address xrp) (xrp-draw-value xrp))))
 
@@ -987,15 +984,8 @@
                                 (copy-addbox (store->factors store))
                                 (store->diff-factors store)
                                 (store->structural-addrs store)
-                                ))
-             ;; we need to clear the provenance otherwise if statements in mcmc kernels will wrongly mark xrp's as structural
-             [debug (begin (display-debug '(in queryvalue+prov))
-                           (display-debug (store->structural-addrs store)))]
-             [answer (clear-prov (church-apply (mcmc-state->address state) store (cdr (erase (second state))) '()))]
-             )
-        (begin
-          (display-debug (list '(mcmc-state->query-value answer:) answer))
-          answer)))
+                                )))
+        (clear-prov (church-apply (mcmc-state->address state) store (cdr (erase (second state))) '()))))
 
     ;;this captures the current store/address and packages up an initial mcmc-state.
     ;;should copy here? not needed currently, since counterfactual-update coppies and is only thing aplied to states....
@@ -1022,14 +1012,12 @@
     (define (update-xrp-draw-structural-fields store)
       (let ([draws (store->xrp-draws store)])
         (for-each (lambda (addr)
-                    (if (eq? trienone (read-addbox draws addr))
-                      '() ;; Somehow these can be *missing*...
-                      (update-addbox draws
-                                     addr 
+                    (if (eq? trienone (read-addbox draws addr)) '() 
+                      (update-addbox draws addr 
                                      (lambda (draw) 
                                        (begin 
                                          (xrp-draw-set-structural draw #t))))))
-                  (store->structural-addrs store))))
+                  (dlist->list (store->structural-addrs store)))))
 
     (define (store->structural-draws store)
       (filter xrp-draw-structural? (addbox->values (store->xrp-draws store))))
@@ -1152,7 +1140,7 @@
                                        (store->enumeration-flag (mcmc-state->store state))
                                        (copy-addbox (store->factors (mcmc-state->store state)))
                                        (store->diff-factors (mcmc-state->store state))
-                                       '() ;; empty set of structural addrs
+                                       empty-prov ;; empty set of structural addrs
                                        ))
              ;;application of the nfqp happens with interv-store, which is a copy so won't mutate original state.
              ;;after application the store must be captured and put into the mcmc-state.

@@ -44,7 +44,6 @@
   (display-prov (tr-reverse xs1))
   (display '(Iota:))
   (display-prov (tr-iota (sample-integer 5)))
-  (display-prov (tr-drop-last (tr-iota (sample-integer 5))))
   (display '(Repeat:))
   (display-prov (tr-repeat (sample-integer 10) flip))
   (display '(Bigram:))
