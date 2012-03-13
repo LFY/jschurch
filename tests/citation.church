@@ -1,7 +1,3 @@
-(define REPULSE-DIST 20)
-(define ANNEAL-STEPS 100)
-(define DP-PARAM 1.0)
-
 
 (define all-citations '(((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate versus univariate decision trees")     )
   ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate versus univariate decision trees")     )
@@ -445,7 +441,7 @@
 
 (define (score-repulsion c1 c2)
   (let ((dist (distance-citation c1 c2)))
-    (norm-eq-log dist REPULSE-DIST 1)
+    (norm-eq-log dist 100 1)
     )
   )
 
@@ -517,16 +513,27 @@
                    (score-affinity c1 p1)
                   )))
 
+;; would like to verify that 
+;; 1. whether the same set of papers are being kept within the same sample. (checked)
+;; 2. whether the paper-distribution is a structural xrp
 (for-each display
-         ;; (mh-query 10 400
-        (larj-mh-query-proposal-count 10000 1 ANNEAL-STEPS
-                    (define paper-distribution (DPmemS DP-PARAM (lambda () (sample-paper 0 citations))))
+        (mh-query 50 1
+        ;;(larj-mh-query-proposal-count 100 1 10
+                    (define paper-distribution (DPmemS 1.0 (lambda () (sample-paper 0 citations))))
                     (define citation->paper 
                       (mem (lambda (object) (paper-distribution))))
+                    (define (print-citation->paper object)
+                      (begin  
+                        ;;(display (citation->paper-id object))
+                        ;;(display (paper->title (citation->paper object)))
+                        ;;(display (citation->obs-title object))
+                        (citation->paper object)
+                        )
+                      )
                     (define citation-assignment
-                      (map (lambda (c) (list (citation->paper c) c)) citations))
+                      (map (lambda (c) (list (print-citation->paper c) c)) citations))
                     (define paper-assignment
-                      (delete-duplicates (map citation->paper citations))
+                      (delete-duplicates (map print-citation->paper citations))
                       )
                     (define x
                       (let* (
@@ -534,11 +541,12 @@
                              [paper-citation-factors (map 
                                                        (lambda (c1) 
                                                          (begin
-                                                           (factor-citation-paper c1 (citation->paper c1)))
+                                                           (factor-citation-paper (second c1) (first c1)))
                                                          ) 
                                                        citation-assignment)]
+                             ;;[void (display '===============end-sample)]
                              )
-                        (list paper-assignment)))
+                        (list (length paper-assignment) paper-assignment)))
                     x
                     true
                     ))
