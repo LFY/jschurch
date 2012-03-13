@@ -27,7 +27,7 @@
   (frac
    (mh-query 100 10
              (define x (let* ([%x (flipS)]
-                              [y (factor-true x)])
+                              [y (factor-true %x)])
                          %x))
              x
              true)))

@@ -9,6 +9,9 @@
 
 ;; kernels (mcmc transition distributions) and proposal distributions
 
+(define (default-scorer state)
+  (mcmc-state->score state))
+
 (define (log-flip* . w)
   (if (null? w)
       (< (random-real) 0.5)
@@ -160,7 +163,7 @@
 
 (define (basic-repeat-kernel steps nfqp)
   (repeat-kernel steps (make-mh-kernel (lambda (state) (basic-proposal-distribution state nfqp))
-                                       mcmc-state->score)))
+                                       default-scorer)))
 
 ;;;standard queries
 (define (repeated-mcmc-query-core initializer kernel num-samples)
@@ -371,7 +374,7 @@
                                                   (selective-proposal-distribution state
                                                                                    nfqp
                                                                                    discrete-xrp-draw?))
-                                                mcmc-state->score)))
+                                                default-scorer)))
    num-samples))
 
 (define (hmc-query/annealed-init temps init-step-size num-samples lag dt leapfrog-steps temps->nfqp)
@@ -385,7 +388,7 @@
                                                     (selective-proposal-distribution state
                                                                                      nfqp
                                                                                      discrete-xrp-draw?))
-                                                  mcmc-state->score)))
+                                                  default-scorer)))
      
      num-samples)))
 
@@ -433,7 +436,7 @@
            
            ;;rejuvenate using kernel.
            (kernel (repeat-kernel lag (make-mh-kernel (lambda (state) (basic-proposal-distribution state (apply temps->nfqp (first temps))))
-                                                      mcmc-state->score)))
+                                                      default-scorer)))
            (new3-population (map kernel new2-population)))
 
       (begin (map (lambda (x y) (begin (display "  ")(display x)(display "  ")(display y)(display "\n")))
@@ -686,7 +689,7 @@
   (repeat-kernel steps 
                  (make-mh-kernel 
                   (lambda (state) (non-structural-proposal-distribution state nfqp))
-                  mcmc-state->score)))
+                  default-scorer)))
 
 ;; larj kernel
 ;; The static-proposal is used for performing proposals in the annealing stage. 
@@ -699,13 +702,13 @@
      steps 
      (make-mh-kernel
       (lambda (state) (larj-proposal-distribution state nfqp num-temps power static-proposal))
-      mcmc-state->score))))
+      default-scorer))))
 
 (define (larj-kernel-proposal-count num-temps steps power nfqp)
   (let ((static-proposal (lambda (state1state2) (extended-state-space-proposal-distribution state1state2 nfqp))))
      (make-larj-kernel
       (lambda (state) (larj-proposal-distribution state nfqp num-temps power static-proposal))
-      mcmc-state->score)))
+      default-scorer)))
 
 (define (non-structural-mh-query samples lag normal-form-proc)
   (repeated-mcmc-query-core (lambda () (rejection-initializer normal-form-proc))
