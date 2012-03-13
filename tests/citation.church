@@ -1,3 +1,8 @@
+(define REPULSE-DIST 20)
+(define ANNEAL-STEPS 100)
+(define DP-PARAM 1.0)
+
+
 (define all-citations '(((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate versus univariate decision trees")     )
   ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate versus univariate decision trees")     )
   ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate versus univariate decision trees,   (Coins")     )
@@ -440,7 +445,7 @@
 
 (define (score-repulsion c1 c2)
   (let ((dist (distance-citation c1 c2)))
-    (norm-eq-log dist 300 1)
+    (norm-eq-log dist REPULSE-DIST 1)
     )
   )
 
@@ -514,8 +519,8 @@
 
 (for-each display
          ;; (mh-query 10 400
-        (larj-mh-query-proposal-count 10000 1 100
-                    (define paper-distribution (DPmemS 1.0 (lambda () (sample-paper 0 citations))))
+        (larj-mh-query-proposal-count 10000 1 ANNEAL-STEPS
+                    (define paper-distribution (DPmemS DP-PARAM (lambda () (sample-paper 0 citations))))
                     (define citation->paper 
                       (mem (lambda (object) (paper-distribution))))
                     (define citation-assignment
