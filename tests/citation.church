@@ -440,7 +440,7 @@
 
 (define (score-repulsion c1 c2)
   (let ((dist (distance-citation c1 c2)))
-    (norm-eq-log dist 100 1)
+    (norm-eq-log dist 300 1)
     )
   )
 
@@ -452,6 +452,9 @@
                   )
   )))
 
+(define factor-repulsion
+  (make-factor (lambda (c1 c2) (score-repulsion c1 c2))))
+
 
 (define (randintS low high)
   (+ low (sample-integerS (- high low))))
@@ -460,7 +463,7 @@
   (+ low (sample-integer (- high low))))
 
 (define (sample-paper-id! num-papers citation)
-  (let* ((new-paper-id (randint 1 (+ num-papers 1)))
+  (let* ((new-paper-id (randintS 1 (+ num-papers 1)))
          (new-citation (make-citation (citation->num-obs-authors citation) 
                                       (citation->obs-authors citation)
                                       (citation->obs-title citation)
@@ -509,29 +512,28 @@
                    (score-affinity c1 p1)
                   )))
 
-(length
-;;(for-each display
-          (mh-query 1 1
-                    (define num-papers (randintS 1 10))
-                    (define citation-assignment 
-                      (tr-map (lambda (citation) (sample-paper-id! num-papers citation)) citations)
-                      )
+(for-each display
+         ;; (mh-query 10 400
+        (larj-mh-query-proposal-count 10000 1 100
+                    (define paper-distribution (DPmemS 1.0 (lambda () (sample-paper 0 citations))))
+                    (define citation->paper 
+                      (mem (lambda (object) (paper-distribution))))
+                    (define citation-assignment
+                      (map (lambda (c) (list (citation->paper c) c)) citations))
                     (define paper-assignment
-                      (tr-map (lambda (i) (sample-paper i citations)) (tr-iota num-papers)))
+                      (delete-duplicates (map citation->paper citations))
+                      )
                     (define x
                       (let* (
-                             [voidprint0 (display 'num-papers)]
-                             [voidprint1 (display num-papers)]
-                             [voidprint4 (display 'got-paper-assignment)]
-                             [voidprint5 (display 'got-citation-assignment)]
-                             [voidprint2 (map print-citation-cluster citation-assignment)]
-                             [constraints (tr-map (lambda (c1c2) (factor-repulsion-affinity (tr-first c1c2) (tr-second c1c2))) (tr-pairs citation-assignment))]
-                             [voidprint3 (display 'voidprint3)]
-                             ;;[paper-citation-factors (map 
-                             ;;                          (lambda (c1) (factor-citation-paper c1 (list-ref papers (citation->paper-id c1)))) 
-                             ;;                          citation-assignment)]
+                             [paper-paper-replusion (map (lambda (p1p2) (factor-repulsion (first p1p2) (second p1p2))) (pairs paper-assignment))]
+                             [paper-citation-factors (map 
+                                                       (lambda (c1) 
+                                                         (begin
+                                                           (factor-citation-paper c1 (citation->paper c1)))
+                                                         ) 
+                                                       citation-assignment)]
                              )
-                       (list num-papers citation-assignment)))
+                        (list paper-assignment)))
                     x
-                    (= (length (tr-filter (lambda (cpid) (>= cpid num-papers)) (tr-map citation->paper-id citation-assignment))) 0)
-                    ));;)
+                    true
+                    ))
