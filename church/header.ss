@@ -1019,13 +1019,12 @@
     (define (update-xrp-draw-structural-fields store)
       (let ([draws (store->xrp-draws store)])
         (for-each (lambda (addr)
-                    (begin (display addr)
                     (if (eq? trienone (read-addbox draws addr)) '() 
                       (update-addbox draws addr 
                                      (lambda (draw) 
                                        (begin 
                                          (xrp-draw-set-structural draw #t)))))))
-                  (store->structural-addrs store))))
+        (store->structural-addrs store)))
 
     (define (store->structural-draws store)
       (filter xrp-draw-structural? (addbox->values (store->xrp-draws store))))
