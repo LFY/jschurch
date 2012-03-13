@@ -1,0 +1,36 @@
+;; This example illustrates how larj (with auxiliary structural
+;; variable) results in a kind of delayed rejection that allows mixing
+;; in situations where plain mh does not mix.
+
+(define (xor x y)
+  (or (and x (not y))
+      (and (not x) y)))
+
+(define (ignore x)
+  true)
+
+
+;; mh
+
+(define mh-samples
+  (mh-query 10 100
+            (define x (flip))
+            (define y (flip))
+            (list x y)
+            (xor x y)))
+
+(display mh-samples)
+
+
+;; larj as global delayed rejection
+
+(define larj-dr-samples
+  (larj-mh-query 10 10 10
+                 (define aux (flipS))
+                 (define x (flip))
+                 (define y (flip))
+                 (list x y)
+                 (and (xor x y)
+                      (ignore aux))))
+
+(display larj-dr-samples)

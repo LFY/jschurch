@@ -1,5 +1,9 @@
 ;; based on
 ;; http://projects.csail.mit.edu/church/wiki/Occam's_Razor
+;;
+;; Evaluation: how well do we recover the true polynomial order.
+
+(define max-poly-order 4)
 
 (define logprob-factor
   (make-factor
@@ -13,17 +17,6 @@
 (define x-vals
   (map (lambda (x) (/ x 1)) (map (lambda (x) (- x 5)) (iota 10))))
 
-(define true-coeffs '(-.5 1 .5))
-
-(define true-y-vals
-  (map (make-poly true-coeffs) x-vals)) 
-
-(define obs-noise 0.2)
-
-(define obs-y-vals
-  (map (lambda (x) (gaussian x obs-noise))
-       true-y-vals))
-
 (define (noisy= x y noise)
   (log-flip (- (* (/ 1.0 noise) (expt (- x y) 2)))))
 
@@ -33,24 +26,43 @@
       (all (map (lambda (i j) (noisy=* i j noise)) a b))
       (noisy= a b noise)))
 
+(define (sample-coefficients poly-order)
+  (repeat (+ poly-order 1)
+           (lambda () (gaussian 0 4))))
 
-(mh-query
- 10 10
+(define (make-factors hyp-ys true-ys)
+  (begin
+    (map (lambda (y-val obs-y-val)
+           (logprob-factor (- (abs (- y-val obs-y-val)))))
+         hyp-ys true-ys)
+    true))
 
- (define poly-order (sample-integer 4))  
+(define (infer-order/mh-query obs-y-vals)
+  (mh-query
+   10 100
+   (define poly-order (sample-integer max-poly-order))  
+   (define coefficients (sample-coefficients poly-order))
+   (define y-vals (map (make-poly coefficients) x-vals))
+   poly-order
+   (make-factors y-vals obs-y-vals)))
 
- (define coefficients
-   (repeat (+ poly-order 1)
-           (lambda () (gaussian 0 2))))
+(define (count xs)
+  (length (filter (lambda (x) x) xs)))
 
- (define y-vals
-   (map (make-poly coefficients) x-vals))
+(define (evaluate query n noise)
+  (count
+   (map (lambda (i)
+          (let* ([poly-order (sample-integer max-poly-order)]
+                 [coefficients (sample-coefficients poly-order)]
+                 [y-vals (map (make-poly coefficients) x-vals)]
+                 [obs-y-vals (map (lambda (y) (gaussian y noise)) y-vals)]
+                 [inferred-order (last (query obs-y-vals))])
+            (display (list i poly-order inferred-order))
+            (equal? poly-order inferred-order)))
+        (iota n))))
 
- (define factors
-   (map (lambda (y-val obs-y-val)
-          (logprob-factor (- (abs (- y-val obs-y-val)))))
-        y-vals obs-y-vals))
- 
- poly-order
-
- true)
+(let ([n 30])
+  (for-each display
+            (list "inferred correct order "
+                  (evaluate infer-order/mh-query n 0.5)
+                  " out of " n " times.")))

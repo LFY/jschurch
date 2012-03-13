@@ -1,0 +1,50 @@
+(define (frac lst)
+  (/ (length (filter (lambda (x) x) lst))
+     (length lst)))
+
+(define factor-true
+  (make-factor (lambda (z) (if z 0.0 -10.0))))
+
+(define f1
+  (frac
+   (mh-query 100 10
+             (define x (flipS))
+             (define y (factor-true x))
+             x
+             true)))
+
+(define f2
+  (frac
+   (mh-query 100 10
+             (define x (flipS))
+             (define y (factor-true x))
+             x
+             (begin
+               y
+               true))))
+
+(define f3
+  (frac
+   (mh-query 100 10
+             (define x (let* ([%x (flipS)]
+                              [y (factor-true x)])
+                         %x))
+             x
+             true)))
+
+(list f1 f2 f3)
+
+;; expected:
+;; ~> (1.0 1.0 1.0)
+;; 
+;; with addressing.ss compiler:
+;; ~> (0.5 1.0 0.5)
+;;
+;; with addressing.ss compiler without dead-code removal:
+;; ~> [can't test right now, as scheme2js fails]
+
+;; with dynamic-provenance.ss compiler:
+;; ~> (0.5 0.5 EXCEPTION)
+
+;; with dynamic-provenance.ss compiler without dead-code removal:
+;; ~> [can't test right now, as scheme2js fails]
