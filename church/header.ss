@@ -64,9 +64,10 @@
     `(define ,symb (list (lambda (address store . args) 
                            (list
                              (apply ,(un-prefix-church symb) (extract-vals args))
-                             (apply merge-provs (extract-provs args))
+                             (merge-list-provs (extract-provs args))
                              ))
-                         (lambda (xs) xs)))
+                         ;;(lambda (xs) xs)))
+                         '()))
     `(define ,symb (lambda (address store . args) (apply ,(un-prefix-church symb) (map (lambda (a) (church-force address store a)) args))))))
 
 
@@ -130,7 +131,7 @@
       (let* ([list-prov (prov xs+)]
              [vals (extract-vals (erase xs+))]
              [provs (extract-provs (erase xs+))])
-        (make-prov vals (merge-provs list-prov (apply merge-provs provs)))))
+        (make-prov vals (merge-provs list-prov (merge-list-provs provs)))))
 
     ;; (define (church-tr-map+provenance add store f+ xs+)
     ;;   (if (null? xs+) '()
@@ -217,11 +218,10 @@
     
     (define (compose . fs)
       (let loop ([acc (lambda (x) x)]
-                 [rest (reverse fs)])
+                 [rest fs])
         (if (null? rest) acc
           (loop (lambda (x) 
-                  ((car rest) (acc x))
-                  ) (cdr rest)))))
+                  (acc ((car rest) x))) (cdr rest)))))
     
     ;; constructors
     
@@ -249,7 +249,6 @@
     (define arglist list)
 
     ;; empty annotation
-    (define empty-prov dl-null)
 
     ;; initialize an annotated value
     (define (make-prov v p)
@@ -309,9 +308,12 @@
     
     (define (extract-provs xs) (map (lambda (x) (if (null? x) '() (cadr x))) xs))
 
-    (define (addr->prov addr) (dl-unit addr))
+    (define empty-prov '())
+    (define addr->prov list)
+    (define merge-provs append)
+    (define (merge-list-provs xs) (apply append xs))
+    (define (prov->list xs) xs)
 
-    (define merge-provs dl-append)
     ;; (define (merge-provs . xs)
     ;;   (begin
     ;;     (display 'merge-provs)
@@ -323,10 +325,10 @@
         (display-debug "extract-opt-arg:")
         (display-debug pr-pvs)        
         (make-prov (extract-vals pr-pvs) 
-                   (apply merge-provs (extract-provs pr-pvs)))))
+                   (merge-list-provs (extract-provs pr-pvs)))))
 
     (define (display-prov+provenance x+)
-      (display (list 'val (erase x+) 'prov (dlist->list (prov x+)))))
+      (display (list 'val (erase x+) 'prov (prov->list (prov x+)))))
 
     (define (church-display-structural-addrs address store)
       (print-structural-addresses store))
@@ -356,12 +358,12 @@
         (display-debug "end-apply-prim:")
         (make-prov
          (apply proc (extract-vals args))
-         (apply merge-provs (extract-provs args)))))
+         (merge-list-provs (extract-provs args)))))
 
     (define (apply-prim+prov+addressing address store proc args)
       (make-prov
        (apply proc address store (extract-vals args))
-       (apply merge-provs (extract-provs args))))
+       (merge-list-provs (extract-provs args))))
 
     (define (my-last xs)
       (cond [(null? (cdr xs)) (car xs)]
@@ -401,7 +403,7 @@
     ;;stuff for xrps (and dealing with stores):
     (define (make-store xrp-draws xrp-stats score tick enumeration-flag factors diff-factors structural-addrs) 
       (list xrp-draws xrp-stats score tick enumeration-flag factors diff-factors structural-addrs))
-    (define (make-empty-store) (make-store (make-addbox) (make-addbox) 0.0 0 #f (make-addbox) '(() () ()) empty-prov))
+    (define (make-empty-store) (make-store (make-addbox) (make-addbox) 0.0 0 #f (make-addbox) '(() () ()) '()))
 
     (define store->xrp-draws first)
     (define set-store-xrp-draws! set-car!)
@@ -431,8 +433,7 @@
                     (display-debug (store->structural-addrs store))
                     (display-debug (store->structural-addrs store))
                     ) '())
-        (set-store-structural-addrs! store (merge-provs (store->structural-addrs store) new-deps))
-                                                   ))
+        (set-store-structural-addrs! store (append (store->structural-addrs store) (filter (lambda (x) (not (null? x))) (prov->list new-deps))))))
         
     (define store->xrp-stats second)
     (define store->score third)
@@ -658,15 +659,15 @@
                                       (let* (
                                             
                                              ;; Using provenance to determine whether it should be annealed
-                                             [previous-prov (if (not (eq? trienone factor-instance)) (factor-provenance factor-instance) empty-prov)];;[sandbox-store (cons (make-addbox) (cdr store))]
-                                             [new-provenance (apply merge-provs provs)]
+                                             [previous-prov (if (not (eq? trienone factor-instance)) (factor-provenance factor-instance) (prov->list empty-prov))];;[sandbox-store (cons (make-addbox) (cdr store))]
+                                             [new-provenance (delete-duplicates (prov->list (merge-list-provs provs)))]
                                              [structure-change? (not (equal? previous-prov new-provenance))]
                                              [v (if DEBUG-DEP
                                                   (begin
                                                     (display (list '(detected structural change?) structure-change?))
                                                     (display (list 'factor-addr address))
-                                                    (display (dlist->list previous-prov))
-                                                    (display (dlist->list new-provenance))))]
+                                                    (display (prov->list previous-prov))
+                                                    (display (prov->list new-provenance))))]
                                              [auto-should-anneal (if (eq? trienone factor-instance) ;; Definitely anneal, will suffice to AUTO-ANNEAL this
                                                                    AUTO-ANNEAL
                                                                    (if (eq? (factor-should-anneal? factor-instance) MUST-NOT-ANNEAL)
@@ -921,7 +922,7 @@
                        (begin 
                          (display-debug "Thingreturnedfrommakexrpwithprov:")
                          ;;(display-debug (list new-val (merge-pro address (merge-provs hyperprovs provs))))
-                         (list new-val (merge-provs (addr->prov address) hyperprovs (apply merge-provs provs)))))))))
+                         (list new-val (merge-provs (addr->prov address) hyperprovs (merge-list-provs provs)))))))))
 
     (define (print-single-xrp xrp)
       (display (list (xrp-draw-address xrp) (xrp-draw-value xrp))))
@@ -1008,16 +1009,23 @@
         (xrp-draw-support draw)
         new-str))
 
+    (define (logged-app f args)
+      (let* ([v (display 'start)]
+             [val (apply f args)]
+             [v (display 'end)])
+        val))
+
     
     (define (update-xrp-draw-structural-fields store)
       (let ([draws (store->xrp-draws store)])
         (for-each (lambda (addr)
+                    (begin (display addr)
                     (if (eq? trienone (read-addbox draws addr)) '() 
                       (update-addbox draws addr 
                                      (lambda (draw) 
                                        (begin 
-                                         (xrp-draw-set-structural draw #t))))))
-                  (dlist->list (store->structural-addrs store)))))
+                                         (xrp-draw-set-structural draw #t)))))))
+                  (store->structural-addrs store))))
 
     (define (store->structural-draws store)
       (filter xrp-draw-structural? (addbox->values (store->xrp-draws store))))
@@ -1140,8 +1148,8 @@
                                        (store->enumeration-flag (mcmc-state->store state))
                                        (copy-addbox (store->factors (mcmc-state->store state)))
                                        (store->diff-factors (mcmc-state->store state))
-                                       empty-prov ;; empty set of structural addrs
-                                       ))
+                                       ;;empty-prov ;; empty set of structural addrs
+                                       '()))
              ;;application of the nfqp happens with interv-store, which is a copy so won't mutate original state.
              ;;after application the store must be captured and put into the mcmc-state.
              (value (church-apply (mcmc-state->address state) interv-store nfqp '()))
