@@ -1,0 +1,4 @@
+echo "(define REPULSE-DIST "$1")"
+echo "(define ANNEAL-STEPS "$2")"
+echo "(define DP-PARAM "$3")"
+cat examples/larj/citation/citation-run.church
