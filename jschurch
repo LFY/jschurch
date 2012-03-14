@@ -166,7 +166,7 @@ def webservice():
     print("Combining files done.")
 
     
-def run(file, timeit=False):
+def run(file, timeit=False, debug=False):
     """
     Given a Church file, compiles it to Scheme using the [Church
     compiler in JS], then compiles it to Javascript using scheme2js
@@ -217,11 +217,11 @@ def run(file, timeit=False):
                   church_prog_filename)
 
     print("Running js in node...")
-    if timeit:
-        call("time node %s" % church_prog_filename)
-    else:
-        call("node %s" % church_prog_filename)
-
+    is_timing = "time" if timeit else ""
+    is_debug = "--debug" if debug else ""
+    cmd = "%s node %s %s" % (is_timing, is_debug, church_prog_filename)
+    print cmd
+    call(cmd)
     
 if __name__ == "__main__":
     optfunc.run([make, run, webservice, makecustom])
