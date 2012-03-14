@@ -268,7 +268,7 @@
     (define prov second)
     ;; add a set of dependencies to a value's dependencies
     (define (prov+ e p)
-      (list (erase e) (merge-provs (prov e) p)))
+      (list (erase e) (merge-provs p (prov e))))
 
     (define (add-prov p ps) (cons p ps))
 
@@ -350,15 +350,17 @@
 
 
     (define (apply-prim+prov proc args)
-      (begin 
-        (display-debug "apply-prim:")
-        (display-debug proc)
-        (display-debug args)
-        (display-debug (length args))
-        (display-debug "end-apply-prim:")
+      ;; (begin 
+      ;;   (display-debug "apply-prim:")
+      ;;   (display-debug proc)
+      ;;   (display-debug args)
+      ;;   (display-debug (length args))
+      ;;   (display-debug "end-apply-prim:")
         (make-prov
          (apply proc (extract-vals args))
-         (merge-list-provs (extract-provs args)))))
+         (merge-list-provs (extract-provs args)))
+     ;;   )
+      )
 
     (define (apply-prim+prov+addressing address store proc args)
       (make-prov
@@ -433,7 +435,8 @@
                     (display-debug (store->structural-addrs store))
                     (display-debug (store->structural-addrs store))
                     ) '())
-        (set-store-structural-addrs! store (append (store->structural-addrs store) (filter (lambda (x) (not (null? x))) (prov->list new-deps))))))
+        ;;(append! (filter (lambda (x) (not (null? x))) (prov->list new-deps)) (store->structural-addrs store))))
+        (set-store-structural-addrs! store (append  (filter (lambda (x) (not (null? x))) (prov->list new-deps)) (store->structural-addrs store) ))))
         
     (define store->xrp-stats second)
     (define store->score third)
@@ -754,6 +757,7 @@
             ;;the xrp itself: we update the xrp-draw at call address and return the new value.
             (lambda (address store . args)
               (define new-val '())
+
               (update-addbox (store->xrp-draws store)
                              address
                              (lambda (xrp-draw)
