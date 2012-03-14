@@ -45,6 +45,16 @@
 ;;
 ;;
 
+(define (log-sigmoid x)
+  (if (< x -100) x
+    (- (log (+ 1 (exp (- x)))))))
+
+(define (greater-log x v s)
+  (log-sigmoid (* s (- v x))))
+
+(define (less-log x v s)
+  (log-sigmoid (* s (- x v))))
+
 (define (gauss-log-pdf mean var smp)
   (let ([diff (- smp mean)])
     (- 
