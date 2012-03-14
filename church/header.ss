@@ -1023,8 +1023,8 @@
                       (update-addbox draws addr 
                                      (lambda (draw) 
                                        (begin 
-                                         (xrp-draw-set-structural draw #t)))))))
-        (store->structural-addrs store)))
+                                         (xrp-draw-set-structural draw #t))))))
+        (store->structural-addrs store))))
 
     (define (store->structural-draws store)
       (filter xrp-draw-structural? (addbox->values (store->xrp-draws store))))
