@@ -21,11 +21,16 @@
   (let ((res-list (interp-range min max n)))
     (map (lambda (x) (- 1.0 (expt (- 1.0 x) pow))) res-list)))
 
-(define (run-xrp-draw-proposer xrp state)
-  ((xrp-draw-proposer xrp) '(PROPOSAL-ADDR) (mcmc-state->store state) state))
+(define provenance? list?)
 
+(define (run-xrp-draw-proposer xrp state)
+  (let* ([proc-or-box (xrp-draw-proposer xrp)])
+    (if (provenance? proc-or-box)
+      (erase (fn+prov '(PROPOSAL-ADDR) (mcmc-state->store state) proc-or-box (prov-init state)))
+      (proc-or-box '(PROPOSAL-ADDR) (mcmc-state->store state) state))))
+         
 (define (default-scorer state)
-  (mcmc-state->score state))
+  (mcmc-state->score-generic state))
 
 (define (log-flip* . w)
   (if (null? w)
@@ -48,6 +53,7 @@
         (list 0.0 state)
         (let* ((chosen-xrp (uniform-draw* proposal-xrps))
                (ret1 (run-xrp-draw-proposer chosen-xrp state))
+               ;; [v (display (list 'from-run-xrp-draw-proposer: ret1))]
                (proposed-val (first ret1))
                (proposal-fw-score (second ret1))
                (proposal-bw-score (third ret1))
@@ -56,7 +62,7 @@
                (cd-bw/fw (second ret2))
                (ind-fw (- (log (length proposal-xrps))))
                (ind-bw (- (log (length (proposable-xrps proposal-state proposable?)))))
-               ;;(dummy (for-each display (list "ind-fw " ind-fw "  ind-bw " ind-bw "  cd-bw/fw " cd-bw/fw  " proposal-bw-score  " proposal-bw-score " proposal-fw-score  " proposal-fw-score "\n")))
+               ;; (dummy (display (list 'ind-fw ind-fw 'ind-bw ind-bw 'cd-bw/fw cd-bw/fw  'proposal-bw-score  proposal-bw-score 'proposal-fw-score  proposal-fw-score)))
                )
           (list (+ (- proposal-bw-score proposal-fw-score) cd-bw/fw (- ind-bw ind-fw)) proposal-state))))))
 
@@ -69,7 +75,7 @@
            [res-cu (counterfactual-update init-state normal-form-proc)]
            (rejectioninit-proposal-state (first res-cu))
            )
-      (if (= minus-infinity (mcmc-state->score rejectioninit-proposal-state))
+      (if (= minus-infinity (mcmc-state->score-generic rejectioninit-proposal-state))
         (loop) ;;don't care about bw/fw for init.
         rejectioninit-proposal-state))))
 
@@ -131,6 +137,7 @@
            (old-p (scorer state))
            (new-p (scorer proposal-state))
            (accept (log-flip* (min 0.0 (+ (- new-p old-p) bw/fw))))
+           ;; [v (display (list 'scores bw/fw old-p new-p accept))]
            (score-ratio (+ (- new-p old-p) bw/fw))
            ;;(void (display (list 'score-ratio score-ratio)))
            ) ;;FIXME!! this is to avoid accumulating xrp-draws...
@@ -202,12 +209,12 @@
                (state-and-num-proposals (kernel state))
                (next-state (first state-and-num-proposals))
                (next-num-proposal (second state-and-num-proposals)))
-          (loop kernel next-state (pair (mcmc-state->query-value state) samples) (- num-proposals-left next-num-proposal))))))) 
+          (loop kernel next-state (pair (mcmc-state->query-value-generic state) samples) (- num-proposals-left next-num-proposal))))))) 
 
 (define (mcmc-loop kernel state samples-left samples)
   (if (< samples-left 1)
     (reverse samples)
-    (let* ([q-v (mcmc-state->query-value state)])
+    (let* ([q-v (mcmc-state->query-value-generic state)])
       (mcmc-loop kernel (kernel state) (- samples-left 1) (pair q-v samples)))))
 
 ;; Queries: Church-MH ==========================================================

@@ -292,9 +292,11 @@
       (let* ([res (erase condition)]
              [prov-of-condition (prov condition)])
         (begin
-          (display-debug "if:")
-          (display-debug condition)
-          (display-debug "endif:") 
+          ;; (display "if:")
+          ;; (display label)
+          ;; (display-debug condition)
+          ;; (display-debug "endif:") 
+          ;; (display store)
           (store-add-structural-dep! store
                                      prov-of-condition)
           (if res
@@ -850,20 +852,24 @@
                        address
                        (lambda (stats)
                          (if (or (eq? trienone stats) (not (= (store->tick store) (second stats))))
-                             (list init-stats (store->tick store))
-                             stats)))
+                           (list init-stats (store->tick store))
+                           stats)))
         (display-debug "church-make-xrp-with-provenance:")
 
         (let* ((xrp-address address)
-               (proposer (if (null? proposer)
+               (proposer
+                 (if (null? proposer)
                              (prov-init
                               (lambda (address store operands old-value) ;;--> proposed-value forward-log-prob backward-log-prob
                                 (let* (
+                                       ;; [v (display (list 'default-proposer: address xrp-address))]
+                                       ;; [v (display (list 'args: address store operands old-value))]
                                        [dec (erase (decr-stats address store
                                                                (prov-init old-value)
                                                                (prov-init (car (read-addbox (store->xrp-stats store) xrp-address)))
                                                                (prov-init hyperparams)
                                                                (prov-init operands)))]
+                                       ;; [v (display (list 'result-of-dec: dec))]
 
                                        (decstats (second dec))
                                        (decscore (third dec))
@@ -910,11 +916,11 @@
                                                      (new-xrp-draw (make-xrp-draw address
                                                                                   value
                                                                                   xrp-name
-                                                                                  ;; this is weird, since we don't want this to be wrapped, but it does something that needs to be wrapped. someone kill me now.
-                                                                                  (lambda (address store state+) ;;FIXME: clean up this proposer stuff...
+                                                                                  ;;proposer
+                                                                                  (prov-init (lambda (address store state+) ;;FIXME: clean up this proposer stuff...
                                                                                     (let* ([state (erase state+)])
                                                                                       (let ((store (cons (first (mcmc-state->store state)) (cdr (mcmc-state->store state)))))
-                                                                                        (church-apply (mcmc-state->address state) store (erase proposer) (list args value)))))
+                                                                                        (church-apply (mcmc-state->address state) store (erase proposer) (list args value))))))
                                                                                   (cons (store->tick store) last-tick)
                                                                                   incr-score
                                                                                   support-vals
@@ -924,8 +930,6 @@
                                                 (set-store-score! store (+ (store->score store) incr-score))
                                                 new-xrp-draw)))))
                        (begin 
-                         (display-debug "Thingreturnedfrommakexrpwithprov:")
-                         ;;(display-debug (list new-val (merge-pro address (merge-provs hyperprovs provs))))
                          (list new-val (merge-provs (addr->prov address) hyperprovs (merge-list-provs provs)))))))))
 
     (define (print-single-xrp xrp)
@@ -941,10 +945,25 @@
     (define mcmc-state->address third)
     (define (mcmc-state->xrp-draws state) (store->xrp-draws (mcmc-state->store state)))
     (define (mcmc-state->diff-factors state) (store->diff-factors (mcmc-state->store state)))
+
     (define (mcmc-state->score state)
       (if (not (eq? #t (first (second state))))
         minus-infinity ;;enforce conditioner.
         (store->score (mcmc-state->store state))))
+
+    (define (not-bool? x)
+      (and (not (eq? #t x))
+           (not (eq? #f x))))
+
+    (define (enforce-conditioner state b)
+      (if b (store->score (mcmc-state->store state)) minus-infinity))
+
+    (define (mcmc-state->score-generic state)
+      (let* ([cond-box (second state)])
+             (if (not-bool? (first cond-box))
+               (enforce-conditioner state (first (erase cond-box)))
+               (enforce-conditioner state (first cond-box)))))
+
     (define (mcmc-state->score+provenance state+-with-val+)
       (prov-init (let* ([state-with-val+ (erase state+-with-val+)])
                    (if (not (eq? #t (first (erase (second state-with-val+)))))
@@ -977,6 +996,24 @@
                                 (store->structural-addrs store)
                                 )))
         (church-apply (mcmc-state->address state) store (cdr (second state)) '())))
+
+    ;; Detect at runtime if we're dealing with provenance tracking or not
+    (define (mcmc-state->query-value-generic state)
+      (let* ((store (mcmc-state->store state))
+             (store (make-store (copy-addbox (store->xrp-draws store))
+                                (copy-addbox (store->xrp-stats store))
+                                (store->score store)
+                                (store->tick store)
+                                (store->enumeration-flag store)
+                                (copy-addbox (store->factors store))
+                                (store->diff-factors store)
+                                (store->structural-addrs store)
+                                ))
+             (value-thunk (cdr (second state))) ;; This could be an annotated value!
+             )
+        (if (list? value-thunk)
+          (erase (church-apply (mcmc-state->address state) store (cdr (erase (second state))) '()))
+          (church-apply (mcmc-state->address state) store (cdr (second state)) '()))))
 
     (define (mcmc-state->query-value+provenance state+)
       (let* ([state (erase state+)]
@@ -1085,7 +1122,8 @@
     ;; the counterfactual update that only affects static kernels
     (define (counterfactual-update state nfqp . interventions)
       (let* ((interv-store (make-store (fold (lambda (interv xrps)
-                                               (update-addbox xrps (xrp-draw-address (first interv))
+                                               (update-addbox xrps 
+                                                              (xrp-draw-address (first interv))
                                                               (lambda (xrp-draw)
                                                                 (make-xrp-draw (xrp-draw-address (first interv))
                                                                                (cdr interv)
@@ -1126,7 +1164,8 @@
 
         (when (not (store->enumeration-flag interv-store))
               (clean-store-factors interv-store))
-        (let ([proposal-state (make-mcmc-state interv-store value (mcmc-state->address state))])
+        (let ([proposal-state (make-mcmc-state interv-store value (mcmc-state->address state))] 
+              )
           (list proposal-state cd-bw/fw))))
 
     ;; counterfactual update for LARJMCMC kernel which would allow structural changes.

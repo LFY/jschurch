@@ -29,6 +29,8 @@
 
 (load "header.ss")
 
+(load "mcmc-preamble.ss")
+
 (define infinity (/ 0.0))
 
 (define minus-infinity (/ -0.0))
@@ -79,6 +81,7 @@
           (scexpr (addressing+provenance+structural-deps* ds-sexpr primitive?)))
           ;;(scexpr (addressing* ds-sexpr primitive?)))
      `( ,@(generate-header (delete-duplicates (free-variables scexpr '())) external-defs (eq? #t lazy))
+        ,@(generate-mcmc-header)
         (define (church-main address store) ,scexpr))))
  ;;syntax:
  (define (mem? sexpr) (tagged-list? sexpr 'mem))
