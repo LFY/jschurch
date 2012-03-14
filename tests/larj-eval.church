@@ -24,8 +24,10 @@
         (tr-list-ref state 
           (- (length state) 1))))
 
+(enable-larj-debug)
+
 (for-each display
-  (larj-mh-query+power 100 1 100 5
+  (larj-mh-query 100 1 100
   ;;(mh-query 100 100
     (define state
       (let* ([x1 (sample-point)]
@@ -43,8 +45,7 @@
                     (bi-gram all-elts))]
              [total-score (+ x1-constraint x2-constraint (apply + other-constraints))]
              [result (list total-score (length all-elts) all-elts x1-constraint x2-constraint other-constraints)]
-             )
-        (display (list 'one-sample result))
+             ) 
         result))
     state
     true))

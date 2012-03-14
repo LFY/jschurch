@@ -137,9 +137,8 @@
            (old-p (scorer state))
            (new-p (scorer proposal-state))
            (accept (log-flip* (min 0.0 (+ (- new-p old-p) bw/fw))))
-           ;; [v (display (list 'scores bw/fw old-p new-p accept))]
            (score-ratio (+ (- new-p old-p) bw/fw))
-           ;;(void (display (list 'score-ratio score-ratio)))
+           [v (display-larj (list 'scores: 'bw/fw bw/fw 'old-p old-p 'new-p new-p 'accept accept 'score-ratio score-ratio))]
            ) ;;FIXME!! this is to avoid accumulating xrp-draws...
 
       (if accept
@@ -233,6 +232,14 @@
 ;; --------------------------------------------------------------------
 ;; LARJ
 
+(define DEBUG-LARJ #f)
+(define (enable-larj-debug)
+  (set! DEBUG-LARJ #t))
+(define (disable-larj-debug)
+  (set! DEBUG-LARJ #f))
+(define (display-larj x) (if DEBUG-LARJ (display x) '()))
+
+
 (define (should-do-larj? proposal-state)
   (let ((fpmc (mcmc-state->diff-factors proposal-state)))
     ;;(display (map length fpmc))
@@ -264,14 +271,23 @@
                ;;      (display (list (xrp-draw-address chosen-xrp) 'structural? (xrp-draw-structural? chosen-xrp))))]
                ;;(should-do-larj? proposal-state))
                (larj-state-and-correction (if structural-change?
-                                            (do-larj-anneal-correction state proposal-state normal-form-proc num-temps power static-proposal)
+                                            (begin (display-larj 'do-structural-change)
+                                            (do-larj-anneal-correction state proposal-state normal-form-proc num-temps power static-proposal))
                                             (list proposal-state 0.0)))
                (proposed-larj-state (first larj-state-and-correction))
                (larj-correction (second larj-state-and-correction))
-               ;;(void (if structural-change? (display (list 'larj-correction larj-correction)) 'null))
                (num-proposals-to-make (if structural-change? (+ num-temps 1) 1))
                (final-correction (+ (+ (- proposal-bw-score proposal-fw-score) cd-bw/fw (- ind-bw ind-fw)) larj-correction))
-               ;;(void (if structural-change? (display (list 'final-correction final-correction)) 'null))
+               [void (display-larj (list 
+                                'total-corrections:
+                                'larj-correction larj-correction
+                                'prop-fw proposal-fw-score
+                                'prop-bw proposal-bw-score
+                                'cd-bw/fw cd-bw/fw
+                                'ind-bw ind-bw
+                                'ind-fw ind-fw
+                                'final-correction final-correction
+                                'did-anneal? structural-change?))]
                )
           ;; if structural-change? 1. run static kernel 2. get factor-diffs to compute correction terms
           (list (+ (+ (- proposal-bw-score proposal-fw-score) cd-bw/fw (- ind-bw ind-fw)) larj-correction)
@@ -303,12 +319,14 @@
              ;; (void3 (print-mcmc-state-xrps state2))
              ;; 
              (state1* (if (or (= STATE_SRC_BOTH id-state-to-perturb) (= STATE_SRC_1 id-state-to-perturb)) 
-                        (first (counterfactual-update state1 normal-form-proc (pair chosen-xrp proposed-val)))
+                        (begin (display-larj 'perturb-state-before)
+                        (first (counterfactual-update state1 normal-form-proc (pair chosen-xrp proposed-val))))
                         state1
                         ))
 
              (state2* (if (or (= STATE_SRC_BOTH id-state-to-perturb) (= STATE_SRC_2 id-state-to-perturb)) 
-                        (first (counterfactual-update state2 normal-form-proc (pair chosen-xrp proposed-val)))
+                        (begin (display-larj 'perturb-state-after)
+                        (first (counterfactual-update state2 normal-form-proc (pair chosen-xrp proposed-val))))
                         state2))
              )
         (list 0 (make-extended-state state1* state2*))))))
@@ -425,14 +443,19 @@
              (curr-state (make-extended-state original-state jumped-state)))
     (if (= temp-list '())
       (list (extended-state->after curr-state) total-correction)
-      (let* ((bw/fw-and-next-state (static-proposal curr-state))
+      (let* ([void (display-larj 'one-anneal-step)]
+             (bw/fw-and-next-state (static-proposal curr-state))
              (bw/fw (first bw/fw-and-next-state))
              (next-state (second bw/fw-and-next-state))
              (curr-score (get-larj-score curr-state (car temp-list) (car up-down-temp-list)))
              (next-score (get-larj-score next-state (car temp-list) (car up-down-temp-list)))
              (local-alpha (- next-score curr-score))
              (accept (log-flip* (min 0.0 (+ local-alpha bw/fw))))
-             ;;(void (display (list 'local-alpha local-alpha 'accept accept)))
+             (void (display-larj (list 'curr-before (mcmc-state->query-value-generic (extended-state->before curr-state)))))
+             (void (display-larj (list 'curr-after (mcmc-state->query-value-generic (extended-state->after curr-state)))))
+             (void (display-larj (list 'next-before (mcmc-state->query-value-generic (extended-state->before next-state)))))
+             (void (display-larj (list 'next-after (mcmc-state->query-value-generic (extended-state->after next-state)))))
+             (void (display-larj (list 'temp (car temp-list) 'local-alpha local-alpha 'accept accept 'total-correction-to-accumulate total-correction)))
              )
         ;; (display 'one-anneal-step)
         (if accept
