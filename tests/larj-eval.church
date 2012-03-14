@@ -1,0 +1,52 @@
+
+(define off-by-20
+  (make-factor-annealed
+    (lambda (x y)
+      (norm-eq-log 20 (abs (- x y)) 0.2))))
+
+(define off-by-40
+  (make-factor-annealed
+    (lambda (x y)
+      (norm-eq-log 40 (abs (- x y)) 0.2))))
+
+(define pos-factor
+  (make-factor
+    (lambda (x)
+      (max
+        (norm-eq-log x 5 0.1)
+        ))))
+
+(define (sample-point)
+  (+ -50 (sample-integer 100)))
+
+(define (observe state)
+  (list (tr-list-ref state 0)
+        (tr-list-ref state 
+          (- (length state) 1))))
+
+(for-each display
+  (larj-mh-query+power 100 1 100 5
+  ;;(mh-query 100 100
+    (define state
+      (let* ([x1 (sample-point)]
+             [x2 (sample-point)]
+             [hidden-vars (repeat 10 sample-point)]
+             [x1-constraint (pos-factor x1)]
+             [x2-constraint (pos-factor x2)]
+             [all-elts (append (list x1) hidden-vars (list x2))]
+             [other-constraints
+               (map (lambda (v1v2)
+                      (if (flipS)
+                        (off-by-20 (list-ref v1v2 0) (list-ref v1v2 1))
+                        (off-by-40 (list-ref v1v2 0) (list-ref v1v2 1))
+                        ))
+                    (bi-gram all-elts))]
+             [total-score (+ x1-constraint x2-constraint (apply + other-constraints))]
+             [result (list total-score (length all-elts) all-elts x1-constraint x2-constraint other-constraints)]
+             )
+        (display (list 'one-sample result))
+        result))
+    state
+    true))
+
+
