@@ -313,7 +313,7 @@
     (define empty-prov '())
     (define addr->prov list)
     (define merge-provs append)
-    (define (merge-list-provs xs) (apply append xs))
+    (define (merge-list-provs xs) (delete-duplicates (apply append xs)))
     (define (prov->list xs) xs)
 
     ;; (define (merge-provs . xs)
@@ -438,7 +438,8 @@
                     (display-debug (store->structural-addrs store))
                     ) '())
         ;;(append! (filter (lambda (x) (not (null? x))) (prov->list new-deps)) (store->structural-addrs store))))
-        (set-store-structural-addrs! store (append  (filter (lambda (x) (not (null? x))) (prov->list new-deps)) (store->structural-addrs store) ))))
+        (set-store-structural-addrs! store (delete-duplicates (append (filter (lambda (x) (not (null? x))) (prov->list new-deps)) 
+                                                   (store->structural-addrs store) )))))
         
     (define store->xrp-stats second)
     (define store->score third)
