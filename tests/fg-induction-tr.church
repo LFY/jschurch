@@ -45,8 +45,11 @@
   (let* ([idx (sample-integer (length all-factors))])
     (tr-list-ref all-factors idx)))
 
+(enable-prov-debug)
+(enable-larj-debug)
+
 (for-each display
-  (larj-mh-query 100 1 40
+  (larj-mh-query 10 1 10
     (define result
       (let* ([randpts (tr-repeat (+ 3 (sample-integer 4)) 
                                  (lambda () (+ -10 (sample-integer 21))))]
