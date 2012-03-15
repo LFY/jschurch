@@ -1,0 +1,58 @@
+;; 
+;; (define eq-5
+;;   (make-factor-annealed
+;;     (lambda (x)
+;;       (norm-eq-log x 6.0 0.1))))
+;; 
+;; (define un-gauss
+;;   (make-factor
+;;     (lambda (x)
+;;       (- (norm-eq-log x 0.0 1.0)))))
+;; 
+;; (for-each display
+;;           (mh-query 100 100
+;;                     (define x 
+;;                       (let* ([ann (flipS)]
+;;                              [v (uniform -10 10)] 0 1)]
+;;                              ;;[g (un-gauss v)]
+;;                              [c (eq-5 v)])
+;;                         (list v c)))
+;;                     x
+;;                     true))
+
+(define (pt->string s)
+  (if s "T" "F"))
+
+(define (state->string s)
+  (fold (lambda (next acc) (string-append (pt->string next) " " acc)) (pt->string (car s)) (cdr s)))
+
+(define factor
+  (make-factor-annealed
+    (lambda (x y) (if (eq? x y) 0.0 (log 0.1)))))
+
+;;(enable-larj-debug)
+
+(define factor-t
+  (make-factor-annealed
+    (lambda (x) (if x 0.0 (log 0.1)))))
+
+(define factor-f
+  (make-factor-annealed
+    (lambda (x) (if x (log 0.1) 0.0))))
+
+(for-each display
+  (larj-mh-query 10000 1 20
+  ;;(mh-query 10000 1
+    (define x
+      (let* ([vals (repeat (+ 5 (sample-integerS 4)) flip)]
+             [constr (map (lambda (x)
+                            (begin
+                              (if (even? (length vals))
+                                (factor-t x)
+                                (factor-f x)))) vals)])
+        ;;(list vals (apply + constr) constr)
+        (state->string vals)
+        ))
+    x
+    true))
+
