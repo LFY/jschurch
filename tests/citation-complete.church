@@ -238,7 +238,7 @@
 
 (define (score-repulsion c1 c2)
   (let ((dist (distance-citation c1 c2)))
-    (greater-log 20 dist 1)))
+    (greater-log 20 dist 3)))
 
 (define factor-repulsion
   (make-factor (lambda (c1 c2) (score-repulsion c1 c2))))
@@ -362,8 +362,8 @@
 
 ;;(enable-larj-debug)
 (for-each display
-        ;;(mh-query 100 10
-        (larj-mh-query-proposal-count 3000 1 200
+        (mh-query 100 10
+        ;;(larj-mh-query-proposal-count 3000 1 20
                     (define paper-distribution (DPmemS 1.2 (lambda () (sample-paper))))
                     (define citation->paper 
                       (mem (lambda (object) (paper-distribution))))
