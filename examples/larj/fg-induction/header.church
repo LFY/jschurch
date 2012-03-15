@@ -1,0 +1,4 @@
+echo "(define PROPOSALS "$1")"
+echo "(define ANNEAL-STEPS "$2")"
+echo "(define SOFTNESS "$3")"
+cat $4
