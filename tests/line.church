@@ -14,12 +14,13 @@
 
 ;; different factors, different scope constructors
 (define tf-eq
-  (make-factor (lambda (x y) (norm-gauss-log-pdf 0 0.01 (- x y)))))
+  (make-factor (lambda (x y) (norm-gauss-log-pdf 0 0.1 (- x y)))))
 
 (define tf-offby
-  (make-factor (lambda (n x y) (norm-gauss-log-pdf n 0.01 (abs (- x y))))))
+  (make-factor (lambda (n x y) (norm-gauss-log-pdf n 0.1 (abs (- x y))))))
 
 (define (tf-offby1 x y) (tf-offby 1 x y))
+
 
 (define (get-scope-name scope)
   (cond [(eq? bi-gram scope) 'bi-gram]
@@ -33,8 +34,8 @@
 
 (define bi-gram-skip-1 (lambda (xs) (bi-gram-skip 1 xs)))
 
-;; (for-each display (larj-mh-query-proposal-count 100000 1 500
-(for-each display (mh-query 100 200
+(for-each display (larj-mh-query-proposal-count 10000 1 100
+;; (for-each display (mh-query 100 200
   (define res
     (let* ([num-elts 10]
            [elts (repeat num-elts (lambda () (if (flip) 0 1)))]

@@ -223,7 +223,7 @@ def run(file, timeit=False, debug=False, inspect=False):
         debug_cmd = "--debug"
     if inspect:
         debug_cmd = "--debug-brk"
-    cmd = "%s node %s %s" % (timing_cmd, debug_cmd, church_prog_filename)
+    cmd = "%s node --stack_size=65536 %s %s" % (timing_cmd, debug_cmd, church_prog_filename)
     print cmd
     call(cmd)
     
