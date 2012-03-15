@@ -99,3 +99,7 @@
     (if (null? ls1)
       ls2
       (tr-cons (tr-car ls1) (tr-append (tr-cdr ls1) ls2)))))
+
+(define (tr-last xs)
+  (if (null? (tr-cdr xs)) (tr-car xs)
+    (tr-last (tr-cdr xs))))
