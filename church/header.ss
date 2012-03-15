@@ -284,6 +284,10 @@
     
     (define DEBUG #f)
     (define DEBUG-DEP #f)
+    (define (enable-prov-debug)
+      (set! DEBUG-DEP #t))
+    (define (disable-prov-debug)
+      (set! DEBUG-DEP #f))
 
     (define (display-debug x)
       (if DEBUG (display x) '()))
@@ -670,10 +674,10 @@
                                              [structure-change? (not (equal? previous-prov new-provenance))]
                                              [v (if DEBUG-DEP
                                                   (begin
-                                                    (display (list '(detected structural change?) structure-change?))
                                                     (display (list 'factor-addr address))
-                                                    (display (prov->list previous-prov))
-                                                    (display (prov->list new-provenance))))]
+                                                    (display (list 'prov-before (prov->list previous-prov)))
+                                                    (display (list 'prov-after (prov->list new-provenance)))
+                                                    (display (list 'structure-change? structure-change?))))]
                                              [auto-should-anneal (if (eq? trienone factor-instance) ;; Definitely anneal, will suffice to AUTO-ANNEAL this
                                                                    AUTO-ANNEAL
                                                                    (if (eq? (factor-should-anneal? factor-instance) MUST-NOT-ANNEAL)
