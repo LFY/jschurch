@@ -47,7 +47,7 @@
     (list-ref all-factors idx)))
 
 (for-each display
-  (larj-mh-query 100 1 100
+  (mh-query 50000 1
     (define result
       (let* ([randpts (repeat (+ 3 (sample-integerS 4)) 
                               (lambda () (+ -10 (sample-integer 21))))]
