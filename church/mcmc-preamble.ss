@@ -131,6 +131,7 @@
 (define (make-mh-kernel proposal-distribution scorer)
   (lambda (state)
     (let* (
+           [v (display-larj (list 'curr-sample (mcmc-state->query-value-generic state)))]
            (ret (proposal-distribution state))
            (bw/fw (first ret))
            (proposal-state (second ret)) 
@@ -401,7 +402,15 @@
 
          (f-plus-score (+ f-plus-no-anneal (* f-plus-anneal (- 1.0 temp))))
          (f-minus-score (+ f-minus-no-anneal (* f-minus-anneal temp)))
-         (f-common-score (+ (* f-common-must-anneal up-down-temp) f-common-no-anneal)))
+         (f-common-score (+ (* f-common-must-anneal up-down-temp) f-common-no-anneal))
+         [void
+           (begin
+             (display-larj (list 'f+anneal f-plus-anneal (* f-plus-anneal (- 1.0 temp))))
+             (display-larj (list 'f-anneal f-minus-anneal (* f-minus-anneal temp)))
+             (display-larj (list 'fc-no-anneal f-common-no-anneal ))
+             (display-larj (list 'fc-anneal f-common-must-anneal (* f-common-must-anneal up-down-temp)))
+             (display-larj (list 'f+no-anneal f-plus-no-anneal))
+             (display-larj (list 'f-no-anneal f-minus-no-anneal)))])
     ;; (if #t
     ;;   (begin
     ;;     (display 'f-plus-minus-common)
@@ -425,13 +434,35 @@
 
     (+ f-plus-score f-minus-score f-common-score)))
 
+(define (geo-seq n)
+  (if (= n 1) (list 1.0)
+    (cons (/ 1.0 n) (geo-seq (- n 1)))))
+
+(define (forward-geo-temps n)
+  (map (lambda (x) (- 1.0 x)) (geo-seq n)))
+
+(define (replicate n x)
+  (if (= n 0) '()
+    (cons x (replicate (- n 1) x))))
+
+(define (list-rep n xs)
+  (apply append (map (lambda (x) (replicate n x)) xs)))
+
 (define (do-larj-anneal-correction original-state jumped-state normal-form-proc num-temps power static-proposal)
   (let loop ((total-correction 0)
              (temp-list 
                (begin 
                  ;;(display (interp-range-pow 1.0 0.0 num-temps 1))
-                 (interp-range-pow 1.0 0.0 num-temps power) 
-                 ))
+                 (interp-range-pow 1.0 0.0 num-temps power)))
+                 ;;(list-rep 20 (forward-geo-temps num-temps))))
+             ;; (up-down-temp-list
+             ;;   (list-rep 20 (if (even? num-temps)
+             ;;     (append
+             ;;       (forward-geo-temps (/ num-temps 2))
+             ;;       (reverse (forward-geo-temps (/ num-temps 2))))
+             ;;     (append
+             ;;       (forward-geo-temps (+ 1 (/ num-temps 2)))
+             ;;       (cdr (reverse (forward-geo-temps (+ 1 (/ num-temps 2)))))))))
              (up-down-temp-list
                (if (even? num-temps)
                  (append
@@ -448,7 +479,9 @@
              (bw/fw (first bw/fw-and-next-state))
              (next-state (second bw/fw-and-next-state))
              (curr-score (get-larj-score curr-state (car temp-list) (car up-down-temp-list)))
+             [void (display-larj (list 'current-annealed-score curr-score))]
              (next-score (get-larj-score next-state (car temp-list) (car up-down-temp-list)))
+             [void (display-larj (list 'next-annealed-score next-score))]
              (local-alpha (- next-score curr-score))
              (accept (log-flip* (min 0.0 (+ local-alpha bw/fw))))
              (void (display-larj (list 'curr-before (mcmc-state->query-value-generic (extended-state->before curr-state)))))
