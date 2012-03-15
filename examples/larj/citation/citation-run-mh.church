@@ -1,39 +1,39 @@
 
 (define all-citations '(((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate versus univariate decision trees")     )
-  ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate versus univariate decision trees")     )
-  ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate versus univariate decision trees,   (Coins")     )
-  ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate versus univariate decision trees,   (Coins")     )
-  ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate versus univariate decision trees")    )
-  ((("Brodley" "C E") ("Ut-goff" "P E")) ("Multivariate versus univariate decision trees")     )
-  ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate Versus Univariate Decision Trees")    )
-  ((("Brodley" "Carla E") ("Utgoff" "Paul E")) ("Multivariate versus univariate decision trees")     )
-  ((("Brodley" "Carla E") ("Utgoff" "Paul E")) ("Multivariate versus univariate decision trees")     )
-  ((("Brodley" "Carla E") ("Utgoff" "Paul E")) ("Multivariate versus univariate decision trees")     )
-  ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate Versus Univariate Decision Trees")    )
-  ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate decision trees")      )
-  ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate decision trees")      )
-  ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate versus univariate decision trees")    )
-  ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate versus univariate decision trees")    )
-  ((("Brodley" "Carla E") ("Utgoff" "Paul")) ("Multivariate decision trees")     )
-  ((("Brodley" "Carla E") ("Utgoff" "Paul")) ("Multivariate decision trees")     )
-  ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate versus univariate decision trees")    )
-  ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate versus univariate decision trees")    )
-  ((("Brodley" "C E") ("Utgoff" "P E")) ("Goal-directed Classification Using Linear Machine Decision Trees")   )
-  ((("Brodley" "C E") ("Ut-goff" "P E")) ("Goal-directed Classification Using Linear Machine Decision Trees")    )
-  ((("Draper" "B") ("Brodley" "C E") ("Utgoff" "P")) ("Goal-directed Classification Using Linear Machine Decision Trees")   )
-  ((("Brodley" "C E") ("Utgoff" "P E")) ("Goal-directed Classification Using Linear Machine Decision Trees")   )
-  ((("Brodley" "Carla E") ("Utgoff" "Paul E")) ("Multivariate decision trees")     )
-  ((("Brodley" "Carla E") ("Utgoff" "Paul E")) ("Multivariate decision trees")     )
-  ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate decision trees")  )
-  ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate decision trees")     )
-  ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate decision trees,   Machine Learning 19")   )
-  ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate decision trees,   Machine Learning 19")   )
-  ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate decision trees")   )
-  ((("Brodley" "Carla") ("Utgoff" "Paul")) ("Linear Machine Decision Trees")  )
-  ((("Brodley" "Carla E") ("Utgoff" "Paul E")) ("Multivariate decision trees")     )
-  ((("Brodley" "Carla E") ("Utgoff" "Paul E")) ("Multivariate decision trees")     )
-  ((("Brodley" "Carla E") ("Utgoff" "Paul E")) ("Multivariate decision trees")     )
- ))
+                        ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate versus univariate decision trees")     )
+                        ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate versus univariate decision trees,   (Coins")     )
+                        ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate versus univariate decision trees,   (Coins")     )
+                        ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate versus univariate decision trees")    )
+                        ((("Brodley" "C E") ("Ut-goff" "P E")) ("Multivariate versus univariate decision trees")     )
+                        ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate Versus Univariate Decision Trees")    )
+                        ((("Brodley" "Carla E") ("Utgoff" "Paul E")) ("Multivariate versus univariate decision trees")     )
+                        ((("Brodley" "Carla E") ("Utgoff" "Paul E")) ("Multivariate versus univariate decision trees")     )
+                        ((("Brodley" "Carla E") ("Utgoff" "Paul E")) ("Multivariate versus univariate decision trees")     )
+                        ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate Versus Univariate Decision Trees")    )
+                        ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate decision trees")      )
+                        ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate decision trees")      )
+                        ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate versus univariate decision trees")    )
+                        ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate versus univariate decision trees")    )
+                        ((("Brodley" "Carla E") ("Utgoff" "Paul")) ("Multivariate decision trees")     )
+                        ((("Brodley" "Carla E") ("Utgoff" "Paul")) ("Multivariate decision trees")     )
+                        ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate versus univariate decision trees")    )
+                        ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate versus univariate decision trees")    )
+                        ((("Brodley" "C E") ("Utgoff" "P E")) ("Goal-directed Classification Using Linear Machine Decision Trees")   )
+                        ((("Brodley" "C E") ("Ut-goff" "P E")) ("Goal-directed Classification Using Linear Machine Decision Trees")    )
+                        ((("Draper" "B") ("Brodley" "C E") ("Utgoff" "P")) ("Goal-directed Classification Using Linear Machine Decision Trees")   )
+                        ((("Brodley" "C E") ("Utgoff" "P E")) ("Goal-directed Classification Using Linear Machine Decision Trees")   )
+                        ((("Brodley" "Carla E") ("Utgoff" "Paul E")) ("Multivariate decision trees")     )
+                        ((("Brodley" "Carla E") ("Utgoff" "Paul E")) ("Multivariate decision trees")     )
+                        ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate decision trees")  )
+                        ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate decision trees")     )
+                        ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate decision trees,   Machine Learning 19")   )
+                        ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate decision trees,   Machine Learning 19")   )
+                        ((("Brodley" "C E") ("Utgoff" "P E")) ("Multivariate decision trees")   )
+                        ((("Brodley" "Carla") ("Utgoff" "Paul")) ("Linear Machine Decision Trees")  )
+                        ((("Brodley" "Carla E") ("Utgoff" "Paul E")) ("Multivariate decision trees")     )
+                        ((("Brodley" "Carla E") ("Utgoff" "Paul E")) ("Multivariate decision trees")     )
+                        ((("Brodley" "Carla E") ("Utgoff" "Paul E")) ("Multivariate decision trees")     )
+                        ))
 
 
 ;;; @Package     levenshtein
@@ -109,29 +109,29 @@
     (cond ((zero? a-len) b-len)
           ((zero? b-len) a-len)
           (else
-           (let ((w    (get-scratch (+ 1 b-len)))
-                 (next #f))
-             (let fill ((k b-len))
-               (vector-set! w k k)
-               (or (zero? k) (fill (- k 1))))
-             (let loop-i ((i 0))
-               (if (= i a-len)
-                   next
-                   (let ((a-i (vector-ref a i)))
-                     (let loop-j ((j   0)
-                                  (cur (+ 1 i)))
-                       (if (= j b-len)
-                           (begin (vector-set! w b-len next)
-                                  (loop-i (+ 1 i)))
-                           ;; TODO: Make these costs parameters.
-                           (begin (set! next (min (+ 1 (vector-ref w (+ 1 j)))
-                                                  (+ 1 cur)
-                                                  (if (pred a-i
-                                                            (vector-ref b j))
-                                                      (vector-ref w j)
-                                                      (+ 1 (vector-ref w j)))))
-                                  (vector-set! w j cur)
-                                  (loop-j (+ 1 j) next))))))))))))
+            (let ((w    (get-scratch (+ 1 b-len)))
+                  (next #f))
+              (let fill ((k b-len))
+                (vector-set! w k k)
+                (or (zero? k) (fill (- k 1))))
+              (let loop-i ((i 0))
+                (if (= i a-len)
+                  next
+                  (let ((a-i (vector-ref a i)))
+                    (let loop-j ((j   0)
+                                 (cur (+ 1 i)))
+                      (if (= j b-len)
+                        (begin (vector-set! w b-len next)
+                               (loop-i (+ 1 i)))
+                        ;; TODO: Make these costs parameters.
+                        (begin (set! next (min (+ 1 (vector-ref w (+ 1 j)))
+                                               (+ 1 cur)
+                                               (if (pred a-i
+                                                         (vector-ref b j))
+                                                 (vector-ref w j)
+                                                 (+ 1 (vector-ref w j)))))
+                               (vector-set! w j cur)
+                               (loop-j (+ 1 j) next))))))))))))
 
 ;;; @defproc  vector-levenshtein/predicate a b pred
 ;;; @defprocx vector-levenshtein/eq        a b
@@ -210,16 +210,16 @@
   (cond ((zero? (string-length a)) (string-length b))
         ((zero? (string-length b)) (string-length a))
         (else (vector-levenshtein/eqv
-               (%string->vector a)
-               (%string->vector b)))))
+                (%string->vector a)
+                (%string->vector b)))))
 
 (define (%string-levenshtein/predicate a b pred)
   (cond ((zero? (string-length a)) (string-length b))
         ((zero? (string-length b)) (string-length a))
         (else (vector-levenshtein/predicate
-               (%string->vector a)
-               (%string->vector b)
-               pred))))
+                (%string->vector a)
+                (%string->vector b)
+                pred))))
 
 ;;; @section Type-Coercing Comparisons
 
@@ -245,10 +245,10 @@
   (let ((foo (lambda (a b pred a-emp a-len a-vec)
                (let ((bar (lambda (b-emp b-len b-vec)
                             (if (b-emp b)
-                                (a-len a)
-                                (vector-levenshtein/predicate (a-vec a)
-                                                              (b-vec b)
-                                                              pred)))))
+                              (a-len a)
+                              (vector-levenshtein/predicate (a-vec a)
+                                                            (b-vec b)
+                                                            pred)))))
                  (cond ((vector? b) (bar %vector-empty?
                                          vector-length
                                          %identity))
@@ -260,21 +260,21 @@
                                     b)))))))
     (lambda (a b pred)
       (cond ((vector? a) (if (vector? b)
-                             (vector-levenshtein/predicate a b pred)
-                             (foo a b pred
-                                  %vector-empty?
-                                  vector-length
-                                  %identity)))
+                           (vector-levenshtein/predicate a b pred)
+                           (foo a b pred
+                                %vector-empty?
+                                vector-length
+                                %identity)))
             ((string? a) (if (string? b)
-                             (%string-levenshtein/predicate
-                              a b pred)
-                             (foo a b pred
-                                  %string-empty?
-                                  string-length
-                                  %string->vector)))
+                           (%string-levenshtein/predicate
+                             a b pred)
+                           (foo a b pred
+                                %string-empty?
+                                string-length
+                                %string->vector)))
             ((list?   a) (if (list? b)
-                             (list-levenshtein/predicate a b pred)
-                             (foo a b pred null? length list->vector)))
+                           (list-levenshtein/predicate a b pred)
+                           (foo a b pred null? length list->vector)))
             (else (error "term 1 must be vector, list, or string:" a))))))
 
 ;;; @defproc levenshtein a b
@@ -293,8 +293,8 @@
 
 (define (levenshtein a b)
   (if (and (string? a) (string? b))
-      (string-levenshtein a b)
-      (levenshtein/predicate a b equal?)))
+    (string-levenshtein a b)
+    (levenshtein/predicate a b equal?)))
 
 ;; @appendix Trullenque Perl Implementation
 ;;
@@ -407,12 +407,12 @@
 (define author-as-cited->author fourth)
 
 
-   
+
 (define (initialization all-citations)
   (map  parse-citation all-citations (iota (length all-citations))))
 
 (define (distance-string s1 s2)
-    (levenshtein s1 s2) 
+  (levenshtein s1 s2) 
   )
 
 (define (distance-author a1 a2)
@@ -423,14 +423,14 @@
 
 (define (distance-citation c1 c2)
   (begin
-  (if (not (= (citation->num-obs-authors c1) (citation->num-obs-authors c2))) 
-    1000
-    (+ (apply + (map distance-author (citation->obs-authors c1) (citation->obs-authors c2))) (distance-string (citation->obs-title c1) (citation->obs-title c2)))))
+    (if (not (= (citation->num-obs-authors c1) (citation->num-obs-authors c2))) 
+      1000
+      (+ (apply + (map distance-author (citation->obs-authors c1) (citation->obs-authors c2))) (distance-string (citation->obs-title c1) (citation->obs-title c2)))))
   )
-  
+
 
 (define citations 
- (initialization all-citations))
+  (initialization all-citations))
 (map (lambda (c1c2) (apply distance-citation c1c2)) (pairs citations))
 
 (define (score-affinity c1 c2)
@@ -450,8 +450,8 @@
                  (if (= (citation->paper-id c1) (citation->paper-id c2))
                    (score-affinity c1 c2)
                    (score-repulsion c1 c2)
-                  )
-  )))
+                   )
+                 )))
 
 (define factor-repulsion
   (make-factor (lambda (c1 c2) (score-repulsion c1 c2))))
@@ -509,9 +509,9 @@
   )
 
 (define factor-citation-paper
-  (make-factor (lambda (c1 p1)
-                   (score-affinity c1 p1)
-                  )))
+  (make-factor-annealed (lambda (c1 p1)
+                 (score-affinity c1 p1)
+                 )))
 
 (for-each display
           (mh-query 10000 1
@@ -542,7 +542,11 @@
                                                        citation-assignment)]
                              ;;[void (display '===============end-sample)]
                              )
-                        (list (length paper-assignment) paper-assignment)))
+                        (list 
+                          (length paper-assignment) 
+                          paper-assignment 
+                          (map (lambda (c1) (list (citation->paper-id (second c1)) (paper->title (citation->paper (second c1))))) citation-assignment))))
+
                     x
                     true
                     ))
