@@ -34,7 +34,11 @@
                                        (if val
                                            (log (first args))
                                            (log (- 1 (first args))) )))
-                                 '() ;proposer
+                                 (lambda (ops old-val)
+                                   (let* ([p (if (null? ops) 0.5 (first ops))]
+                                          [new-val (not old-val)]
+                                          [correction 0.0])
+                                     (list new-val correction correction)))
                                  (lambda (args) (list true false)) ;;FIXME: check if prob is 0 or 1.
                                  ))
 
@@ -86,7 +90,15 @@
                                         (if (or (< val a)
                                                 (> val b))
                                             minus-infinity
-                                            (- (log (- b a))) )))))
+                                            (- (log (- b a))) )))
+                                    (lambda (ops old-val)
+                                      (let* ([low (first ops)]
+                                             [high (second ops)]
+                                             [var (/ (- high low) 10.0)]
+                                             [new-val (+ old-val (sample-gaussian 0 var))]
+                                             [correction (log (gaussian-pdf new-val old-val var))])
+                                        (list new-val correction correction)))
+                                    ))
 
 (define exponential (make-stateless-xrp 'exponential
                                         (lambda (inv-mean)
@@ -99,7 +111,14 @@
 
 (define gaussian (make-stateless-xrp 'gaussian
                                      (lambda args (sample-gaussian (first args) (second args)))
-                                     (lambda (args val) (log (gaussian-pdf val (first args) (second args))))))
+                                     (lambda (args val) (log (gaussian-pdf val (first args) (second args))))
+                                     (lambda (ops old-val)
+                                       (let* ([mean (first ops)]
+                                              [var (second ops)]
+                                              [new-val (+ old-val (sample-gaussian 0 var))]
+                                              [correction (log (gaussian-pdf new-val old-val var))])
+                                         (list new-val correction correction)))
+                                     ))
 
 (define gensym (make-stateless-xrp 'gensym
                                    (lambda prefix (apply scheme-gensym prefix))
