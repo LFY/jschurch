@@ -244,7 +244,7 @@
   (make-factor (lambda (c1 c2) (score-repulsion c1 c2))))
 
 (define factor-citation-paper
-  (make-factor-annealed (lambda (c1 p1)
+  (make-factor (lambda (c1 p1)
                           (score-affinity c1 p1)
                           )))
 
@@ -321,14 +321,14 @@
     )
   )
 
-(define (sample-paper)
+(define (sample-paper sym)
   (let* (
          (authors (sample-paper-authors))
          (title (sample-paper-title))
          (pub-type '("default"))
          (num-authors (length authors))
          )
-    (make-paper num-authors authors title pub-type '() 0)
+    (make-paper num-authors authors title pub-type '() sym)
     )  
   )
 
@@ -360,18 +360,20 @@
 ;;  )
 ;;
 
-;;(enable-larj-debug)
+(define (db x) '())
+
+(enable-larj-debug)
 (for-each display
         ;;(mh-query 100 10
         (larj-mh-query-proposal-count 3000 1 200
-                    (define paper-distribution (DPmemS 1.2 (lambda () (sample-paper))))
+                    (define paper-distribution (DPmemS 1.2 (lambda () (sample-paper (gensym)))))
                     (define citation->paper 
                       (mem (lambda (object) (paper-distribution))))
                     (define (print-citation->paper object)
                       (begin  
-                        (display (citation->paper-id object))
-                        (display (paper->title (citation->paper object)))
-                        (display (citation->obs-title object))
+                        (db (citation->paper-id object))
+                        (db (paper->title (citation->paper object)))
+                        (db (citation->obs-title object))
                         (citation->paper object)
                         )
                       )
@@ -389,8 +391,8 @@
                                                            (factor-citation-paper (second c1) (first c1)))
                                                          ) 
                                                        citation-assignment)]
-                             [void2 (display (length paper-assignment))]
-                             [void (display '===============end-sample)]
+                             [void2 (db (length paper-assignment))]
+                             [void (db '===============end-sample)]
                              )
                         (list 
                           (length paper-assignment) 
