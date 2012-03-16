@@ -103,3 +103,14 @@
 (define (tr-last xs)
   (if (null? (tr-cdr xs)) (tr-car xs)
     (tr-last (tr-cdr xs))))
+
+
+(define (tr-assoc key key-values)
+    (cond [(null? key-values) #f]
+          [(equal? key (tr-first (tr-first key-values))) (tr-first key-values)]
+          [else
+            (tr-assoc key (tr-cdr key-values))]))
+
+(define (tr-delete-duplicates ls)
+  (delete-duplicates ls)
+  )

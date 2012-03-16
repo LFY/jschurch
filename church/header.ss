@@ -1296,5 +1296,8 @@
         )
         ))
 
+    (define (sum xs)
+      (apply + xs)
+      )
 
     ) )

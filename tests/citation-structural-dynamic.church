@@ -203,42 +203,42 @@
                         ((("C" "E" "Brodley") ("P" "E" "Ut-goff")) ("Goal-directed Classification Using Linear Machine Decision Trees")    )
                         ((("Carla" "E" "Brodley") ("Paul" "E" "Utgoff")) ("Multivariate decision trees")     )
                         ((("Carla" "E" "Brodley") ("Paul" "E" "Utgoff")) ("Multivariate decision trees")     )
-                        ((("C" "E" "Brodley") ("P" "E" "Utgoff")) ("Multivariate decision trees")  )
-                        ((("A" "B" "Brodley") ("P" "E" "Utgoff")) ("Multivariate versus univariate decision trees")     )
-                        ((("C" "E" "Brodley") ("P" "E" "Utgoff")) ("Multivariate decision trees")      )
-                        ((("C" "E" "Brodley") ("P" "E" "Utgoff")) ("Multivariate Decision Trees")   )
-                        ((("Carla" "E" "Brodley") ("Paul" "E" "Utgoff")) ("Multivariate decision trees")      )
-                        ((("C" "E" "Brodley") ("P" "E" "Utgoff")) ("Multivariate decision trees")    )
-                        ((("C" "" "Brodley") ("P" "" "Utgoff")) ("Multivriate Decision Trees")  )
-                        ((("J" "P" "Callan") ("P" "E" "Utgoff")) ("A Transformational Approach to Constructive Induction")     )
-                        ((("J" "" "Callan") ("P" "" "Utgoff")) ("A Transformational Approach to Constructive Induction")       )
-                        ((("J" "" "Callan") ("P" "" "Utgoff")) ("A transformational approach to constructive induction")     )
-                        ((("J" "P" "Callan") ("P" "E" "Utgoff")) ("A transformational approach to constructive induction")     )
-                        ((("J" "P" "Callan") ("P" "E" "Utgoff")) ("Constructive induction on domain knowl edge")      )
-                        ((("C" "" "Cardie")) ("Using Decision Trees to Improve Case-Based Learning")        )
-                        ((("C" "" "Cardie")) ("Using Decision Trees to Improve Case-Based Learning")        )
-                        ((("C" "" "Cardie")) ("Using Decision Trees to Improve Case-Based Learning")        )
-                        ((("R" "" "Caruana")) ("Multitask learning: A knowledge-based of source of inductive bias")       )
-                        ((("Richard" "" "Caruana")) ("Multitask learning: A knowledge-based of source of inductive bias")       )
-                        ((("R" "" "Caruana")) ("Multitask learning: A knowledge-based of source of inductive bias")       )
-                        ((("R" "" "Caruana")) ("Multitask learning: A knowledge-based of source of inductive bias")       )
-                        ((("Caruana" "R Multitask P E" "Utgoff")) ("Learning: A Knowledge-Based of Source of Inductive Bias.   in")      )
-                        ((("Caruana" "R" "Multitask")) ("Learning: A Knowledge-Based of Source of Inductive Bias")      )
-                        ((("Caruana" "R Multitask E" "Utgoff")) ("Learning: A Knowledge-Based of Source of Inductive Bias.   in")      )
-                        ((("Caruana" "R Multitask P E" "Utgoff")) ("Learning: A Knowledge-Based of Source of Inductive Bias")       )
-                        ((("Caruana" "R Multitask P E" "Utgoff")) ("Learning: A Knowledge-Based of Source of Inductive Bias")       )
-                        ((("D" "" "Chapman")) ("Planning for conjunctive goals")     )
-                        ((("D" "" "Chapman")) ("Planning for conjunctive goals")     )
-                        ((("D" "" "Chapman")) ("Vision instruction and action")    )
-                        ((("D" "" "Chapman")) ("Vision instruction and action")    )
-                        ((("D" "" "Chapman")) ("Vision instruction and action")    )
-                        ((("P" "" "Clark") ("S" "" "Matwin")) ("Using Qualitative Models to Guide Inductive Learning")     )
-                        ((("A" "" "Cleeremans") ("D" "" "Servan-Schreiber") ("J" "" "McClelland")) ("Finite state automata and simple recurrent networks")     )
-                        ((("J" "A" "Clouse") ("Utgoff" "P E Learning Ed D" "Sleeman") ("P" "" "Edwards")) ("A Teaching Method for Reinforcement Learning")     )
-                        ((("J" "A" "Clouse") ("P" "E" "Utgoff")) ("A teaching method for reinforcement learning")      )
-                        ((("J" "A" "Clouse") ("P" "E" "Utgoff")) ("A teaching method for reinforcement learning")      )
-                        ((("J" "" "Clouse") ("P" "" "Utgoff")) ("A teaching method for reinforcement learning")     )
-                        ((("J" "" "Clouse") ("P" "" "Utgoff")) ("A teaching method for reinforcement learning")    )
+                        ;;((("C" "E" "Brodley") ("P" "E" "Utgoff")) ("Multivariate decision trees")  )
+                        ;;((("A" "B" "Brodley") ("P" "E" "Utgoff")) ("Multivariate versus univariate decision trees")     )
+                        ;;((("C" "E" "Brodley") ("P" "E" "Utgoff")) ("Multivariate decision trees")      )
+                        ;;((("C" "E" "Brodley") ("P" "E" "Utgoff")) ("Multivariate Decision Trees")   )
+                        ;;((("Carla" "E" "Brodley") ("Paul" "E" "Utgoff")) ("Multivariate decision trees")      )
+                        ;;((("C" "E" "Brodley") ("P" "E" "Utgoff")) ("Multivariate decision trees")    )
+                        ;;((("C" "" "Brodley") ("P" "" "Utgoff")) ("Multivriate Decision Trees")  )
+                        ;;((("J" "P" "Callan") ("P" "E" "Utgoff")) ("A Transformational Approach to Constructive Induction")     )
+                        ;;((("J" "" "Callan") ("P" "" "Utgoff")) ("A Transformational Approach to Constructive Induction")       )
+                        ;;((("J" "" "Callan") ("P" "" "Utgoff")) ("A transformational approach to constructive induction")     )
+                        ;;((("J" "P" "Callan") ("P" "E" "Utgoff")) ("A transformational approach to constructive induction")     )
+                        ;;((("J" "P" "Callan") ("P" "E" "Utgoff")) ("Constructive induction on domain knowl edge")      )
+                        ;;((("C" "" "Cardie")) ("Using Decision Trees to Improve Case-Based Learning")        )
+                        ;;((("C" "" "Cardie")) ("Using Decision Trees to Improve Case-Based Learning")        )
+                        ;;((("C" "" "Cardie")) ("Using Decision Trees to Improve Case-Based Learning")        )
+                        ;;((("R" "" "Caruana")) ("Multitask learning: A knowledge-based of source of inductive bias")       )
+                        ;;((("Richard" "" "Caruana")) ("Multitask learning: A knowledge-based of source of inductive bias")       )
+                        ;;((("R" "" "Caruana")) ("Multitask learning: A knowledge-based of source of inductive bias")       )
+                        ;;((("R" "" "Caruana")) ("Multitask learning: A knowledge-based of source of inductive bias")       )
+                        ;;((("Caruana" "R Multitask P E" "Utgoff")) ("Learning: A Knowledge-Based of Source of Inductive Bias.   in")      )
+                        ;;((("Caruana" "R" "Multitask")) ("Learning: A Knowledge-Based of Source of Inductive Bias")      )
+                        ;;((("Caruana" "R Multitask E" "Utgoff")) ("Learning: A Knowledge-Based of Source of Inductive Bias.   in")      )
+                        ;;((("Caruana" "R Multitask P E" "Utgoff")) ("Learning: A Knowledge-Based of Source of Inductive Bias")       )
+                        ;;((("Caruana" "R Multitask P E" "Utgoff")) ("Learning: A Knowledge-Based of Source of Inductive Bias")       )
+                        ;;((("D" "" "Chapman")) ("Planning for conjunctive goals")     )
+                        ;;((("D" "" "Chapman")) ("Planning for conjunctive goals")     )
+                        ;;((("D" "" "Chapman")) ("Vision instruction and action")    )
+                        ;;((("D" "" "Chapman")) ("Vision instruction and action")    )
+                        ;;((("D" "" "Chapman")) ("Vision instruction and action")    )
+                        ;;((("P" "" "Clark") ("S" "" "Matwin")) ("Using Qualitative Models to Guide Inductive Learning")     )
+                        ;;((("A" "" "Cleeremans") ("D" "" "Servan-Schreiber") ("J" "" "McClelland")) ("Finite state automata and simple recurrent networks")     )
+                        ;;((("J" "A" "Clouse") ("Utgoff" "P E Learning Ed D" "Sleeman") ("P" "" "Edwards")) ("A Teaching Method for Reinforcement Learning")     )
+                        ;;((("J" "A" "Clouse") ("P" "E" "Utgoff")) ("A teaching method for reinforcement learning")      )
+                        ;;((("J" "A" "Clouse") ("P" "E" "Utgoff")) ("A teaching method for reinforcement learning")      )
+                        ;;((("J" "" "Clouse") ("P" "" "Utgoff")) ("A teaching method for reinforcement learning")     )
+                        ;;((("J" "" "Clouse") ("P" "" "Utgoff")) ("A teaching method for reinforcement learning")    )
                         ))
 (define author-sets 
   (delete-duplicates (map car all-citations)))
@@ -268,20 +268,26 @@
   (levenshtein (string-downcase s1) (string-downcase s2)))
 
 (define (score-affinity c1 c2)
-  (let ((dist (distance-citation c1 c2)))
-    (norm-eq-log dist 0 5)))
+  (begin
+    (let ((dist (distance-citation c1 c2)))
+    (norm-eq-log dist 0 5))
+  ))
 
 (define (score-repulsion c1 c2)
   (let ((dist (distance-citation c1 c2)))
     (greater-log 20 dist 3)))
 
 (define factor-repulsion
-  (make-factor (lambda (c1 c2) (score-repulsion c1 c2))))
+  (begin
+  (make-factor (lambda (c1 c2) (score-repulsion c1 c2)))
+  ))
 
 (define factor-citation-paper
+  (begin
   (make-factor (lambda (c1 p1)
                           (score-affinity c1 p1)
-                          )))
+                          ))
+  ))
 
 (define (get-initial s1)
   (if (zero? (string-length s1))
@@ -333,14 +339,14 @@
 
 (define (string-length-authors authors)
   (begin 
-    (apply + (map string-length-author authors))
+    (sum (map string-length-author authors))
     ))
 
 (define (distance-citation c1 c2)
   (begin
     (if (not (= (citation->num-obs-authors c1) (citation->num-obs-authors c2))) 
       (max (string-length-authors (citation->obs-authors c1)) (string-length-authors (citation->obs-authors c2)))
-      (+ (apply + (map distance-author (citation->obs-authors c1) (citation->obs-authors c2))) (distance-string-case-insensitive (citation->obs-title c1) (citation->obs-title c2)))
+      (+ (sum (map distance-author (citation->obs-authors c1) (citation->obs-authors c2))) (distance-string-case-insensitive (citation->obs-title c1) (citation->obs-title c2)))
       )
     )
   )
@@ -364,14 +370,14 @@
     )
   )
 
-(define (sample-paper sym)
+(define (sample-paper)
   (let* (
          (authors (sample-paper-authors))
          (title (sample-paper-title))
          (pub-type '("default"))
          (num-authors (length authors))
          )
-    (make-paper num-authors authors title pub-type '() sym)
+    (make-paper num-authors authors title pub-type '())
     )  
   )
 
@@ -404,74 +410,53 @@
 ;;
 
 
-;; (define (sample-paper-idS)
-;;   (sample-integerS 20))
-;;
+(define (sample-paper-idS)
+  (sample-integerS 20))
+
 
 
 ;;Model 1: paper-citation
 ;;
 (define (db x) '())
+(enable-larj-debug)
+(enable-prov-debug)
 
 (for-each display
-        ;;(mh-query 300 50
-        (larj-mh-query-proposal-count 10000 1 50
-
-        ;; maybe have paper id be structural
-        ;; (define paper-id-distribution (DPmemS 1.2 (lambda () (sample-paper-idS))))
-        ;; (define citation->paper-id
-        ;;   (mem (lambda (o) (paper-id-distribution))))
-        ;; (define unique-paper-ids (delete-duplicates (map citation->paper-id citations)))
-        ;; (define papers (map (lambda (id) (list id (sample-paper))) unique-paper-ids))
-        ;; (define paper-citation-factors
-        ;;   (map (lambda (c1)
-        ;;          (factor-citation-paper c1 (assoc (citation->paper-id c1) papers)))
-        ;;        citations))
-
-                    (define paper-distribution (DPmemS 1.2 (lambda () (sample-paper (gensym)))))
-                    (define citation->paper 
-                      (mem (lambda (object) (paper-distribution))))
-                    (define (print-citation->paper object)
-                      (begin  
-                        (db (citation->paper-id object))
-                        (db (paper->title (citation->paper object)))
-                        (db (citation->obs-title object))
-                        (citation->paper object)
-                        )
-                      )
-                    (define citation-assignment
-                      (map (lambda (c) (list (print-citation->paper c) c)) citations))
-                    (define paper-assignment
-                      (delete-duplicates (map print-citation->paper citations))
-                      )
+          ;;(mh-query 100 10
+                    (larj-mh-query-proposal-count 2000 1 50
+                    ;; maybe have paper id be structural
+                     (define paper-id-distribution (DPmem 1.2 gensym))
+                     (define citation->paper-id-mem
+                       (mem (lambda (o) (paper-id-distribution))))
+                     (define unique-paper-ids (tr-delete-duplicates (tr-map citation->paper-id-mem citations)))
                     (define x
                       (let* (
-                             [paper-paper-replusion (map (lambda (p1p2) (factor-repulsion (first p1p2) (second p1p2))) (pairs paper-assignment))]
-                             [paper-citation-factors (map 
-                                                       (lambda (c1) 
-                                                         (begin
-                                                           (factor-citation-paper (second c1) (first c1)))
-                                                         ) 
-                                                       citation-assignment)]
-                             [void2 (db (length paper-assignment))]
-                             [void (db '===============end-sample)]
+                             (papers (tr-map (lambda (id) (tr-list id (sample-paper))) unique-paper-ids))
+                             (citation->paper (lambda (c1) (tr-second (tr-assoc (citation->paper-id-mem c1) papers))))
+                             (paper-citation-factors
+                               (tr-map (lambda (c1)
+                                      (factor-citation-paper c1 (citation->paper c1)))
+                                    citations))
+                             (paper-paper-factors
+                               (tr-map (lambda (p1p2) 
+                                      (factor-repulsion (tr-second (tr-first p1p2)) (tr-second (tr-second p1p2)))) 
+                                    (pairs papers)))
                              )
                         (list 
-                          (length paper-assignment) 
-                          paper-assignment 
-                          ;;(map (lambda (c1) (list (citation->paper-id (second c1)) (paper->title (citation->paper (second c1))))) citation-assignment)
-                          (map (lambda (c1 score1) 
-                                 (list 
-                                   (citation->paper-id (second c1)) 
-                                   (list (paper->title (citation->paper (second c1)))) 
-                                   (list (citation->obs-title (second c1)))
-                                   score1)) 
-                               citation-assignment paper-citation-factors)
-                          (apply + paper-citation-factors)
-                          paper-paper-replusion
-                          (+ (apply + paper-citation-factors) (apply + paper-paper-replusion))
-                          )))
+                          (length unique-paper-ids) 
+                          (tr-list->list papers)
+                          (map (lambda (c1 score1)
+                                 (list
+                                   (citation->paper-id-mem c1)
+                                   (list (paper->title (citation->paper c1)))
+                                   (list (citation->obs-title c1))
+                                   score1))
+                                 citations (tr-list->list paper-citation-factors))
+                          (sum (tr-list->list paper-citation-factors))
+                          (tr-list->list paper-paper-factors)
+                          (+ (sum (tr-list->list paper-citation-factors)) (sum (tr-list->list paper-paper-factors)))
+                          )
+                        ))
                     x
-                    true
-                    ))
+                    (>= (length unique-paper-ids) 2)))
 
