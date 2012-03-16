@@ -1,0 +1,92 @@
+(define PROPOSALS 10000)
+(define ANNEAL-STEPS 20)
+(define SOFTNESS 0.1)
+
+(define HARDNESS 1.0)
+
+(define soft-eq
+  (make-factor (lambda (x y)
+    (norm-eq-log x y SOFTNESS))))
+
+;; x > y softly
+(define soft-gt
+  (make-factor (lambda (x y)
+    (greater-log x y HARDNESS))))
+
+(define diff-by-1
+  (make-factor (lambda (x y)
+    (norm-eq-log (abs (- x y)) 1.0 SOFTNESS))))
+
+(define diff-by-3
+  (make-factor (lambda (x y)
+    (norm-eq-log (abs (- x y)) 3.0 SOFTNESS))))
+
+(define diff-by-5
+  (make-factor (lambda (x y)
+    (norm-eq-log (abs (- x y)) 5.0 SOFTNESS))))
+
+(define diff-by-10
+  (make-factor (lambda (x y)
+    (norm-eq-log (abs (- x y)) 10.0 SOFTNESS))))
+
+(define soft-neg
+  (make-factor (lambda (x y)
+    (norm-eq-log y (- x) SOFTNESS))))
+
+(define all-factors (tr-list diff-by-1 diff-by-3 diff-by-5 diff-by-10 soft-neg))
+(define factor-names (zip (tr-list->list all-factors) (list 'diff-by-1 'diff-by-3 'diff-by-5 'diff-by-10 'soft-neg)))
+
+(define (factor->name f)
+  (cadr (assq f factor-names)))
+
+;; our observation: soemthing like a sequential list (maybe even have
+;; unobserved parts taht vary in structure)
+
+(define seq-observation
+  (tr-list 0.0 1.0 2.0 3.0 4.0))
+
+(define all-idx-pairs (bi-gram (tr-iota (length seq-observation))))
+
+(define (uniform-select-factor)
+  (let* ([idx (sample-integer (length all-factors))])
+    (tr-list-ref all-factors idx)))
+
+
+(define (count-changes lst)
+  (let loop ([start (first lst)]
+             [lst (rest lst)])
+    (if (null? lst)
+        0
+        (if (eq? start (first lst))
+            (loop start (rest lst))
+            (+ 1 (loop (first lst) (rest lst)))))))
+(define results 
+  (larj-mh-query-proposal-count PROPOSALS 1 ANNEAL-STEPS
+    (define result
+      (let* ([randpts (tr-repeat (+ 3 (sample-integer 10)) 
+                                 (lambda () (+ -50 (sample-integer 101))))]
+             [obs-constraints ;; we have an _incomplete_ observation
+               (tr-list (soft-eq (tr-car randpts) 0.0)
+                        (soft-eq (tr-last randpts) 100))]
+             [all-idx-pairs (tr-bigram (tr-iota (length randpts)))]
+             [factor-arg-scores
+               (tr-map 
+                 (lambda (i1i2) 
+                   (let* ([f (uniform-select-factor)]
+                          [x1 (tr-list-ref randpts (tr-car i1i2))]
+                          [x2 (tr-list-ref randpts (tr-cadr i1i2))]
+                          )
+                     (list (factor->name f) (tr-list->list i1i2) (f x1 x2))))
+                 all-idx-pairs)]
+             [ans (list (length randpts) (tr-list->list randpts) (tr-list->list factor-arg-scores))]
+             )
+        ans
+        ))
+    result
+    true))
+
+(begin
+  (for-each display results)
+  (display (list 'Total-dim-changes (count-changes (map car results))))
+  'done)
+
