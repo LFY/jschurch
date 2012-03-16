@@ -301,9 +301,8 @@
                          ,(cons 'address (cons 'store new-params)) 
                          ,(addr-prov (lambda-body sexpr) (lset-union equal? re-init (list new-re-init))))))]
         [(mem? sexpr) 
-         `(
-           (lambda (mem-address store proc)
-             (prov-init (lambda (address store . args) (fn+prov (cons args mem-address) store proc args))))
+         `((lambda (mem-address store proc)
+             (prov-init (lambda (address store . args) (apply-fn+prov (cons args mem-address) store proc args))))
            address
            store
            ,(re-addr-prov (second sexpr)))]
