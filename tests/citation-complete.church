@@ -133,6 +133,8 @@
 
 
 
+(define (db x) '())
+
 
 ;;; Citation Classes
 ;;; class: author-as-cited
@@ -196,15 +198,49 @@
                         ((("Carla" "E" "Brodley") ("Paul" "E" "Utgoff")) ("Multivariate versus univariate decision trees")     )
                         ((("C" "E" "Brodley") ("P" "E" "Utgoff")) ("Multivariate versus univariate decision trees   Coins")     )
                         ((("C" "E" "Brodley") ("P" "E" "Utgoff")) ("Multivariate Versus Univariate Decision Trees")    )
-                        ;;((("C" "E" "Brodley") ("P" "E" "Ut-goff")) ("Multivariate versus univariate decision trees")     )
-                        ;;((("C" "E" "Brodley") ("P" "E" "Utgoff")) ("Multivariate Versus Univariate Decision Trees")    )
+                        ((("C" "E" "Brodley") ("P" "E" "Ut-goff")) ("Multivariate versus univariate decision trees")     )
+                        ((("C" "E" "Brodley") ("P" "E" "Utgoff")) ("Multivariate Versus Univariate Decision Trees")    )
                         ((("C" "E" "Brodley") ("P" "E" "Utgoff")) ("Goal-directed Classification Using Linear Machine Decision Trees")   )
-                        ;;((("C" "E" "Brodley") ("P" "E" "Utgoff")) ("Goal-directed Classification Using Linear Machine Decision Trees")   )
+                        ((("C" "E" "Brodley") ("P" "E" "Utgoff")) ("Goal-directed Classification Using Linear Machine Decision Trees")   )
                         ((("C" "E" "Brodley") ("P" "E" "Ut-goff")) ("Goal-directed Classification Using Linear Machine Decision Trees")    )
                         ((("Carla" "E" "Brodley") ("Paul" "E" "Utgoff")) ("Multivariate decision trees")     )
-                        ;;((("Carla" "E" "Brodley") ("Paul" "E" "Utgoff")) ("Multivariate decision trees")     )
-                        ;;((("C" "E" "Brodley") ("P" "E" "Utgoff")) ("Multivariate decision trees")  )
+                        ((("Carla" "E" "Brodley") ("Paul" "E" "Utgoff")) ("Multivariate decision trees")     )
+                        ((("C" "E" "Brodley") ("P" "E" "Utgoff")) ("Multivariate decision trees")  )
                         ((("A" "B" "Brodley") ("P" "E" "Utgoff")) ("Multivariate versus univariate decision trees")     )
+                        ((("C" "E" "Brodley") ("P" "E" "Utgoff")) ("Multivariate decision trees")      )
+                        ((("C" "E" "Brodley") ("P" "E" "Utgoff")) ("Multivariate Decision Trees")   )
+                        ((("Carla" "E" "Brodley") ("Paul" "E" "Utgoff")) ("Multivariate decision trees")      )
+                        ((("C" "E" "Brodley") ("P" "E" "Utgoff")) ("Multivariate decision trees")    )
+                        ((("C" "" "Brodley") ("P" "" "Utgoff")) ("Multivriate Decision Trees")  )
+                        ((("J" "P" "Callan") ("P" "E" "Utgoff")) ("A Transformational Approach to Constructive Induction")     )
+                        ((("J" "" "Callan") ("P" "" "Utgoff")) ("A Transformational Approach to Constructive Induction")       )
+                        ((("J" "" "Callan") ("P" "" "Utgoff")) ("A transformational approach to constructive induction")     )
+                        ((("J" "P" "Callan") ("P" "E" "Utgoff")) ("A transformational approach to constructive induction")     )
+                        ((("J" "P" "Callan") ("P" "E" "Utgoff")) ("Constructive induction on domain knowl edge")      )
+                        ((("C" "" "Cardie")) ("Using Decision Trees to Improve Case-Based Learning")        )
+                        ((("C" "" "Cardie")) ("Using Decision Trees to Improve Case-Based Learning")        )
+                        ((("C" "" "Cardie")) ("Using Decision Trees to Improve Case-Based Learning")        )
+                        ((("R" "" "Caruana")) ("Multitask learning: A knowledge-based of source of inductive bias")       )
+                        ((("Richard" "" "Caruana")) ("Multitask learning: A knowledge-based of source of inductive bias")       )
+                        ((("R" "" "Caruana")) ("Multitask learning: A knowledge-based of source of inductive bias")       )
+                        ((("R" "" "Caruana")) ("Multitask learning: A knowledge-based of source of inductive bias")       )
+                        ((("Caruana" "R Multitask P E" "Utgoff")) ("Learning: A Knowledge-Based of Source of Inductive Bias.   in")      )
+                        ((("Caruana" "R" "Multitask")) ("Learning: A Knowledge-Based of Source of Inductive Bias")      )
+                        ((("Caruana" "R Multitask E" "Utgoff")) ("Learning: A Knowledge-Based of Source of Inductive Bias.   in")      )
+                        ((("Caruana" "R Multitask P E" "Utgoff")) ("Learning: A Knowledge-Based of Source of Inductive Bias")       )
+                        ((("Caruana" "R Multitask P E" "Utgoff")) ("Learning: A Knowledge-Based of Source of Inductive Bias")       )
+                        ((("D" "" "Chapman")) ("Planning for conjunctive goals")     )
+                        ((("D" "" "Chapman")) ("Planning for conjunctive goals")     )
+                        ((("D" "" "Chapman")) ("Vision instruction and action")    )
+                        ((("D" "" "Chapman")) ("Vision instruction and action")    )
+                        ((("D" "" "Chapman")) ("Vision instruction and action")    )
+                        ((("P" "" "Clark") ("S" "" "Matwin")) ("Using Qualitative Models to Guide Inductive Learning")     )
+                        ((("A" "" "Cleeremans") ("D" "" "Servan-Schreiber") ("J" "" "McClelland")) ("Finite state automata and simple recurrent networks")     )
+                        ((("J" "A" "Clouse") ("Utgoff" "P E Learning Ed D" "Sleeman") ("P" "" "Edwards")) ("A Teaching Method for Reinforcement Learning")     )
+                        ((("J" "A" "Clouse") ("P" "E" "Utgoff")) ("A teaching method for reinforcement learning")      )
+                        ((("J" "A" "Clouse") ("P" "E" "Utgoff")) ("A teaching method for reinforcement learning")      )
+                        ((("J" "" "Clouse") ("P" "" "Utgoff")) ("A teaching method for reinforcement learning")     )
+                        ((("J" "" "Clouse") ("P" "" "Utgoff")) ("A teaching method for reinforcement learning")    )
                         ))
 (define author-sets 
   (delete-duplicates (map car all-citations)))
@@ -250,7 +286,7 @@
                           )))
 
 (define (get-initial s1)
-  (if (= 0 (string-length s1))
+  (if (zero? (string-length s1))
     ""
     (car (string->list s1))))
 
@@ -263,7 +299,7 @@
   (let ((length-n1 (string-length n1))
         (length-n2 (string-length n2))
         )
-    (if (and (= 0 length-n1) (= 0 length-n2)) 
+    (if (and (zero? length-n1) (zero? length-n2)) 
       0
       (if (or (= 1 length-n1) (= 1 length-n2)) 
         (let ((initial-n1 (get-initial n1))
@@ -291,8 +327,16 @@
     ans)
   )
 
+(define (string-length-author author)
+  (begin
+    (+ (string-length (author-as-cited->firstname author)) (string-length (author-as-cited->middlename author)) (string-length (author-as-cited->lastname author)))
+    ))
+
+
 (define (string-length-authors authors)
-  (apply + (map string-length-authors authors)))
+  (begin 
+    (apply + (map string-length-author authors))
+    ))
 
 (define (distance-citation c1 c2)
   (begin
@@ -363,14 +407,15 @@
 
 ;;(enable-larj-debug)
 
-(define (db x) '())
-
 ;; (define (sample-paper-idS)
 ;;   (sample-integerS 20))
+;;
 
+
+;;Model 1: paper-citation
 (for-each display
-        (mh-query 100 10
-        ;;(larj-mh-query-proposal-count 3000 1 200
+        ;;(mh-query 300 50
+        (larj-mh-query-proposal-count 5000 1 200
 
         ;; maybe have paper id be structural
         ;; (define paper-id-distribution (DPmemS 1.2 (lambda () (sample-paper-idS))))
