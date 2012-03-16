@@ -1,0 +1,76 @@
+;; mean coefficients for true-observations:
+
+;; for 3 coefficients:
+
+;; -1.2885933890977552
+;; -0.44974133350304996
+;; 0.35682760412571196
+
+;; -1.1367170364406003
+;; -0.46914186762812754
+;; 0.3400934226676548
+
+;; for 2 coefficients:
+
+;; 1.2209615270607876
+;; -0.4381856711582288
+
+;; 1.13768030512195
+;; -0.42511880402437446
+
+(define x-vals '(-5 -4 -3 -2 -1 0 1 2 3 4 5))
+
+(define (make-poly c)
+  (lambda (x) (apply + (map (lambda (a b) (* a (expt x b)))
+                       c
+                       (iota (length c))))))
+
+(define true-observations '(10.229278134620932 6.412978128005648 3.341257367949409 1.0141158544522146 -0.5684464124859345 -1.406429432865039 -1.499833206685099 -0.8486577339461141 0.5470969853519159 2.68743095120899 5.572344163625109))
+
+(define (make-factors hyp-ys true-ys)
+  (begin
+    (map (lambda (y-val obs-y-val)
+           (logprob-factor (- (abs (- y-val obs-y-val)))))
+         hyp-ys true-ys)
+    true))
+
+(define logprob-factor
+  (make-factor
+   (lambda (x) x)))
+
+
+(define (count-changes lst)
+  (let loop ([start (first lst)]
+             [lst (rest lst)])
+    (if (null? lst)
+        0
+        (if (eq? start (first lst))
+            (loop start (rest lst))
+            (+ 1 (loop (first lst) (rest lst)))))))
+
+
+(define samples
+
+  (larj-mh-query-proposal-count
+
+   2000 1 100
+
+   (define bdim (flipS))
+                                
+   (define coefficients
+     (repeat (if bdim 2 3)
+             (lambda () (gaussian 0 2))))
+
+   (define observations
+     (map (make-poly coefficients) x-vals))
+
+   bdim
+
+   (if bdim
+       (make-factors observations true-observations)
+       (make-factors observations true-observations))))
+
+
+(display samples)
+
+(display (list 'changes (count-changes samples)))
