@@ -281,7 +281,7 @@
   (make-factor (lambda (c1 c2) (score-repulsion c1 c2))))
 
 (define factor-citation-paper
-  (make-factor-annealed (lambda (c1 p1)
+  (make-factor (lambda (c1 p1)
                           (score-affinity c1 p1)
                           )))
 
@@ -366,14 +366,14 @@
     )
   )
 
-(define (sample-paper)
+(define (sample-paper sym)
   (let* (
          (authors (sample-paper-authors))
          (title (sample-paper-title))
          (pub-type '("default"))
          (num-authors (length authors))
          )
-    (make-paper num-authors authors title pub-type '() 0)
+    (make-paper num-authors authors title pub-type '() sym)
     )  
   )
 
@@ -405,7 +405,6 @@
 ;;  )
 ;;
 
-;;(enable-larj-debug)
 
 ;; (define (sample-paper-idS)
 ;;   (sample-integerS 20))
@@ -413,6 +412,9 @@
 
 
 ;;Model 1: paper-citation
+;;
+(define (db x) '())
+
 (for-each display
         ;;(mh-query 300 50
         (larj-mh-query-proposal-count 5000 1 200
@@ -428,7 +430,7 @@
         ;;          (factor-citation-paper c1 (assoc (citation->paper-id c1) papers)))
         ;;        citations))
 
-                    (define paper-distribution (DPmemS 1.2 (lambda () (sample-paper))))
+                    (define paper-distribution (DPmemS 1.2 (lambda () (sample-paper (gensym)))))
                     (define citation->paper 
                       (mem (lambda (object) (paper-distribution))))
                     (define (print-citation->paper object)
