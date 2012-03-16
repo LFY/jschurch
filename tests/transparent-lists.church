@@ -17,6 +17,8 @@
 (begin
   (display '(the transparent list:))
   (display-prov xs1)
+  (display '(delete-duplicates for transparent lists:))
+  (display-prov (tr-delete-duplicates xs1))
   (display '(the second element (depends only on one xrp)))
   (display-prov (tr-list-ref xs1 1))
   (display '(the first element of tr-list using car))

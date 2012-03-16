@@ -179,6 +179,8 @@
                     tr-car
                     tr-cdr
                     tr-list-ref
+
+                    tr-delete-duplicates
                     
                     )))
                                    

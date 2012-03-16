@@ -96,6 +96,15 @@
 
     ;; the idea is to only affect the values within
 
+    (define (tr-delete-duplicates+provenance xs+)
+      (let ([xs (erase xs+)])
+        (make-prov
+          (let* ([val-prov-map xs]
+                 [vals (map erase xs)]
+                 [shortened (delete-duplicates vals)])
+            (map (lambda (x) (assoc x val-prov-map)) shortened))
+          (prov xs+))))
+
     (define (tr-list+provenance . xs+)
       (make-prov xs+ empty-prov))
 
