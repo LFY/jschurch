@@ -204,6 +204,7 @@
                         ((("Carla" "E" "Brodley") ("Paul" "E" "Utgoff")) ("Multivariate decision trees")     )
                         ;;((("Carla" "E" "Brodley") ("Paul" "E" "Utgoff")) ("Multivariate decision trees")     )
                         ;;((("C" "E" "Brodley") ("P" "E" "Utgoff")) ("Multivariate decision trees")  )
+                        ((("A" "B" "Brodley") ("P" "E" "Utgoff")) ("Multivariate versus univariate decision trees")     )
                         ))
 (define author-sets 
   (delete-duplicates (map car all-citations)))
@@ -238,7 +239,7 @@
 
 (define (score-repulsion c1 c2)
   (let ((dist (distance-citation c1 c2)))
-    (greater-log 20 dist 1)))
+    (greater-log 20 dist 3)))
 
 (define factor-repulsion
   (make-factor (lambda (c1 c2) (score-repulsion c1 c2))))
@@ -360,12 +361,24 @@
 ;;  )
 ;;
 
+
 (define (db x) '())
 
-(enable-larj-debug)
 (for-each display
-        ;;(mh-query 100 10
-        (larj-mh-query-proposal-count 3000 1 200
+        (mh-query 100 10
+        ;;(larj-mh-query-proposal-count 3000 1 200
+
+        ;; maybe have paper id be structural
+        ;; (define paper-id-distribution (DPmemS 1.2 (lambda () (sample-paper-idS))))
+        ;; (define citation->paper-id
+        ;;   (mem (lambda (o) (paper-id-distribution))))
+        ;; (define unique-paper-ids (delete-duplicates (map citation->paper-id citations)))
+        ;; (define papers (map (lambda (id) (list id (sample-paper))) unique-paper-ids))
+        ;; (define paper-citation-factors
+        ;;   (map (lambda (c1)
+        ;;          (factor-citation-paper c1 (assoc (citation->paper-id c1) papers)))
+        ;;        citations))
+
                     (define paper-distribution (DPmemS 1.2 (lambda () (sample-paper (gensym)))))
                     (define citation->paper 
                       (mem (lambda (object) (paper-distribution))))
