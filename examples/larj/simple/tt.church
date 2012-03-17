@@ -20,17 +20,15 @@
             (loop start (rest lst))
             (+ 1 (loop (first lst) (rest lst)))))))
 
-
-(count-changes (map car 
-;;(for-each display
-          ;;(larj-mh-query-proposal-count 10000 1 4
-          ;;(larj-mh-query-proposal-count+power 10000 1 100 2
-          (mh-query 10000 1
+(begin
+  (enable-larj-stats)
+(display (string-append "my-stat " (number->string (count-changes (map car 
+          ;;(larj-mh-query-proposal-count+power 10000 1 100 0.95
+          (larj-mh-query-proposal-count 10000 1 100
+          ;;(mh-query 10000 1
           (define res
             (let* ([v (cause-structural-change)]
                    [smp (gaussian 0 1)]
                    [score (modal-factor smp)])
               (list (if (< 0 smp) 1 0) smp score)))
-          res true)))
-               
-;;)
+          res true)))))))
