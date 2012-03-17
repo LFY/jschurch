@@ -3,6 +3,11 @@
 ;;
 ;; Evaluation: how well do we recover the true polynomial order.
 
+;; (enable-larj-debug)
+;; (enable-prov-debug)
+
+(define wiki-obs-y-vals '(-0.199 -0.208 -0.673 -0.431 -0.360 -0.478 -0.984 0.516 1.138 2.439 3.501))
+
 (define max-poly-order 4)
 
 (define logprob-factor
@@ -14,8 +19,7 @@
                        c
                        (iota (length c))))))
 
-(define x-vals
-  (map (lambda (x) (/ x 1)) (map (lambda (x) (- x 5)) (iota 10))))
+(define x-vals '(-5 -4 -3 -2 -1 0 1 2 3 4 5))
 
 (define (noisy= x y noise)
   (log-flip (- (* (/ 1.0 noise) (expt (- x y) 2)))))
@@ -28,7 +32,7 @@
 
 (define (sample-coefficients poly-order)
   (repeat (+ poly-order 1)
-           (lambda () (gaussian 0 4))))
+           (lambda () (gaussian 0.0 2.0)))) ;; 0.0 4.0
 
 (define (make-factors hyp-ys true-ys)
   (begin
@@ -39,30 +43,56 @@
 
 (define (infer-order/mh-query obs-y-vals)
   (mh-query
-   10 100
+   1000 1
    (define poly-order (sample-integer max-poly-order))  
    (define coefficients (sample-coefficients poly-order))
    (define y-vals (map (make-poly coefficients) x-vals))
    poly-order
    (make-factors y-vals obs-y-vals)))
 
+(define (infer-order/larj-mh-query obs-y-vals)
+  (larj-mh-query-proposal-count
+   10000 1 30
+   (define poly-order (sample-integerS max-poly-order))  
+   (define coefficients (sample-coefficients poly-order))
+   (define y-vals (map (make-poly coefficients) x-vals))
+   (begin (display (list poly-order coefficients))
+          poly-order)
+   (make-factors y-vals obs-y-vals)))
+
 (define (count xs)
   (length (filter (lambda (x) x) xs)))
 
-(define (evaluate query n noise)
+(define (bin-orders xs)
+  (map (lambda (j) (pair j (/ (length (filter (lambda (x) (= x j))
+                                         xs))
+                         (length xs))))
+       (iota max-poly-order)))
+
+(define (evaluate-prior query n noise)
   (count
    (map (lambda (i)
           (let* ([poly-order (sample-integer max-poly-order)]
                  [coefficients (sample-coefficients poly-order)]
                  [y-vals (map (make-poly coefficients) x-vals)]
                  [obs-y-vals (map (lambda (y) (gaussian y noise)) y-vals)]
-                 [inferred-order (last (query obs-y-vals))])
+                 [inferred-order (last (query obs-y-vals))]
+                 )
             (display (list i poly-order inferred-order))
             (equal? poly-order inferred-order)))
         (iota n))))
 
-(let ([n 30])
-  (for-each display
-            (list "inferred correct order "
-                  (evaluate infer-order/mh-query n 0.5)
-                  " out of " n " times.")))
+(define (evaluate-wikivals query n noise)
+  (repeat n (lambda () (display (bin-orders (query wiki-obs-y-vals))))))
+
+;; (let ([n 30])
+;;   (for-each display
+;;             (list "inferred correct order "
+;;                   (evaluate-prior infer-order/mh-query n 0.5)
+;;                   " out of " n " times.")))
+
+;; (display "mh:")
+;; (evaluate-wikivals infer-order/mh-query 5 0.5)
+
+(display "larj:")
+(evaluate-wikivals infer-order/larj-mh-query 5 0.5)

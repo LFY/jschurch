@@ -247,6 +247,12 @@
     (or (> (length (first fpmc)) 0) (> (length (second fpmc)) 0))
     ))
 
+(define (should-do-larj?-dynamic proposal-state)
+  (let ((fpmc (mcmc-state->diff-factors proposal-state)))
+    ;;(display (map length fpmc))
+    (or (> (length (first fpmc)) 0) (> (length (second fpmc)) 0))
+    ))
+
 ;; This is implementing Larj-mcmc outer proposals.
 ;; Larj-mcmc has two types of outer proposals: structural and non-structural.
 (define (larj-selective-proposal-distribution state normal-form-proc proposable? num-temps power static-proposal)
@@ -266,7 +272,7 @@
                (ind-fw (- (log (length proposal-xrps))))
                (ind-bw (- (log (length (proposable-xrps proposal-state proposable?)))))
                ;;(structural-change? (should-do-larj? proposal-state))
-               (structural-change? (xrp-draw-structural? chosen-xrp))
+               (structural-change? (and (xrp-draw-structural? chosen-xrp) (should-do-larj? proposal-state)))
                ;; [v (begin
                ;;      (display '(debug-larj-selective))
                ;;      (display (list (xrp-draw-address chosen-xrp) 'structural? (xrp-draw-structural? chosen-xrp))))]
