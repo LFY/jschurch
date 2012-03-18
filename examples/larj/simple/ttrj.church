@@ -1,0 +1,52 @@
+;; Running "tempered transitions" as a larj-mcmc kernel.
+
+;; Our evaluation metric is sign changes; church-mh cannot do sign changes
+;; (find the modes) as well as la-church can.
+
+(define f1
+  (make-factor (lambda (x)
+    (norm-eq-log x -5 0.1))))
+
+(define f2
+  (make-factor (lambda (x)
+    (norm-eq-log x 5 0.1))))
+
+(define modal-factor
+  (make-factor
+    (lambda (x)
+      (max (norm-eq-log x -1 0.1)
+           (norm-eq-log x 1 0.1)))))
+
+(define pair-eq
+  (make-factor (lambda (x y)
+    (norm-eq-log x y 0.1))))
+
+(define (sample-pt) (gaussian 0 1.0))
+
+(define (count-changes lst)
+  (let loop ([start (first lst)]
+             [lst (rest lst)])
+    (if (null? lst)
+        0
+        (if (equal? start (first lst))
+            (loop start (rest lst))
+            (+ 1 (loop (first lst) (rest lst)))))))
+
+(begin
+  (enable-larj-stats)
+  (let* ([results 
+           ;(mh-query 20000 1
+           (larj-mh-query-proposal-count 20000 1 %(steps)s
+    (define res
+      (let* ([smps (repeat (if (flipS) 1 2) sample-pt)]
+             [mode-scores (map (lambda (x)
+                                 (let* ([which-factor (flipS)])
+                                   (list which-factor (if which-factor (f1 x) (f2 x)))))
+                               smps)]
+             )
+        (list 
+         ;;(length smps) 
+          (map car mode-scores) (length smps)
+              smps)))
+    res true)])
+    (display (string-append "my-stat factor-switches " (count-changes (map car results)) " dim-switches " (count-changes (map cadr results))))))

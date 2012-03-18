@@ -1,0 +1,34 @@
+;; Running "tempered transitions" as a larj-mcmc kernel.
+
+;; Our evaluation metric is sign changes; church-mh cannot do sign changes
+;; (find the modes) as well as la-church can.
+
+(define modal-factor
+  (make-factor-annealed
+    (lambda (x)
+      (max (norm-eq-log x -2.5 0.1)
+           (norm-eq-log x 2.5 0.1)))))
+
+(define (cause-structural-change) (flipS))
+
+(define (count-changes lst)
+  (let loop ([start (first lst)]
+             [lst (rest lst)])
+    (if (null? lst)
+        0
+        (if (eq? start (first lst))
+            (loop start (rest lst))
+            (+ 1 (loop (first lst) (rest lst)))))))
+
+(begin
+  (enable-larj-stats)
+(display (string-append "my-stat " (number->string (count-changes (map car 
+          ;;(larj-mh-query-proposal-count+power 10000 1 100 0.95
+          (larj-mh-query-proposal-count 10000 1 100
+          ;;(mh-query 10000 1
+          (define res
+            (let* ([v (cause-structural-change)]
+                   [smp (gaussian 0 1)]
+                   [score (modal-factor smp)])
+              (list (if (< 0 smp) 1 0) smp score)))
+          res true)))))))

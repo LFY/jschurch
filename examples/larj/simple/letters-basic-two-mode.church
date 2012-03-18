@@ -1,0 +1,21 @@
+
+(define all-0 (make-factor (lambda (xs) (norm-eq-log (length xs) (length (filter (lambda (x) (= x 0)) xs)) 0.1))))
+(define all-1 (make-factor (lambda (xs) (norm-eq-log (length xs) (length (filter (lambda (x) (= x 1)) xs)) 0.1))))
+
+(begin
+  (disable-fwd-prob)
+  (enable-prov-debug)
+  (enable-larj-debug)
+  (enable-larj-log)
+  (enable-larj-stats)
+(larj-mh-query-proposal-count 100000 1 100
+;;(mh-query 100000 1;; 200 0.9
+    (define res
+      (let* ([num (if (flipS) 5 6)]
+             [pts (repeat num (lambda () (sample-integer 2)))]
+             [constr (if (= 5 (length pts))
+                       (all-0 pts)
+                       (all-1 pts))])
+        pts))
+    res
+    true))

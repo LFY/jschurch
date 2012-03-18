@@ -298,6 +298,10 @@
     (define (disable-prov-debug)
       (set! DEBUG-DEP #f))
 
+    (define NO-FWD-PROB #f)
+    (define (disable-fwd-prob) (set! NO-FWD-PROB #t))
+    (define (enable-fwd-prob) (set! NO-FWD-PROB #f))
+
     (define (display-debug x)
       (if DEBUG (display x) '()))
 
@@ -802,12 +806,13 @@
                                                                          (let ((store (cons (first (mcmc-state->store state)) (cdr (mcmc-state->store state)))))
                                                                            (church-apply (mcmc-state->address state) store proposer (list args value))))
                                                                        (cons (store->tick store) last-tick)
-                                                                       incr-score
+                                                                       (if NO-FWD-PROB 0.0 incr-score)
                                                                        support-vals
                                                                        structural)))
                                      (set! new-val value)
                                      (insert-addbox (store->xrp-stats store) xrp-address new-stats)
-                                     (set-store-score! store (+ (store->score store) incr-score))
+                                     (set-store-score! store (+ (store->score store) 
+                                                                (if NO-FWD-PROB 0.0 incr-score)))
                                      new-xrp-draw))))
               new-val)))))
 
@@ -873,26 +878,23 @@
         (let* ((xrp-address address)
                (proposer
                  (if (null? proposer)
-                             (prov-init
-                              (lambda (address store operands old-value) ;;--> proposed-value forward-log-prob backward-log-prob
-                                (let* (
-                                       ;; [v (display (list 'default-proposer: address xrp-address))]
-                                       ;; [v (display (list 'args: address store operands old-value))]
-                                       [dec (erase (decr-stats address store
-                                                               (prov-init old-value)
-                                                               (prov-init (car (read-addbox (store->xrp-stats store) xrp-address)))
-                                                               (prov-init hyperparams)
-                                                               (prov-init operands)))]
-                                       ;; [v (display (list 'result-of-dec: dec))]
-
-                                       (decstats (second dec))
-                                       (decscore (third dec))
-                                       (sandbox-store (cons (make-addbox) (cdr store)));;FIXME: this is a hack to need to isolate random choices in sampler from MH.
-                                       (inc (erase (sample address sandbox-store (prov-init decstats) (prov-init hyperparams) (prov-init operands))))
-                                       (proposal-value (first inc))
-                                       (incscore (third inc)))
-                                  (prov-init (list proposal-value incscore decscore)))))
-                             proposer))) ;;FIXME!! need to isolate provided proposer from MH...
+                   (prov-init
+                     (lambda (address store operands+ old-value+) ;;--> proposed-value forward-log-prob backward-log-prob
+                       (let* (
+                              [dec (erase (decr-stats address store
+                                                      old-value+
+                                                      (prov-init (car (read-addbox (store->xrp-stats store) xrp-address)))
+                                                      (prov-init hyperparams)
+                                                      operands+
+                                                      ))]
+                              (decstats (second dec))
+                              (decscore (third dec))
+                              (sandbox-store (cons (make-addbox) (cdr store)));;FIXME: this is a hack to need to isolate random choices in sampler from MH.
+                              (inc (erase (sample address sandbox-store (prov-init decstats) (prov-init hyperparams) operands+)))
+                              (proposal-value (first inc))
+                              (incscore (third inc)))
+                         (prov-init (list proposal-value incscore decscore)))))
+                   proposer+))) ;;FIXME!! need to isolate provided proposer from MH...
 
           (display-debug "church-make-xrp-with-provenance-actual-xrp:")
           ;;the xrp itself: we update the xrp-draw at call address and return the new value.
@@ -934,7 +936,8 @@
                                                                                   (prov-init (lambda (address store state+) ;;FIXME: clean up this proposer stuff...
                                                                                     (let* ([state (erase state+)])
                                                                                       (let ((store (cons (first (mcmc-state->store state)) (cdr (mcmc-state->store state)))))
-                                                                                        (church-apply (mcmc-state->address state) store (erase proposer) (list args value))))))
+                                                                                        (apply-fn+prov (mcmc-state->address state) store proposer (list (prov-init args) (prov-init value)))
+                                                                                        ))))
                                                                                   (cons (store->tick store) last-tick)
                                                                                   incr-score
                                                                                   support-vals
@@ -1304,9 +1307,5 @@
             result
         )
         ))
-
-    (define (sum xs)
-      (apply + xs)
-      )
 
     ) )

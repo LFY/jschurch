@@ -14,7 +14,7 @@
 (define (interp-range min max n) 
     (if (eq? n 1)
         max
-        (map (lambda (i) (+ min (* (/ i (- n 1)) (- max min)))) (iota n))
+        (map (lambda (i) (+ min (* (/ i (- n 1.0)) (- max min)))) (iota n))
 ))
 
 (define (interp-range-pow min max n pow)
@@ -143,8 +143,10 @@
            ) ;;FIXME!! this is to avoid accumulating xrp-draws...
 
       (if accept
-        proposal-state
-        state))))
+        (begin (display-larj-stats 'larj-run-accept)
+        proposal-state)
+        (begin (display-larj-stats 'larj-run-reject)
+               state)))))
 
 ;;Larj Kernel
 (define (larj-scorer state)
@@ -152,7 +154,8 @@
 
 (define (make-larj-kernel proposal-distribution scorer)
   (lambda (state)
-    (let* ((ret (proposal-distribution state))
+    (let* ([v (display-larj (list 'curr-sample (mcmc-state->query-value-generic state)))]
+           (ret (proposal-distribution state))
            (bw/fw (first ret))
            (proposal-state (second ret)) 
            (number-of-proposals-made (third ret)) 
@@ -164,8 +167,14 @@
            ;;(dummy (display (list 'score-ratio score-ratio)))
            ) ;;FIXME!! this is to avoid accumulating xrp-draws...
       (if accept
-        (list proposal-state number-of-proposals-made)
-        (list state number-of-proposals-made)))))
+        (begin (display-larj-stats 'larj-run-accept)
+               (display-larj-log (list 'final-score-ratio (+ (- new-p old-p) bw/fw)))
+               (display-larj-log (mcmc-state->query-value-generic proposal-state))
+        (list proposal-state number-of-proposals-made))
+        (begin (display-larj-stats 'larj-run-reject)
+               (display-larj-log (list 'final-score-ratio (+ (- new-p old-p) bw/fw)))
+               (display-larj-log (mcmc-state->query-value-generic state))
+               (list state number-of-proposals-made))))))
 
 ;; ;; mixture kernel
 ;; (define (mixture-kernel cdf . kernels )
@@ -234,14 +243,29 @@
 ;; LARJ
 
 (define DEBUG-LARJ #f)
+(define PRINT-LARJ-STATS #f)
 (define (enable-larj-debug)
   (set! DEBUG-LARJ #t))
 (define (disable-larj-debug)
   (set! DEBUG-LARJ #f))
 (define (display-larj x) (if DEBUG-LARJ (display x) '()))
 
+(define (enable-larj-stats) (set! PRINT-LARJ-STATS #t))
+(define (disable-larj-stats) (set! PRINT-LARJ-STATS #f))
+(define (display-larj-stats x) (if PRINT-LARJ-STATS (display x) '()))
+
+(define PRINT-LARJ-RUN #f)
+(define (enable-larj-log) (set! PRINT-LARJ-RUN #t))
+(define (disable-larj-log) (set! PRINT-LARJ-RUN #f))
+(define (display-larj-log x) (if PRINT-LARJ-RUN (display x) '()))
 
 (define (should-do-larj? proposal-state)
+  (let ((fpmc (mcmc-state->diff-factors proposal-state)))
+    ;;(display (map length fpmc))
+    (or (> (length (first fpmc)) 0) (> (length (second fpmc)) 0))
+    ))
+
+(define (should-do-larj?-dynamic proposal-state)
   (let ((fpmc (mcmc-state->diff-factors proposal-state)))
     ;;(display (map length fpmc))
     (or (> (length (first fpmc)) 0) (> (length (second fpmc)) 0))
@@ -266,6 +290,7 @@
                (ind-fw (- (log (length proposal-xrps))))
                (ind-bw (- (log (length (proposable-xrps proposal-state proposable?)))))
                ;;(structural-change? (should-do-larj? proposal-state))
+               ;;(structural-change? (and (xrp-draw-structural? chosen-xrp) (should-do-larj? proposal-state)))
                (structural-change? (xrp-draw-structural? chosen-xrp))
                ;; [v (begin
                ;;      (display '(debug-larj-selective))
@@ -279,6 +304,7 @@
                (larj-correction (second larj-state-and-correction))
                (num-proposals-to-make (if structural-change? (+ num-temps 1) 1))
                (final-correction (+ (+ (- proposal-bw-score proposal-fw-score) cd-bw/fw (- ind-bw ind-fw)) larj-correction))
+               [void (display-larj-log (list 'larj-correction larj-correction))]
                [void (display-larj (list 
                                 'total-corrections:
                                 'larj-correction larj-correction
@@ -434,12 +460,17 @@
 
     (+ f-plus-score f-minus-score f-common-score)))
 
-(define (geo-seq n)
-  (if (= n 1) (list 1.0)
-    (cons (/ 1.0 n) (geo-seq (- n 1)))))
+;; z^n, z < 1
+(define (geo-seq n z)
+  (append (map (lambda (i) (expt z i)) (iota (- n 1)))
+          (list 0.0)))
 
-(define (forward-geo-temps n)
-  (map (lambda (x) (- 1.0 x)) (geo-seq n)))
+;; (define (geo-seq n)
+;;   (if (= n 1) (list 1.0)
+;;     (cons (/ 1.0 n) (geo-seq (- n 1)))))
+;; 
+;; (define (forward-geo-temps n)
+;;   (map (lambda (x) (- 1.0 x)) (geo-seq n)))
 
 (define (replicate n x)
   (if (= n 0) '()
@@ -453,8 +484,18 @@
              (temp-list 
                (begin 
                  ;;(display (interp-range-pow 1.0 0.0 num-temps 1))
+                 ;;(geo-seq num-temps power)))
                  (interp-range-pow 1.0 0.0 num-temps power)))
                  ;;(list-rep 20 (forward-geo-temps num-temps))))
+                
+             ;; (up-down-temp-list
+             ;;  (if (even? num-temps)
+             ;;    (append
+             ;;      (geo-seq (/ num-temps 2) power)
+             ;;      (reverse (geo-seq (/ num-temps 2) power)))
+             ;;    (append
+             ;;      (geo-seq (+ 1 (floor (/ num-temps 2))))
+             ;;      (cdr (reverse (geo-seq (+ 1 (floor (/ num-temps 2)))))))))
              ;; (up-down-temp-list
              ;;   (list-rep 20 (if (even? num-temps)
              ;;     (append
@@ -464,13 +505,13 @@
              ;;       (forward-geo-temps (+ 1 (/ num-temps 2)))
              ;;       (cdr (reverse (forward-geo-temps (+ 1 (/ num-temps 2)))))))))
              (up-down-temp-list
-               (if (even? num-temps)
-                 (append
-                   (interp-range-pow 1.0 0.0 (/ num-temps 2) power)
-                   (interp-range-pow 0.0 1.0 (/ num-temps 2) power))
-                 (append
-                   (interp-range-pow 1.0 0.0 (+ 1 (/ num-temps 2)) power)
-                   (cdr (interp-range-pow 0.0 1.0 (+ 1 (/ num-temps 2)) power)))))
+              (if (even? num-temps)
+                (append
+                  (interp-range-pow 1.0 0.0 (floor (/ num-temps 2)) power)
+                  (interp-range-pow 0.0 1.0 (floor (/ num-temps 2)) power))
+                (append
+                  (interp-range-pow 1.0 0.0 (+ 1 (floor (/ num-temps 2))) power)
+                  (cdr (interp-range-pow 0.0 1.0 (+ 1 (floor (/ num-temps 2))) power)))))
              (curr-state (make-extended-state original-state jumped-state)))
     (if (= temp-list '())
       (list (extended-state->after curr-state) total-correction)
@@ -490,7 +531,7 @@
              (void (display-larj (list 'next-after (mcmc-state->query-value-generic (extended-state->after next-state)))))
              (void (display-larj (list 'temp (car temp-list) 'local-alpha local-alpha 'accept accept 'total-correction-to-accumulate total-correction)))
              )
-        ;; (display 'one-anneal-step)
+        ;;(display 'one-anneal-step)
         (if accept
           (loop (+ total-correction (- local-alpha)) (cdr temp-list) (cdr up-down-temp-list) next-state) ;;if accept, accumulate alpha
           (loop total-correction (cdr temp-list) (cdr up-down-temp-list) curr-state))))))
@@ -509,6 +550,7 @@
   (larj-selective-proposal-distribution state
                                         normal-form-proc
                                         xrp-draw-structural? num-temps power static-proposal))
+                                        ;;(lambda (x) true) num-temps power static-proposal))
 
 (define (non-structural-kernel steps nfqp)
   (repeat-kernel steps 

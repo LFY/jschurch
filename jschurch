@@ -1,4 +1,5 @@
 #!/usr/bin/python
+from __future__ import print_function
 import sys
 import re
 import os
@@ -29,12 +30,12 @@ def call(cmd, verbose=False, allow_fail=False):
     Run cmd in shell.
     """
     if verbose:
-        print cmd
+        print(cmd)
     p = Popen(cmd, shell=True)
     p.communicate()
     status = p.returncode
     if status != 0 and not allow_fail:
-        print "command failed:\n%s" % cmd
+        print("command failed:\n%s" % cmd)
         exit()
     else:
         return status
@@ -165,67 +166,83 @@ def webservice():
     f.close()
     print("Combining files done.")
 
+
+def parse_params(params):
+    if params == "":
+        return [(None, None)]
+    else:
+        key, vals = params.split(":")
+        return [(key, val) for val in vals.split(",")]
+
+def vprint(s, verbose):
+    if verbose:
+        print
+        print(s)
     
-def run(file, timeit=False, debug=False, inspect=False):
+def run(file, timeit=False, debug=False, inspect=False, params="", verbose=False):
     """
     Given a Church file, compiles it to Scheme using the [Church
     compiler in JS], then compiles it to Javascript using scheme2js
     and runs it.
     """
-    print("Reading Church code...")    
-    church_input_src = open(file).read()    
+    parameters = parse_params(params)
 
-    print("Combining wrapped code and libraries into single file...")
-    church_pre_filename = rooted("compiled/church-prog-pre.tmp.js")
-    church_pre = open(church_pre_filename, "w")
-    church_pre.write(JS_TEMPLATE % { "church_prog" : js_escape(church_input_src) })
-    church_pre.close()
-    church_with_compiler_filename = rooted("compiled/church-with-compiler.tmp.js")
-    combine_files([rooted("external/scheme2js/runtime.js"),
-                   rooted("compiled/church-compiler.js"),
-                   church_pre_filename],
-                  church_with_compiler_filename)
+    for (i, (param_key, param_value)) in enumerate(parameters):
 
-    print("Compiling Church code to Scheme...")
-    scm_src_filename = rooted("compiled/church-prog.tmp.ss")
-    call("node %s > %s" % (church_with_compiler_filename, scm_src_filename))
+        vprint("Reading Church code...", verbose)
+        church_input_src = open(file).read() % { param_key : param_value }
 
-    print("Wrapping Scheme code in template...")
-    scm_src = open(scm_src_filename).read()
-    scm_src_file = open(scm_src_filename, "w")
-    scm_src_file.write(SCM_TEMPLATE.replace("{churchprogram}", scm_src))
-    scm_src_file.close()
-
-    print("Compiling Scheme code to js using scheme2js...")
-    church_prog_core_filename = rooted("compiled/church-prog-core.tmp.js")    
-    call("java -jar external/scheme2js/scheme2js.jar -o %s %s" % (church_prog_core_filename, scm_src_filename))
-
-    print("Setting output ports...")
-    church_prog_core_src = open(church_prog_core_filename).read()
-    church_prog_core_file = open(church_prog_core_filename, "w")
-    church_prog_core_file.write(S2JS_PORTS + "\n\n" + church_prog_core_src)
-    church_prog_core_file.close()
-
-    print("Adding libraries...")
-    libs = ["external/scheme2js/runtime.js",
-            "scheme-compilers/javascript/math-functions.js",
-            "scheme-compilers/javascript/random/MRG32k3a.js",
-            "scheme-compilers/javascript/random/Mash.js",
-            "compiled/church-prog-core.tmp.js"]
-    church_prog_filename = rooted("compiled/church-prog.js")
-    combine_files([rooted(lib_path) for lib_path in libs],
-                  church_prog_filename)
-
-    print("Running js in node...")
-    timing_cmd = "time" if timeit else ""
-    debug_cmd = ""
-    if debug:
-        debug_cmd = "--debug"
-    if inspect:
-        debug_cmd = "--debug-brk"
-    cmd = "%s node --stack_size=65536 %s %s" % (timing_cmd, debug_cmd, church_prog_filename)
-    print cmd
-    call(cmd)
+        vprint("Combining wrapped code and libraries into single file...", verbose)
+        church_pre_filename = rooted("compiled/church-prog-pre.tmp.js")
+        church_pre = open(church_pre_filename, "w")
+        church_pre.write(JS_TEMPLATE % { "church_prog" : js_escape(church_input_src) })
+        church_pre.close()
+        church_with_compiler_filename = rooted("compiled/church-with-compiler.tmp.js")
+        combine_files([rooted("external/scheme2js/runtime.js"),
+                       rooted("compiled/church-compiler.js"),
+                       church_pre_filename],
+                      church_with_compiler_filename)
+        
+        vprint("Compiling Church code to Scheme...", verbose)
+        scm_src_filename = rooted("compiled/church-prog.tmp.ss")
+        call("node %s > %s" % (church_with_compiler_filename, scm_src_filename))
+        
+        vprint("Wrapping Scheme code in template...", verbose)
+        scm_src = open(scm_src_filename).read()
+        scm_src_file = open(scm_src_filename, "w")
+        scm_src_file.write(SCM_TEMPLATE.replace("{churchprogram}", scm_src))
+        scm_src_file.close()
+        
+        vprint("Compiling Scheme code to js using scheme2js...", verbose)
+        church_prog_core_filename = rooted("compiled/church-prog-core.tmp.js")    
+        call("java -jar external/scheme2js/scheme2js.jar -o %s %s" % (church_prog_core_filename, scm_src_filename))
+        
+        vprint("Setting output ports...", verbose)
+        church_prog_core_src = open(church_prog_core_filename).read()
+        church_prog_core_file = open(church_prog_core_filename, "w")
+        church_prog_core_file.write(S2JS_PORTS + "\n\n" + church_prog_core_src)
+        church_prog_core_file.close()
+        
+        vprint("Adding libraries...", verbose)
+        libs = ["external/scheme2js/runtime.js",
+                "scheme-compilers/javascript/math-functions.js",
+                "scheme-compilers/javascript/random/MRG32k3a.js",
+                "scheme-compilers/javascript/random/Mash.js",
+                "compiled/church-prog-core.tmp.js"]
+        church_prog_filename = rooted("compiled/church-prog.js")
+        combine_files([rooted(lib_path) for lib_path in libs],
+                      church_prog_filename)
+        
+        vprint("Running js in node...", verbose)
+        timing_cmd = "time" if timeit else ""
+        debug_cmd = ""
+        if debug:
+            debug_cmd = "--debug"
+        if inspect:
+            debug_cmd = "--debug-brk"
+        cmd = "%s node --max-stack-size=1111265536 %s %s" % (timing_cmd, debug_cmd, church_prog_filename)
+        vprint(cmd, verbose)
+        call(cmd)
     
 if __name__ == "__main__":
     optfunc.run([make, run, webservice, makecustom])
