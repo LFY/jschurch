@@ -80,6 +80,30 @@
                                            (lambda (args) (iota (first args)))
                                            ))
 
+(define sample-integer-shiftS (make-stateless-structural-xrp
+                         'sample-integer-shiftS
+                                           random-integer
+                                           (lambda (args val)
+                                             (let ((n (first args)))
+                                               (if (and (integer? val)
+                                                        (>= val 0)
+                                                        (< val n))
+                                                   (- (log n))
+                                                   minus-infinity)))
+                                           (lambda (ops old-val)
+                                             (let* ([max-val (first ops)])
+                                               (cond 
+                                                 [(= 0 old-val) (list 1 (log 1.0) (log 0.5))]
+                                                 [(= max-val old-val) (list (- max-val 1) (log 1.0) (log 0.5))]
+                                                 [else
+                                                   (list (+
+                                                           (if (= 0 (random-integer 2))
+                                                           1 -1)
+                                                           old-val)
+                                                         (log 0.5) (log 0.5))])))
+                                           (lambda (args) (iota (first args)))
+                                           ))
+
 (define uniformS (make-stateless-structural-xrp
                   'uniformS
                                     (lambda (a b) (+ (* (- b a) (random-real)) a))
