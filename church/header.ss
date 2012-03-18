@@ -298,6 +298,10 @@
     (define (disable-prov-debug)
       (set! DEBUG-DEP #f))
 
+    (define NO-FWD-PROB #f)
+    (define (disable-fwd-prob) (set! NO-FWD-PROB #t))
+    (define (enable-fwd-prob) (set! NO-FWD-PROB #f))
+
     (define (display-debug x)
       (if DEBUG (display x) '()))
 
@@ -802,12 +806,13 @@
                                                                          (let ((store (cons (first (mcmc-state->store state)) (cdr (mcmc-state->store state)))))
                                                                            (church-apply (mcmc-state->address state) store proposer (list args value))))
                                                                        (cons (store->tick store) last-tick)
-                                                                       incr-score
+                                                                       (if NO-FWD-PROB 0.0 incr-score)
                                                                        support-vals
                                                                        structural)))
                                      (set! new-val value)
                                      (insert-addbox (store->xrp-stats store) xrp-address new-stats)
-                                     (set-store-score! store (+ (store->score store) incr-score))
+                                     (set-store-score! store (+ (store->score store) 
+                                                                (if NO-FWD-PROB 0.0 incr-score)))
                                      new-xrp-draw))))
               new-val)))))
 
