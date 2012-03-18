@@ -143,8 +143,10 @@
            ) ;;FIXME!! this is to avoid accumulating xrp-draws...
 
       (if accept
-        proposal-state
-        state))))
+        (begin (display-larj-stats 'larj-run-accept)
+        proposal-state)
+        (begin (display-larj-stats 'larj-run-reject)
+               state)))))
 
 ;;Larj Kernel
 (define (larj-scorer state)
@@ -152,7 +154,8 @@
 
 (define (make-larj-kernel proposal-distribution scorer)
   (lambda (state)
-    (let* ((ret (proposal-distribution state))
+    (let* ([v (display-larj (list 'curr-sample (mcmc-state->query-value-generic state)))]
+           (ret (proposal-distribution state))
            (bw/fw (first ret))
            (proposal-state (second ret)) 
            (number-of-proposals-made (third ret)) 
@@ -165,8 +168,12 @@
            ) ;;FIXME!! this is to avoid accumulating xrp-draws...
       (if accept
         (begin (display-larj-stats 'larj-run-accept)
+               (display-larj-log (list 'final-score-ratio (+ (- new-p old-p) bw/fw)))
+               (display-larj-log (mcmc-state->query-value-generic proposal-state))
         (list proposal-state number-of-proposals-made))
         (begin (display-larj-stats 'larj-run-reject)
+               (display-larj-log (list 'final-score-ratio (+ (- new-p old-p) bw/fw)))
+               (display-larj-log (mcmc-state->query-value-generic state))
                (list state number-of-proposals-made))))))
 
 ;; ;; mixture kernel
@@ -247,6 +254,10 @@
 (define (disable-larj-stats) (set! PRINT-LARJ-STATS #f))
 (define (display-larj-stats x) (if PRINT-LARJ-STATS (display x) '()))
 
+(define PRINT-LARJ-RUN #f)
+(define (enable-larj-log) (set! PRINT-LARJ-RUN #t))
+(define (disable-larj-log) (set! PRINT-LARJ-RUN #f))
+(define (display-larj-log x) (if PRINT-LARJ-RUN (display x) '()))
 
 (define (should-do-larj? proposal-state)
   (let ((fpmc (mcmc-state->diff-factors proposal-state)))
@@ -293,6 +304,7 @@
                (larj-correction (second larj-state-and-correction))
                (num-proposals-to-make (if structural-change? (+ num-temps 1) 1))
                (final-correction (+ (+ (- proposal-bw-score proposal-fw-score) cd-bw/fw (- ind-bw ind-fw)) larj-correction))
+               [void (display-larj-log (list 'larj-correction larj-correction))]
                [void (display-larj (list 
                                 'total-corrections:
                                 'larj-correction larj-correction
@@ -482,8 +494,8 @@
              ;;      (geo-seq (/ num-temps 2) power)
              ;;      (reverse (geo-seq (/ num-temps 2) power)))
              ;;    (append
-             ;;      (geo-seq (+ 1 (/ num-temps 2)))
-             ;;      (cdr (reverse (geo-seq (+ 1 (/ num-temps 2))))))))
+             ;;      (geo-seq (+ 1 (floor (/ num-temps 2))))
+             ;;      (cdr (reverse (geo-seq (+ 1 (floor (/ num-temps 2)))))))))
              ;; (up-down-temp-list
              ;;   (list-rep 20 (if (even? num-temps)
              ;;     (append
