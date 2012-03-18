@@ -11,10 +11,10 @@ all_states = concat $ map gen_int_vectors [min_dim..max_dim]
 
 factor_eq x y = case x `compare` y of
     EQ -> 0.0
-    _ -> log 0.1
+    _ -> log 0.01
 
 factor_not_eq x y = case x `compare` y of
-    EQ -> log 0.1
+    EQ -> log 0.01
     _ -> 0.0
 
 
@@ -25,7 +25,7 @@ my_state_score state = fwd_prob state +
         n = length state `div` 2
         first_half = take n state 
         second_half = take n (reverse state) in
-            (sum $ map (\(x, y) -> factor_eq x y) (zip first_half second_half)) +
+            (sum $ zipWith factor_eq first_half second_half) +
             (sum $ zipWith factor_not_eq first_half (tail first_half)) +
             (sum $ zipWith factor_not_eq second_half (tail second_half)))
     

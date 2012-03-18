@@ -28,18 +28,18 @@
 (begin
   ;;(enable-larj-stats)
   (let* ([results 
-           (larj-mh-query-proposal-count 20000 1 4
+           (larj-mh-query-proposal-count 30000 1 5
            
-           ;;(mh-query 20000 1
+           ;;(mh-query 30000 1
              (define res
                (let* ([smps (repeat (+ 3 (sample-integerS 10)) (lambda () (sample-integer 2)))]
                       [first-half (take smps (floor (/ (length smps) 2)))]
                       [second-half (take (reverse smps) (floor (/ (length smps) 2)))]
-                              [not-eq-constr (map (lambda (xy) (apply pair-not-eq xy))
-                                                  (bi-gram first-half))]
-                              [not-eq-constr2 (map (lambda (xy) (apply pair-not-eq xy))
-                                                  (bi-gram second-half))]
-                      )
+                      [mirror-constr (map (lambda (x y) (f2 x y)) first-half second-half)]
+                      [not-eq-constr (map (lambda (xy) (apply pair-not-eq xy))
+                                          (bi-gram first-half))]
+                      [not-eq-constr2 (map (lambda (xy) (apply pair-not-eq xy))
+                                           (bi-gram second-half))])
                  smps))
                  ;;(list (length smps)
                        ;;(+ (apply + (map (lambda (x y) (f2 x y)) first-half second-half)))
