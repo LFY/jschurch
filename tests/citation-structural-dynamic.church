@@ -427,20 +427,55 @@
                     ;; maybe have paper id be structural
                      (define paper-id-distribution (DPmem 1.2 gensym))
                      (define citation->paper-id-mem
-                       (mem (lambda (o) (paper-id-distribution))))
-                     (define unique-paper-ids (tr-delete-duplicates (tr-map citation->paper-id-mem citations)))
+                       (mem ( lambda (o) (
+                                          begin
+                                            ;;(display 'in-citation-paper-id-mem)
+                                            ;;(display o)
+                                            (paper-id-distribution)
+                                          
+                                          ))))
+                     (define unique-paper-ids (tr-delete-duplicates (tr-map (lambda (x) (citation->paper-id-mem x)) citations)))
+                     ;;(define unique-paper-ids  (list->tr-list (map (lambda (x) (citation->paper-id-mem x)) citations)))
                     (define x
                       (let* (
                              (papers (tr-map (lambda (id) (tr-list id (sample-paper))) unique-paper-ids))
-                             (citation->paper (lambda (c1) (tr-second (tr-assoc (citation->paper-id-mem c1) papers))))
+                             ;;(void (display papers))
+                             ;;(void (display (tr-list->list unique-paper-ids)))
+                             (citation->paper 
+                               (lambda (c1) 
+                                 (begin
+                                   ;;(display 'get-citation-paper-id-mem)
+                                   ;;(display (citation->paper-id-mem c1))
+                                   ;;(display (citation->paper-id-mem c1))
+                                   ;;(display (citation->paper-id-mem c1))
+                                   ;;(display (tr-assoc (citation->paper-id-mem c1) papers))
+                                   ;;(display (tr-second (tr-assoc (citation->paper-id-mem c1) papers)))
+                                   (tr-second (tr-assoc (citation->paper-id-mem c1) papers))
+                                 )
+                                 )
+                               )
                              (paper-citation-factors
-                               (tr-map (lambda (c1)
+                               (map (lambda (c1)
                                       (factor-citation-paper c1 (citation->paper c1)))
                                     citations))
                              (paper-paper-factors
-                               (tr-map (lambda (p1p2) 
-                                      (factor-repulsion (tr-second (tr-first p1p2)) (tr-second (tr-second p1p2)))) 
-                                    (pairs papers)))
+                               (tr-map (lambda (p1p2)
+                                         (begin
+                                           ;;(display 'p1p2)
+                                           ;;(display p1p2)
+                                           ;;(display 'tr-first-p1p2)
+                                           ;;(display (tr-first p1p2))
+                                           ;;(display 'tr-second-p1p2)
+                                           ;;(display (tr-second p1p2))
+                                           ;;(display 'tr-second-tr-first-p1p2)
+                                           ;;(display (tr-second (tr-first p1p2)))
+                                           ;;(display 'tr-second-tr-second-p1p2)
+                                           ;;(display (tr-second (tr-second p1p2)))
+                                            (factor-repulsion (tr-second (tr-first p1p2)) (tr-second (tr-second p1p2)))
+                                      
+                                          )
+                                         ) 
+                                    (tr-pairs papers)))
                              )
                         (list 
                           (length unique-paper-ids) 

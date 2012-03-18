@@ -203,17 +203,17 @@
                         ((("C" "E" "Brodley") ("P" "E" "Ut-goff")) ("Goal-directed Classification Using Linear Machine Decision Trees")    )
                         ((("Carla" "E" "Brodley") ("Paul" "E" "Utgoff")) ("Multivariate decision trees")     )
                         ((("Carla" "E" "Brodley") ("Paul" "E" "Utgoff")) ("Multivariate decision trees")     )
-                        ;;((("C" "E" "Brodley") ("P" "E" "Utgoff")) ("Multivariate decision trees")  )
-                        ;;((("A" "B" "Brodley") ("P" "E" "Utgoff")) ("Multivariate versus univariate decision trees")     )
-                        ;;((("C" "E" "Brodley") ("P" "E" "Utgoff")) ("Multivariate decision trees")      )
-                        ;;((("C" "E" "Brodley") ("P" "E" "Utgoff")) ("Multivariate Decision Trees")   )
-                        ;;((("Carla" "E" "Brodley") ("Paul" "E" "Utgoff")) ("Multivariate decision trees")      )
-                        ;;((("C" "E" "Brodley") ("P" "E" "Utgoff")) ("Multivariate decision trees")    )
-                        ;;((("C" "" "Brodley") ("P" "" "Utgoff")) ("Multivriate Decision Trees")  )
-                        ;;((("J" "P" "Callan") ("P" "E" "Utgoff")) ("A Transformational Approach to Constructive Induction")     )
-                        ;;((("J" "" "Callan") ("P" "" "Utgoff")) ("A Transformational Approach to Constructive Induction")       )
-                        ;;((("J" "" "Callan") ("P" "" "Utgoff")) ("A transformational approach to constructive induction")     )
-                        ;;((("J" "P" "Callan") ("P" "E" "Utgoff")) ("A transformational approach to constructive induction")     )
+                        ((("C" "E" "Brodley") ("P" "E" "Utgoff")) ("Multivariate decision trees")  )
+                        ((("A" "B" "Brodley") ("P" "E" "Utgoff")) ("Multivariate versus univariate decision trees")     )
+                        ((("C" "E" "Brodley") ("P" "E" "Utgoff")) ("Multivariate decision trees")      )
+                        ((("C" "E" "Brodley") ("P" "E" "Utgoff")) ("Multivariate Decision Trees")   )
+                        ((("Carla" "E" "Brodley") ("Paul" "E" "Utgoff")) ("Multivariate decision trees")      )
+                        ((("C" "E" "Brodley") ("P" "E" "Utgoff")) ("Multivariate decision trees")    )
+                        ((("C" "" "Brodley") ("P" "" "Utgoff")) ("Multivriate Decision Trees")  )
+                        ((("J" "P" "Callan") ("P" "E" "Utgoff")) ("A Transformational Approach to Constructive Induction")     )
+                        ((("J" "" "Callan") ("P" "" "Utgoff")) ("A Transformational Approach to Constructive Induction")       )
+                        ((("J" "" "Callan") ("P" "" "Utgoff")) ("A transformational approach to constructive induction")     )
+                        ((("J" "P" "Callan") ("P" "E" "Utgoff")) ("A transformational approach to constructive induction")     )
                         ;;((("J" "P" "Callan") ("P" "E" "Utgoff")) ("Constructive induction on domain knowl edge")      )
                         ;;((("C" "" "Cardie")) ("Using Decision Trees to Improve Case-Based Learning")        )
                         ;;((("C" "" "Cardie")) ("Using Decision Trees to Improve Case-Based Learning")        )
@@ -268,27 +268,48 @@
   (levenshtein (string-downcase s1) (string-downcase s2)))
 
 (define (score-affinity c1 c2)
-  (begin
-    (db 'in-score-affinity)
-    (db c1)
-    (db 'citation2)
-    (db c2)
-    (let ((dist (distance-citation c1 c2)))
-    (norm-eq-log dist 0 5))
-  ))
+  (let ((dist (distance-citation c1 c2)))
+    (display 'in-score-affinity)
+    (display dist)
+    (display c1)
+    (display 'citation2)
+    (display c2)
+    (display (norm-eq-log dist 0 1))
+    (display (norm-eq-log dist 0 10))
+    (display (norm-eq-log dist 0 50))
+    (display (norm-eq-log dist 0 100))
+    (norm-eq-log dist 0 200)
+    )
+  )
 
 (define (score-repulsion c1 c2)
   (let ((dist (distance-citation c1 c2)))
-    (db 'in-score-repulsion)
-    (db 'c1)
-    (db c1)
-    (db 'c2)
-    (db c2)
-    (greater-log 20 dist 3)))
+    (greater-log 10 dist 1)))
+
+;; question:
+;; compares title only?
+;; or when sample paper, we should only use the same pair of author-title
+(define (score-repulsion-title c1 c2)
+  (let ((dist (distance-citation-title c1 c2)))
+    ;;(db 'in-score-repulsion)
+    ;;(db 'c1)
+    ;;(db c1)
+    ;;(db 'c2)
+    ;;(db c2)
+    (display 'in-score-repulsion-dist=)
+    (display dist)
+    (display 'c1)
+    (display c1)
+    (display 'c2)
+    (display c2)
+    (display (greater-log 10 dist 10))
+    (display (greater-log 10 dist 5))
+    (display (greater-log 10 dist 1))
+    (greater-log 10 dist 1)))
 
 (define factor-repulsion
   (begin
-  (make-factor (lambda (c1 c2) (score-repulsion c1 c2)))
+  (make-factor (lambda (c1 c2) (score-repulsion-title c1 c2)))
   ))
 
 (define factor-citation-paper
@@ -328,7 +349,24 @@
     )
   )
 
-(define (distance-middlename n1 n2) (distance-firstname n1 n2))
+(define (distance-middlename n1 n2) 
+  (let ((length-n1 (string-length n1))
+        (length-n2 (string-length n2))
+        )
+    (if (or (zero? length-n1) (zero? length-n2)) 
+      0
+      (if (or (= 1 length-n1) (= 1 length-n2)) 
+        (let ((initial-n1 (get-initial n1))
+              (initial-n2 (get-initial n2))
+              )
+          (if (eq? initial-n1 initial-n2) 0 (max (string-length n1) (string-length n2) 5))
+          )
+        (distance-string n1 n2)
+        )
+      )
+    )
+  )
+
 (define (distance-lastname n1 n2) (distance-string n1 n2))
 
 
@@ -352,6 +390,12 @@
   (begin 
     (apply + (map string-length-author authors))
     ))
+
+(define (distance-citation-title c1 c2)
+  (begin
+      (distance-string-case-insensitive (citation->obs-title c1) (citation->obs-title c2))
+    )
+  )
 
 (define (distance-citation c1 c2)
   (begin
@@ -434,20 +478,40 @@
 
 (for-each display
           ;;(mh-query 100 10
-                    (larj-mh-query-proposal-count 2000 1 50
+                    (larj-mh-query-proposal-count 2000 1 100
                     ;; maybe have paper id be structural
-                     (define paper-id-distribution (DPmemS 1.2 gensym))
+                     (define paper-id-distribution (DPmemS 0.8 gensymS))
                      (define citation->paper-id-mem
                        (mem (lambda (o) (paper-id-distribution))))
                      (define unique-paper-ids (delete-duplicates (map citation->paper-id-mem citations)))
                     (define x
                       (let* (
                              (papers (map (lambda (id) (list id (sample-paper))) unique-paper-ids))
+                             (paper->paper-id-mem (lambda (p) (first p)))
+                             (paper->paper-entity (lambda (p) (second p)))
                              (citation->paper (lambda (c1) (second (assoc (citation->paper-id-mem c1) papers))))
+                             (citation->paper-pair (lambda (c1) (assoc (citation->paper-id-mem c1) papers)))
+                             (paper->citations 
+                               (lambda (p1) 
+                                 (filter 
+                                   (lambda (c) (eq? (paper->paper-id-mem (citation->paper-pair c)) (paper->paper-id-mem p1))) citations)))
+                             ;;(paper-citation-factors
+                             ;;  (map (lambda (c1)
+                             ;;         (factor-citation-paper c1 (citation->paper c1)))
+                             ;;       citations))
                              (paper-citation-factors
-                               (map (lambda (c1)
-                                      (factor-citation-paper c1 (citation->paper c1)))
-                                    citations))
+                               (map (lambda (p1)
+                                      (map (lambda (c1) 
+                                             (begin
+                                             ;;(display 'in-make-paper-citation-factors)
+                                             ;;(display 'c1)
+                                             ;;(display c1)
+                                             ;;(display 'p1)
+                                             ;;(display p1)
+                                             (factor-citation-paper c1 (paper->paper-entity p1))
+                                             )
+                                             ) (paper->citations p1)))
+                                    papers))
                              (paper-paper-factors
                                (map (lambda (p1p2) 
                                       (factor-repulsion (second (first p1p2)) (second (second p1p2)))) 
@@ -456,16 +520,26 @@
                         (list 
                           (length unique-paper-ids) 
                           papers
-                          (map (lambda (c1 score1)
-                                 (list
-                                   (citation->paper-id-mem c1)
-                                   (list (paper->title (citation->paper c1)))
-                                   (list (citation->obs-title c1))
-                                   score1))
-                                 citations paper-citation-factors)
-                          (apply + paper-citation-factors)
+                          (map (lambda (p1 scorelist)
+                                 (list 
+                                   (paper->title (paper->paper-entity p1))
+                                   (map (lambda (c1 score1) (list (citation->obs-title c1) score1)) (paper->citations p1) scorelist)
+                                   )
+                                 ) 
+                               papers paper-citation-factors)
                           paper-paper-factors
-                          (+ (apply + paper-citation-factors) (apply + paper-paper-factors))
+                          ;;(sum (map sum paper-paper-factors))
+                          ;;
+                          ;;(map (lambda (c1 score1)
+                          ;;       (list
+                          ;;         (citation->paper-id-mem c1)
+                          ;;         (list (paper->title (citation->paper c1)))
+                          ;;         (list (citation->obs-title c1))
+                          ;;         score1))
+                          ;;       citations paper-citation-factors)
+                          ;;(apply + paper-citation-factors)
+                          ;;paper-paper-factors
+                          ;;(+ (apply + paper-citation-factors) (apply + paper-paper-factors))
                           )
                         ))
                     x

@@ -63,12 +63,12 @@
 (define (tr-caddddr xs) (tr-car (tr-cddddr xs)))
 (define (tr-cadddddr xs) (tr-car (tr-cdddddr xs)))
 
-(define tr-first tr-car)
-(define tr-second tr-cadr)
-(define tr-third tr-caddr)
-(define tr-fourth tr-cadddr)
-(define tr-fifth tr-caddddr)
-(define tr-sixth tr-cadddddr)
+(define (tr-first x) (tr-car x))
+(define (tr-second x)  (tr-cadr x))
+(define (tr-third  x)  (tr-caddr x))
+(define (tr-fourth x)  (tr-cadddr x))
+(define (tr-fifth  x)  (tr-caddddr x))
+(define (tr-sixth  x)  (tr-cadddddr x))
 (define (tr-seventh xs) (tr-list-ref xs 6))
 (define (tr-eighth xs) (tr-list-ref xs 7))
 (define (tr-ninth xs) (tr-list-ref xs 8))
@@ -106,10 +106,19 @@
 
 
 (define (tr-assoc key key-values)
-    (cond [(null? key-values) #f]
+  (begin
+    ;;(display 'key)
+    ;;(display key)
+    ;;(display 'key-values)
+    ;;(display key-values)
+    (cond [(null? key-values) 
+           (begin
+             (display 'failed-to-find-key-values)
+             #f 
+             )]
           [(equal? key (tr-first (tr-first key-values))) (tr-first key-values)]
           [else
-            (tr-assoc key (tr-cdr key-values))]))
+            (tr-assoc key (tr-cdr key-values))])))
 
 (define (tr-delete-duplicates ls)
   (delete-duplicates ls)
