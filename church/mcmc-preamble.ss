@@ -14,7 +14,7 @@
 (define (interp-range min max n) 
     (if (eq? n 1)
         max
-        (map (lambda (i) (+ min (* (/ i (- n 1)) (- max min)))) (iota n))
+        (map (lambda (i) (+ min (* (/ i (- n 1.0)) (- max min)))) (iota n))
 ))
 
 (define (interp-range-pow min max n pow)
@@ -495,11 +495,11 @@
              (up-down-temp-list
               (if (even? num-temps)
                 (append
-                  (interp-range-pow 1.0 0.0 (/ num-temps 2) power)
-                  (interp-range-pow 0.0 1.0 (/ num-temps 2) power))
+                  (interp-range-pow 1.0 0.0 (floor (/ num-temps 2)) power)
+                  (interp-range-pow 0.0 1.0 (floor (/ num-temps 2)) power))
                 (append
-                  (interp-range-pow 1.0 0.0 (+ 1 (/ num-temps 2)) power)
-                  (cdr (interp-range-pow 0.0 1.0 (+ 1 (/ num-temps 2)) power)))))
+                  (interp-range-pow 1.0 0.0 (+ 1 (floor (/ num-temps 2))) power)
+                  (cdr (interp-range-pow 0.0 1.0 (+ 1 (floor (/ num-temps 2))) power)))))
              (curr-state (make-extended-state original-state jumped-state)))
     (if (= temp-list '())
       (list (extended-state->after curr-state) total-correction)
@@ -538,6 +538,7 @@
   (larj-selective-proposal-distribution state
                                         normal-form-proc
                                         xrp-draw-structural? num-temps power static-proposal))
+                                        ;;(lambda (x) true) num-temps power static-proposal))
 
 (define (non-structural-kernel steps nfqp)
   (repeat-kernel steps 
