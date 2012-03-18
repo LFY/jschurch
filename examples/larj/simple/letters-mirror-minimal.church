@@ -1,10 +1,13 @@
 (define f1
   (make-factor (lambda (x)
-                 (if x 0.0 (log 0.1)))))
+                 (if x 0.0 (log 0.01)))))
 
 (define f2
   (make-factor (lambda (x y)
-                 (if (eq? x y) 0.0 (log 0.1)))))
+                 (if (eq? x y) 0.0 (log 0.01)))))
+
+(define pair-not-eq
+  (make-factor (lambda (x y) (if (eq? x y) (log 0.01) 0.0))))
 
 (define (count-changes lst)
   (let loop ([start (first lst)]
@@ -15,18 +18,32 @@
             (loop start (rest lst))
             (+ 1 (loop (first lst) (rest lst)))))))
 
+(define (display-sample smp)
+  (display 
+    (string-append
+      "state "
+      (fold (lambda (next acc) (string-append (number->string next) " " acc)) (number->string (car smp)) (cdr smp))
+      )))
+
 (begin
-  (enable-larj-stats)
+  ;;(enable-larj-stats)
   (let* ([results 
-           ;;(larj-mh-query-proposal-count 10000 1 4
-           (mh-query 10000 1
+           (larj-mh-query-proposal-count 20000 1 4
+           
+           ;;(mh-query 20000 1
              (define res
                (let* ([smps (repeat (+ 3 (sample-integerS 10)) (lambda () (sample-integer 2)))]
                       [first-half (take smps (floor (/ (length smps) 2)))]
-                      [second-half (take (reverse smps) (floor (/ (length smps) 2)))])
-                 (list (length smps)
-                       (+ (apply + (map (lambda (x y) (f2 x y)) first-half second-half)))
-                       smps)))
+                      [second-half (take (reverse smps) (floor (/ (length smps) 2)))]
+                              [not-eq-constr (map (lambda (xy) (apply pair-not-eq xy))
+                                                  (bi-gram first-half))]
+                              [not-eq-constr2 (map (lambda (xy) (apply pair-not-eq xy))
+                                                  (bi-gram second-half))]
+                      )
+                 smps))
+                 ;;(list (length smps)
+                       ;;(+ (apply + (map (lambda (x y) (f2 x y)) first-half second-half)))
+                       ;;smps)))
              res true)])
-    (for-each display results)
-    (display (string-append "my-stat " (count-changes (map car results))))))
+    (for-each display-sample results)))
+    ;;(display (string-append "my-stat " (count-changes (map car results))))))
