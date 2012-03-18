@@ -240,7 +240,7 @@ def run(file, timeit=False, debug=False, inspect=False, params="", verbose=False
             debug_cmd = "--debug"
         if inspect:
             debug_cmd = "--debug-brk"
-        cmd = "%s node --max-stack-size=11265536 %s %s" % (timing_cmd, debug_cmd, church_prog_filename)
+        cmd = "%s node --max-stack-size=1111265536 %s %s" % (timing_cmd, debug_cmd, church_prog_filename)
         vprint(cmd, verbose)
         call(cmd)
     
