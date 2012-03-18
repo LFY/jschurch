@@ -1,0 +1,32 @@
+(define f1
+  (make-factor (lambda (x)
+                 (if x 0.0 (log 0.1)))))
+
+(define f2
+  (make-factor (lambda (x y)
+                 (if (eq? x y) 0.0 (log 0.1)))))
+
+(define (count-changes lst)
+  (let loop ([start (first lst)]
+             [lst (rest lst)])
+    (if (null? lst)
+        0
+        (if (equal? start (first lst))
+            (loop start (rest lst))
+            (+ 1 (loop (first lst) (rest lst)))))))
+
+(begin
+  (enable-larj-stats)
+  (let* ([results 
+           ;;(larj-mh-query-proposal-count 10000 1 4
+           (mh-query 10000 1
+             (define res
+               (let* ([smps (repeat (+ 3 (sample-integerS 10)) (lambda () (sample-integer 2)))]
+                      [first-half (take smps (floor (/ (length smps) 2)))]
+                      [second-half (take (reverse smps) (floor (/ (length smps) 2)))])
+                 (list (length smps)
+                       (+ (apply + (map (lambda (x y) (f2 x y)) first-half second-half)))
+                       smps)))
+             res true)])
+    (for-each display results)
+    (display (string-append "my-stat " (count-changes (map car results))))))
