@@ -1,0 +1,32 @@
+
+(define mentions
+  (tr-list 1 2 3 4 5 6 7 8 9 10))
+
+(define (sample-entity) (sample-integer 2))
+
+(define mention-entity-factor
+  (make-factor (lambda (m e) (if (= (modulo m 2) e) 0.0 (log 0.01)))))
+
+(begin
+  (enable-prov-debug)
+(for-each display (larj-mh-query-proposal-count 50 1 5
+;;(for-each display (mh-query 500 1
+          (define entity-distr (DPmem 1.0 gensym))
+          (define mention->entity (mem (lambda (x) (entity-distr))))
+          (define mention-entity-instantiation (tr-map (lambda (m) (tr-list m (mention->entity m))) mentions))
+          (define unique-entities (tr-delete-duplicates (tr-snds mention-entity-instantiation)))
+          (define sampled-entities (tr-map (lambda (x) (tr-list x (sample-entity))) unique-entities))
+          (define (entity-id->entity id) (tr-second (tr-assoc id sampled-entities)))
+          (define scores
+            (tr-map (lambda (m-e)
+                      (mention-entity-factor
+                        (tr-first m-e)
+                        (entity-id->entity (tr-second m-e))))
+                    mention-entity-instantiation))
+          (list (map (lambda (x) (tr-list->list x)) 
+                     (tr-list->list mention-entity-instantiation)) 
+                (map (lambda (x) (tr-list->list x))
+                     (tr-list->list sampled-entities))
+                (apply + (tr-list->list scores)))
+          true)))
+
