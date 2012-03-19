@@ -1,22 +1,40 @@
-;; mean coefficients for true-observations:
-
-;; for 3 coefficients:
-
-;; -1.2885933890977552
-;; -0.44974133350304996
-;; 0.35682760412571196
-
-;; -1.1367170364406003
-;; -0.46914186762812754
-;; 0.3400934226676548
-
-;; for 2 coefficients:
-
-;; 1.2209615270607876
-;; -0.4381856711582288
-
-;; 1.13768030512195
-;; -0.42511880402437446
+;; mh 10.000/10, 30s per run:
+;; (2692 (6966 3034) ((0.5620185425857667 -0.41780874048574584) (-0.653621086559955 -0.42541976674364557 0.31516407351552395))) :: 2.29
+;; (2694 (6979 3021) ((0.5577819326790483 -0.37835155394436065) (-0.6386679006188464 -0.42098477314914945 0.3157335292834497))) :: 2.31
+;; (2639 (7104 2896) ((0.5939691099945494 -0.37809061396528165) (-0.6658194447750465 -0.4196039683928567 0.3203679899341263))) :: 2.45
+;;
+;; mh 20.000/10, 67s per run:
+;; (5277 (14076 5924) ((0.5451337392639658 -0.3919659447160972) (-0.6959561207523669 -0.42701904239892674 0.3245168598067748)))  :: 2.376
+;;
+;; mh 30.000/10:
+;; <segfault>
+;;
+;; mh 3.000/100:
+;; (1259 (2123 877) ((0.5795220665440695 -0.38887118936738163) (-0.6342824265033281 -0.4059393316475246 0.31538625439939205))) :: 2.42
+;;
+;;
+;; larj 50.000/10/10, 34s per run:
+;; (342 (3820 1180) ((0.801084609537303 -0.3208560978140361) (-0.8693751641599354 -0.4158455538532209 0.3367365064345898))) :: 3.23
+;; (341 (3813 1187) ((0.8902404108482523 -0.37205292579125027) (-0.9602134703164149 -0.49088729699348194 0.34765056468260813))) :: 3.212
+;; (349 (3538 1462) ((0.3724819756595785 -0.3481771270577489) (-0.9219371478954818 -0.38201010092756926 0.34152840299250464))) :: 2.41
+;;
+;; larj 100.000/10/10, 66s per run:
+;; (690 (7705 2295) ((0.6457515611072722 -0.39468498454497863) (-0.9960841622727021 -0.47512870195309737 0.3372240294817944))) :: 3.35
+;;
+;; larj 200.000/10/10, 120s per run:
+;; (1348 (14498 5502) ((0.5937804904229801 -0.43599126422809154) (-1.053644561534983 -0.43416941920173197 0.33872214964216535))) :: 2.63
+;;
+;; larj 300.000/100/10, :
+;; ...
+;; 
+;; Here, mh switches more often and gets a more consistent estimate of
+;; the relative marginal probability of the two dimensions. This is
+;; not surprising--we force larj to spend 10x more samples on
+;; nonstructural choices than on the structural choice, whereas the
+;; ratio for mh is 1:2.
+;; 
+;; MH also seems to get a more consistent estimate of the parameters;
+;; is this systematic? is the estimate actually better?
 
 (define x-vals '(-5 -4 -3 -2 -1 0 1 2 3 4 5))
 
@@ -25,19 +43,24 @@
                        c
                        (iota (length c))))))
 
-(define true-observations '(10.229278134620932 6.412978128005648 3.341257367949409 1.0141158544522146 -0.5684464124859345 -1.406429432865039 -1.499833206685099 -0.8486577339461141 0.5470969853519159 2.68743095120899 5.572344163625109))
+(define true-observations
+  (list 10.229278134620932 6.412978128005648 3.341257367949409
+        1.0141158544522146 -0.5684464124859345 -1.406429432865039
+        -1.499833206685099 -0.8486577339461141 0.5470969853519159
+        2.68743095120899 5.572344163625109))
+
+(define SOFTNESS 10)
 
 (define (make-factors hyp-ys true-ys)
   (begin
     (map (lambda (y-val obs-y-val)
-           (logprob-factor (- (abs (- y-val obs-y-val)))))
+           (logprob-factor (- (/ (abs (- y-val obs-y-val)) SOFTNESS))))
          hyp-ys true-ys)
     true))
 
 (define logprob-factor
-  (make-factor
+  (make-factor-annealed
    (lambda (x) x)))
-
 
 (define (count-changes lst)
   (let loop ([start (first lst)]
@@ -48,15 +71,26 @@
             (loop start (rest lst))
             (+ 1 (loop (first lst) (rest lst)))))))
 
+(define (all-means xs)
+  (map (lambda (i) (mean (map (lambda (x) (list-ref x i))
+                         xs)))
+       (iota (length (first xs)))))
+
+(define (mean-coefficients xs)
+  (list (all-means (filter (lambda (xi) (= (length xi) 2))
+                           xs))
+        (all-means (filter (lambda (xi) (= (length xi) 3))
+                           xs))))
 
 (define samples
 
   (larj-mh-query-proposal-count
+  ;; (mh-query
 
-   2000 1 100
+   %(samples)s 100 10
 
    (define bdim (flipS))
-                                
+   
    (define coefficients
      (repeat (if bdim 2 3)
              (lambda () (gaussian 0 2))))
@@ -64,13 +98,16 @@
    (define observations
      (map (make-poly coefficients) x-vals))
 
-   bdim
+   (list bdim coefficients)
 
-   (if bdim
-       (make-factors observations true-observations)
-       (make-factors observations true-observations))))
+   (make-factors observations true-observations)))
 
+;; (display samples)
 
-(display samples)
+(define (count-dimensions xs)
+  (list (length (filter (lambda (x) x) xs))
+        (length (filter (lambda (x) (not x)) xs))))
 
-(display (list 'changes (count-changes samples)))
+(list (count-changes (map first samples))
+      (count-dimensions (map first samples))
+      (mean-coefficients (map second samples)))
