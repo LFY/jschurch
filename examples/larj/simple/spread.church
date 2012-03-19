@@ -1,0 +1,31 @@
+(define soft-eq
+  (make-factor (lambda (x y)
+    (norm-eq-log x y 0.1))))
+
+(define (run-distr)
+  (let* ([which-distr (flipS)]
+         [pts (repeat (if which-distr 1 2) (lambda () (gaussian 0 1)))]
+         [constr
+           (if which-distr
+             (list (soft-eq 0.0 (first pts)))
+             (list
+               (soft-eq -1.7 (first pts))
+               (soft-eq -1.7 (second pts))))])
+    (list (length pts) pts (apply + constr))))
+
+(define (larj-run)
+  (larj-mh-query-proposal-count 10000 1 10
+                                (define res (run-distr))    
+                                res
+                                true))
+(define (mh-run)
+  (mh-query 10000 1
+            (define res (run-distr))    
+            res
+            true))
+
+;;(define results (larj-run))
+(define results (mh-run))
+;;(for-each display results)
+
+(length (filter (lambda (xy) (not (eq? (first xy) (second xy)))) (bi-gram (map car results))))
