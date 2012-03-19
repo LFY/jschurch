@@ -71,7 +71,7 @@
                             (load "factor-preamble.church")
                             (load "mcmc-preamble.church")
                             ,@top-list))
-          (ds-sexpr (remove-dead (de-sugar-all church-sexpr))) ;;desugar and remove unused defs.
+          (ds-sexpr (de-sugar-all church-sexpr)) ;;desugar and remove unused defs.
           (ds-sexpr (if (eq? #t lazy)
                         (add-forcing ds-sexpr) ;;this supports lazy evaluation, by adding force at applications, etc.
                         ds-sexpr))
