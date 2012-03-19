@@ -107,19 +107,15 @@
 
 (define (tr-assoc key key-values)
   (begin
-    ;;(display 'key)
-    ;;(display key)
-    ;;(display 'key-values)
-    ;;(display key-values)
-    (cond [(null? key-values) 
-           (begin
-             (display 'failed-to-find-key-values)
-             #f 
-             )]
+    (cond [(null? key-values) #f]
           [(equal? key (tr-first (tr-first key-values))) (tr-first key-values)]
-          [else
-            (tr-assoc key (tr-cdr key-values))])))
+          [else (tr-assoc key (tr-cdr key-values))])))
 
-(define (tr-delete-duplicates ls)
-  (delete-duplicates ls)
-  )
+(define (tr-fsts xss)
+  (tr-map (lambda (xs) (tr-first xs)) xss))
+
+(define (tr-snds xss)
+  (tr-map (lambda (xs) (tr-second xs)) xss))
+
+(define (tr-thds xss)
+  (tr-map (lambda (xs) (tr-third xs)) xss))
