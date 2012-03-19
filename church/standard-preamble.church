@@ -128,6 +128,15 @@
                          (single-map rest lsts))))))
 ;(define (unfold proc init stop) ...
 
+(define (foldl f z xs)
+  (if (null? xs) z
+    (foldl f (f z (car xs)) (cdr xs))))
+
+(define (foldl1 f xs)
+  (foldl f (car xs) (cdr xs)))
+
+(define (reduce f xs) (foldl1 f xs))
+
 ; @desc
 ; Returns the reverse of a list.
 ; @param lst the list
