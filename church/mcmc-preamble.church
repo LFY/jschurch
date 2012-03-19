@@ -1,3 +1,21 @@
+;; --------------------------------------------------------------------
+;; Rejection
+
+(define (factor-rejection-query nfqp)
+  (let loop ()
+    (let* ([init-state (church-make-initial-mcmc-state '(TOP) (make-empty-store))]
+           [proposed-state (first (counterfactual-update init-state nfqp))]
+           [factors (store->factors (mcmc-state->store proposed-state))]
+           [state-score (apply + (map factor-value (addbox->values factors)))]
+           [cond-box (second proposed-state)])
+      (if (and (not (equal? (mcmc-state->score-generic proposed-state) minus-infinity))
+               (log-flip state-score))
+          (mcmc-state->query-value proposed-state)
+          (loop)))))
+
+;; --------------------------------------------------------------------
+;; MH
+
 (define (mh-query samples lag normal-form-proc)
   (mh-query* samples lag normal-form-proc))
 
