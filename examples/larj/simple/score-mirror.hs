@@ -2,8 +2,8 @@ import Control.Monad
 import Data.List
 
 domain_size = 2
-min_dim = 3
-max_dim = 12
+min_dim = 4
+max_dim = 15
 
 gen_int_vectors num_dims = sequence $ map (\i -> [0..(domain_size - 1)]) [1..num_dims]
 
@@ -11,10 +11,10 @@ all_states = concat $ map gen_int_vectors [min_dim..max_dim]
 
 factor_eq x y = case x `compare` y of
     EQ -> 0.0
-    _ -> log 0.01
+    _ -> log 0.001
 
 factor_not_eq x y = case x `compare` y of
-    EQ -> log 0.01
+    EQ -> log 0.001
     _ -> 0.0
 
 
@@ -35,4 +35,4 @@ norm_const = sum $ map (\x -> exp (my_state_score x)) $ all_states
 main = let
     all_state_scores = map (\s -> (s, exp (my_state_score s - log norm_const))) all_states in do
         forM_ all_state_scores $ \(state, norm_score) ->
-            putStrLn $ "state" ++ " " ++ (foldr (\x y -> show x ++ " " ++ y) (show (head state)) (tail state)) ++ " score " ++ show norm_score
+            putStrLn $ "state" ++ " " ++ (foldl1 (\x y -> x ++ " " ++ y) (map show state)) ++ " score " ++ show norm_score
