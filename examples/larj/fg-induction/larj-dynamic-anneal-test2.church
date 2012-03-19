@@ -67,7 +67,7 @@
                                  (lambda () (+ -50 (sample-integer 101))))]
              [obs-constraints ;; we have an _incomplete_ observation
                (tr-list (soft-eq (tr-car randpts) 0.0)
-                        (soft-eq (tr-last randpts) 100))]
+                        (soft-eq (tr-last randpts) 50))]
              [all-idx-pairs (tr-bigram (tr-iota (length randpts)))]
              [factor-arg-scores
                (tr-map 
