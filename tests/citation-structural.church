@@ -6,12 +6,12 @@
 ;;; @Date        2009-03-14
 ;;; @PLaneT      neil/levenshtein:1:3
 
-(define (%identity x) x)
+(define (identity* x) x)
 
-(define (%string-empty? v) (zero? (string-length v)))
-(define (%vector-empty? v) (zero? (vector-length v)))
+(define (string-empty?* v) (zero? (string-length v)))
+(define (vector-empty?* v) (zero? (vector-length v)))
 
-(define (%string->vector s)
+(define (string->vector* s)
   (list->vector (string->list s)))
 
 (define (vector-levenshtein/predicate/get-scratch a b pred get-scratch)
@@ -76,15 +76,15 @@
   (cond ((zero? (string-length a)) (string-length b))
         ((zero? (string-length b)) (string-length a))
         (else (vector-levenshtein/eqv
-                (%string->vector a)
-                (%string->vector b)))))
+                (string->vector* a)
+                (string->vector* b)))))
 
-(define (%string-levenshtein/predicate a b pred)
+(define (string-levenshtein/predicate* a b pred)
   (cond ((zero? (string-length a)) (string-length b))
         ((zero? (string-length b)) (string-length a))
         (else (vector-levenshtein/predicate
-                (%string->vector a)
-                (%string->vector b)
+                (string->vector* a)
+                (string->vector* b)
                 pred))))
 
 
@@ -97,12 +97,12 @@
                               (vector-levenshtein/predicate (a-vec a)
                                                             (b-vec b)
                                                             pred)))))
-                 (cond ((vector? b) (bar %vector-empty?
+                 (cond ((vector? b) (bar vector-empty?*
                                          vector-length
-                                         %identity))
-                       ((string? b) (bar %string-empty?
+                                         identity*))
+                       ((string? b) (bar string-empty?*
                                          string-length
-                                         %string->vector))
+                                         string->vector*))
                        ((list?   b) (bar null? length list->vector))
                        (else (error "term 2 must be vector, list, or string:"
                                     b)))))))
@@ -110,16 +110,16 @@
       (cond ((vector? a) (if (vector? b)
                            (vector-levenshtein/predicate a b pred)
                            (foo a b pred
-                                %vector-empty?
+                                vector-empty?*
                                 vector-length
-                                %identity)))
+                                identity*)))
             ((string? a) (if (string? b)
-                           (%string-levenshtein/predicate
+                           (string-levenshtein/predicate*
                              a b pred)
                            (foo a b pred
-                                %string-empty?
+                                string-empty?*
                                 string-length
-                                %string->vector)))
+                                string->vector*)))
             ((list?   a) (if (list? b)
                            (list-levenshtein/predicate a b pred)
                            (foo a b pred null? length list->vector)))
@@ -174,7 +174,7 @@
   (car (third c)))      
 (define citation->obs-pub-type fourth)      
 (define citation->text fifth)
-(define citation->paper-id sixth)
+(define citation->id sixth)
 
 (define (parse-citation obs-citation default-id)
   (let* (
@@ -246,6 +246,9 @@
 (define title-sets 
   (delete-duplicates (map cadr all-citations)))
 
+(define author-title-sets
+  (delete-duplicates all-citations))
+
 (define (initialization all-citations)
   (map  parse-citation all-citations (iota (length all-citations))))
 
@@ -269,16 +272,16 @@
 
 (define (score-affinity c1 c2)
   (let ((dist (distance-citation c1 c2)))
-    (display 'in-score-affinity)
-    (display dist)
-    (display c1)
-    (display 'citation2)
-    (display c2)
-    (display (norm-eq-log dist 0 1))
-    (display (norm-eq-log dist 0 10))
-    (display (norm-eq-log dist 0 50))
-    (display (norm-eq-log dist 0 100))
-    (norm-eq-log dist 0 200)
+    ;; (display 'in-score-affinity)
+    ;; (display dist)
+    ;; (display c1)
+    ;; (display 'citation2)
+    ;; (display c2)
+    ;; (display (norm-eq-log dist 0 1))
+    ;; (display (norm-eq-log dist 0 10))
+    ;; (display (norm-eq-log dist 0 50))
+    ;; (display (norm-eq-log dist 0 100))
+    (norm-eq-log dist 0 100)
     )
   )
 
@@ -296,15 +299,15 @@
     ;;(db c1)
     ;;(db 'c2)
     ;;(db c2)
-    (display 'in-score-repulsion-dist=)
-    (display dist)
-    (display 'c1)
-    (display c1)
-    (display 'c2)
-    (display c2)
-    (display (greater-log 10 dist 10))
-    (display (greater-log 10 dist 5))
-    (display (greater-log 10 dist 1))
+    ;; (display 'in-score-repulsion-dist=)
+    ;; (display dist)
+    ;; (display 'c1)
+    ;; (display c1)
+    ;; (display 'c2)
+    ;; (display c2)
+    ;; (display (greater-log 10 dist 10))
+    ;; (display (greater-log 10 dist 5))
+    ;; (display (greater-log 10 dist 1))
     (greater-log 10 dist 1)))
 
 (define factor-repulsion
@@ -406,35 +409,28 @@
     )
   )
 
+(define (rnd-select xs)
+  (let* ([total-length (length xs)]
+         [sampled-id (sample-integer total-length)]
+         [selected (list-ref xs sampled-id)])
+    selected))
+
+(define (sample-paper-title-author)
+  (rnd-select author-title-sets))
+
 (define (sample-paper-title)
-  (let*(
-        (total-length (length title-sets))
-        (sampled-id (sample-integer total-length))
-        (selected-title (list-ref title-sets sampled-id))
-        (obs-citation-title selected-title))
-    obs-citation-title
-    )
-  )
+  (rnd-select title-sets))
 
 (define (sample-paper-authors)
-  (let*((total-length (length author-sets))
-        (sampled-id (sample-integer total-length))
-        (selected-authors (list-ref author-sets sampled-id))
-        (obs-citation-authors (map parse-author selected-authors)))
-    obs-citation-authors
-    )
-  )
+  (rnd-select author-sets))
 
 (define (sample-paper)
-  (let* (
-         (authors (sample-paper-authors))
-         (title (sample-paper-title))
+  (let* ([authors-title (sample-paper-title-author)]
+         (authors (first authors-title))
+         (title (second authors-title))
          (pub-type '("default"))
-         (num-authors (length authors))
-         )
-    (make-paper num-authors authors title pub-type '())
-    )  
-  )
+         (num-authors (length authors)))
+    (make-paper num-authors authors title pub-type '())))
 
 ;;; Citation Graphical Model
 
@@ -473,14 +469,16 @@
 ;;Model 1: paper-citation
 ;;
 (define (db x) '())
-(enable-larj-debug)
-(enable-prov-debug)
+;;(enable-larj-log)
+;;(enable-larj-stats)
+;;(enable-larj-debug)
+;;(enable-prov-debug)
 
 (for-each display
           ;;(mh-query 100 10
-                    (larj-mh-query-proposal-count 2000 1 100
+                    (larj-mh-query-proposal-count 10000 1 100
                     ;; maybe have paper id be structural
-                     (define paper-id-distribution (DPmemS 0.8 gensymS))
+                     (define paper-id-distribution (DPmemS 0.8 gensym))
                      (define citation->paper-id-mem
                        (mem (lambda (o) (paper-id-distribution))))
                      (define unique-paper-ids (delete-duplicates (map citation->paper-id-mem citations)))
@@ -500,18 +498,18 @@
                              ;;         (factor-citation-paper c1 (citation->paper c1)))
                              ;;       citations))
                              (paper-citation-factors
+                               (begin 
+                                 (db 'start-paper-citation-factors)
                                (map (lambda (p1)
+                                      (begin
+                                             (db 'in-make-paper-citation-factors)
+                                             (db (paper->paper-id-mem p1))
+                                             (db (map citation->id (paper->citations p1)))
                                       (map (lambda (c1) 
-                                             (begin
-                                             ;;(display 'in-make-paper-citation-factors)
-                                             ;;(display 'c1)
-                                             ;;(display c1)
-                                             ;;(display 'p1)
-                                             ;;(display p1)
                                              (factor-citation-paper c1 (paper->paper-entity p1))
-                                             )
-                                             ) (paper->citations p1)))
-                                    papers))
+
+                                             ) (paper->citations p1))))
+                                    papers)))
                              (paper-paper-factors
                                (map (lambda (p1p2) 
                                       (factor-repulsion (second (first p1p2)) (second (second p1p2)))) 
