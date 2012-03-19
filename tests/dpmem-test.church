@@ -1,0 +1,6 @@
+(define d (DPmemS 1.0 gensym))
+
+(define smps (repeat 20 d))
+(begin
+  (display (delete-duplicates smps))
+  smps)
