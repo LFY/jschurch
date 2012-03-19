@@ -9,8 +9,8 @@
            (if which-distr
              (list (soft-eq 0.0 (first pts)))
              (list
-               (soft-eq -1.7 (first pts))
-               (soft-eq -1.7 (second pts))))])
+               (soft-eq -1.8 (first pts))
+               (soft-eq -1.8 (second pts))))])
     (list (length pts) pts (apply + constr))))
 
 (define (larj-run)
@@ -24,8 +24,8 @@
             res
             true))
 
-;;(define results (larj-run))
-(define results (mh-run))
+(define results (larj-run))
+;;(define results (mh-run))
 ;;(for-each display results)
 
 (length (filter (lambda (xy) (not (eq? (first xy) (second xy)))) (bi-gram (map car results))))
