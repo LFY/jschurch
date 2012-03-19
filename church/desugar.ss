@@ -332,6 +332,7 @@
  (register-query-sugar 'larj-mh-query+power)
  (register-query-sugar 'larj-mh-query-proposal-count)
  (register-query-sugar 'larj-mh-query-proposal-count+power)
+ (register-query-sugar 'factor-rejection-query)
  (register-query-sugar 'rejection-query)
  (register-query-sugar 'enumeration-query)
  (register-query-sugar 'gradient-ascent)
