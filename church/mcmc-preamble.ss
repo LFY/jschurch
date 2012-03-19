@@ -302,7 +302,7 @@
                                             (list proposal-state 0.0)))
                (proposed-larj-state (first larj-state-and-correction))
                (larj-correction (second larj-state-and-correction))
-               (num-proposals-to-make (if structural-change? (+ num-temps 1) 1))
+               (num-proposals-to-make (if structural-change? (third larj-state-and-correction) 1))
                (final-correction (+ (+ (- proposal-bw-score proposal-fw-score) cd-bw/fw (- ind-bw ind-fw)) larj-correction))
                [void (display-larj-log (list 'larj-correction larj-correction))]
                [void (display-larj (list 
@@ -479,6 +479,13 @@
 (define (list-rep n xs)
   (apply append (map (lambda (x) (replicate n x)) xs)))
 
+(define STOP-ALPHA #f)
+
+(define (enable-anneal-early-stop a)
+  (set! STOP-ALPHA a))
+(define (disable-anneal-early-stop)
+  (set! STOP-ALPHA #f))
+
 (define (do-larj-anneal-correction original-state jumped-state normal-form-proc num-temps power static-proposal)
   (let loop ((total-correction 0)
              (temp-list 
@@ -486,8 +493,8 @@
                  ;;(display (interp-range-pow 1.0 0.0 num-temps 1))
                  ;;(geo-seq num-temps power)))
                  (interp-range-pow 1.0 0.0 num-temps power)))
-                 ;;(list-rep 20 (forward-geo-temps num-temps))))
-                
+             ;;(list-rep 20 (forward-geo-temps num-temps))))
+
              ;; (up-down-temp-list
              ;;  (if (even? num-temps)
              ;;    (append
@@ -505,36 +512,41 @@
              ;;       (forward-geo-temps (+ 1 (/ num-temps 2)))
              ;;       (cdr (reverse (forward-geo-temps (+ 1 (/ num-temps 2)))))))))
              (up-down-temp-list
-              (if (even? num-temps)
-                (append
-                  (interp-range-pow 1.0 0.0 (floor (/ num-temps 2)) power)
-                  (interp-range-pow 0.0 1.0 (floor (/ num-temps 2)) power))
-                (append
-                  (interp-range-pow 1.0 0.0 (+ 1 (floor (/ num-temps 2))) power)
-                  (cdr (interp-range-pow 0.0 1.0 (+ 1 (floor (/ num-temps 2))) power)))))
+               (if (even? num-temps)
+                 (append
+                   (interp-range-pow 1.0 0.0 (floor (/ num-temps 2)) power)
+                   (interp-range-pow 0.0 1.0 (floor (/ num-temps 2)) power))
+                 (append
+                   (interp-range-pow 1.0 0.0 (+ 1 (floor (/ num-temps 2))) power)
+                   (cdr (interp-range-pow 0.0 1.0 (+ 1 (floor (/ num-temps 2))) power)))))
              (curr-state (make-extended-state original-state jumped-state)))
-    (if (= temp-list '())
-      (list (extended-state->after curr-state) total-correction)
-      (let* ([void (display-larj 'one-anneal-step)]
-             (bw/fw-and-next-state (static-proposal curr-state))
-             (bw/fw (first bw/fw-and-next-state))
-             (next-state (second bw/fw-and-next-state))
-             (curr-score (get-larj-score curr-state (car temp-list) (car up-down-temp-list)))
-             [void (display-larj (list 'current-annealed-score curr-score))]
-             (next-score (get-larj-score next-state (car temp-list) (car up-down-temp-list)))
-             [void (display-larj (list 'next-annealed-score next-score))]
-             (local-alpha (- next-score curr-score))
-             (accept (log-flip* (min 0.0 (+ local-alpha bw/fw))))
-             (void (display-larj (list 'curr-before (mcmc-state->query-value-generic (extended-state->before curr-state)))))
-             (void (display-larj (list 'curr-after (mcmc-state->query-value-generic (extended-state->after curr-state)))))
-             (void (display-larj (list 'next-before (mcmc-state->query-value-generic (extended-state->before next-state)))))
-             (void (display-larj (list 'next-after (mcmc-state->query-value-generic (extended-state->after next-state)))))
-             (void (display-larj (list 'temp (car temp-list) 'local-alpha local-alpha 'accept accept 'total-correction-to-accumulate total-correction)))
-             )
-        ;;(display 'one-anneal-step)
-        (if accept
-          (loop (+ total-correction (- local-alpha)) (cdr temp-list) (cdr up-down-temp-list) next-state) ;;if accept, accumulate alpha
-          (loop total-correction (cdr temp-list) (cdr up-down-temp-list) curr-state))))))
+    (cond [(= temp-list '()) 
+           (list (extended-state->after curr-state) total-correction (- num-temps (length temp-list)))]
+          [(and STOP-ALPHA (> STOP-ALPHA total-correction))
+           (begin
+             (display-larj-stats 'EARLY-REJECTION)
+             (list (extended-state->after curr-state) total-correction (- num-temps (length temp-list))))]
+          [else
+            (let* ([void (display-larj 'one-anneal-step)]
+                   (bw/fw-and-next-state (static-proposal curr-state))
+                   (bw/fw (first bw/fw-and-next-state))
+                   (next-state (second bw/fw-and-next-state))
+                   (curr-score (get-larj-score curr-state (car temp-list) (car up-down-temp-list)))
+                   [void (display-larj (list 'current-annealed-score curr-score))]
+                   (next-score (get-larj-score next-state (car temp-list) (car up-down-temp-list)))
+                   [void (display-larj (list 'next-annealed-score next-score))]
+                   (local-alpha (- next-score curr-score))
+                   (accept (log-flip* (min 0.0 (+ local-alpha bw/fw))))
+                   (void (display-larj (list 'curr-before (mcmc-state->query-value-generic (extended-state->before curr-state)))))
+                   (void (display-larj (list 'curr-after (mcmc-state->query-value-generic (extended-state->after curr-state)))))
+                   (void (display-larj (list 'next-before (mcmc-state->query-value-generic (extended-state->before next-state)))))
+                   (void (display-larj (list 'next-after (mcmc-state->query-value-generic (extended-state->after next-state)))))
+                   (void (display-larj (list 'temp (car temp-list) 'local-alpha local-alpha 'accept accept 'total-correction-to-accumulate total-correction)))
+                   )
+              ;;(display 'one-anneal-step)
+              (if accept
+                (loop (+ total-correction (- local-alpha)) (cdr temp-list) (cdr up-down-temp-list) next-state) ;;if accept, accumulate alpha
+                (loop total-correction (cdr temp-list) (cdr up-down-temp-list) curr-state)))])))
 
 (define (non-structural-proposal-distribution state normal-form-proc)
   (selective-proposal-distribution state
