@@ -98,7 +98,7 @@
   (make-factor
    (lambda (a b)
      (if (equal? a b)
-         1.0
+         (log 1.0)
          (log .5)))))
 
 (define (matrix-equal-factor m1 m2)
