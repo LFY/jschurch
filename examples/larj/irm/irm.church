@@ -1,7 +1,5 @@
 ;; Adapted from
 ;; http://projects.csail.mit.edu/church/wiki/Mixture_and_Non-Parametric_Models
-;;
-;; Once we have provenance tracking, use local factors.
 
 (define prob-factor
   (make-factor
@@ -50,8 +48,8 @@
       (list matrix classes))))
 
 (define (generate-extreme-irm-data num-objects)
-  (let* ([object->class (lambda (object) (if (> object (/ num-objects 2)) 'class1 'class2))]
-         [classes->parameters (mem (lambda (class1 class2) (if (eq? class1 class2) .95 .05)))]
+  (let* ([object->class (lambda (object) (if (> (+ object 1) (/ num-objects 2)) 'class1 'class2))]
+         [classes->parameters (mem (lambda (class1 class2) (if (eq? class1 class2) 1.0 0.0)))]
          [related (lambda (obj1 obj2) (flip (classes->parameters (object->class obj1)
                                                             (object->class obj2))))]
          [objects (iota num-objects)])
@@ -64,7 +62,7 @@
 (define data->classes second)
 
 (define (classes->equivalences classes)
-  (map (lambda (c1) 
+  (map (lambda (c1)
          (map (lambda (c2)
                 (eq? c1 c2))
               classes))
@@ -99,7 +97,7 @@
    (lambda (a b)
      (if (equal? a b)
          (log 1.0)
-         (log .5)))))
+         (log .001)))))
 
 (define (matrix-equal-factor m1 m2)
   (map (lambda (r1 r2)
@@ -110,21 +108,37 @@
        m1
        m2))
 
-  
+(define bool-softeq/annealed
+  (make-factor-annealed
+   (lambda (a b)
+     (if (equal? a b)
+         (log 1.0)
+         (log .001)))))
+
+(define (matrix-equal-factor/annealed m1 m2)
+  (map (lambda (r1 r2)
+         (map (lambda (x1 x2)
+                (bool-softeq/annealed x1 x2))
+              r1
+              r2))
+       m1
+       m2))
+
+
 (define (irm-mh-inference num-samples lag num-objects observation-matrix true-classes)
-  (mh-query 
+  (mh-query
    num-samples lag
 
    (define objects (iota num-objects))
-   
+
    (define class-distribution (DPmemS 1.0 gensym))
-   
+
    (define object->class
      (mem (lambda (object) (class-distribution))))
-   
+
    (define classes->parameters
      (mem (lambda (class1 class2) (first (beta 0.5 0.5)))))
-   
+
    (define (related object1 object2)
      (flip (classes->parameters (object->class object1) (object->class object2))))
 
@@ -143,15 +157,15 @@
      (factor-rejection-query
 
       (define objects (iota num-objects))
-      
+
       (define class-distribution (DPmemS 1.0 gensym))
-      
+
       (define object->class
         (mem (lambda (object) (class-distribution))))
-      
+
       (define classes->parameters
         (mem (lambda (class1 class2) (first (beta 0.5 0.5)))))
-      
+
       (define (related object1 object2)
         (flip (classes->parameters (object->class object1) (object->class object2))))
 
@@ -164,54 +178,41 @@
 
 
 (define (irm-larj-inference num-samples lag anneal-steps num-objects observation-matrix true-classes)
-  (larj-mh-query-proposal-count
+  (larj-mh-query
    num-samples lag anneal-steps
 
    (define objects (iota num-objects))
-   
+
    (define class-distribution (DPmemS 1.0 gensym))
-   
+
    (define object->class
      (mem (lambda (object) (class-distribution))))
-   
+
    (define classes->parameters
      (mem (lambda (class1 class2) (first (beta 0.5 0.5)))))
-   
+
    (define (related object1 object2)
      (flip (classes->parameters (object->class object1) (object->class object2))))
 
    (score-classes true-classes (map object->class objects))
 
    (begin
-     (matrix-equal-factor observation-matrix
-                          (generate-square-matrix related objects))
+     (matrix-equal-factor/annealed observation-matrix
+                                   (generate-square-matrix related objects))
      true)))
 
 
-(let* ([num-objects 6]
-       [num-steps 5000]
-       [anneal-steps 20]
-       [data (generate-irm-data num-objects)])
-  (display "baseline score:")
-  (display (baseline-score num-objects))
-  ;; (let ([mh-scores (irm-mh-inference (/ num-steps anneal-steps) anneal-steps
-  ;;                                    num-objects
-  ;;                                    (data->matrix data)
-  ;;                                    (data->classes data))])
-  ;;   ;; (display "mh-scores:")
-  ;;   ;; (display mh-scores)
-  ;;   (display (mean mh-scores))
-  ;;   (let ([larj-scores (irm-larj-inference num-steps 1
-  ;;                                          anneal-steps
-  ;;                                          num-objects
-  ;;                                          (data->matrix data)
-  ;;                                          (data->classes data))])
-  ;;     ;; (display "larj-scores:")
-  ;;     ;; (display larj-scores)
-  ;;     (display (mean larj-scores))
-      (let ([rejection-scores (irm-rejection-inference 10
-                                                       num-objects
-                                                       (data->matrix data)
-                                                       (data->classes data))])
-        (display (mean rejection-scores))
-        'done))
+(define (main)
+  (let* ([num-objects 6]
+         [data (generate-extreme-irm-data num-objects)]
+         [obs (data->matrix data)]
+         [classes (data->classes data)])
+    (for-each display obs)
+    (display (list 'baseline (baseline-score num-objects)))
+    (let ([mh-scores (irm-mh-inference 200 10 num-objects obs classes)])
+      (display (list 'mh (mean mh-scores)))
+      (let ([larj-scores (irm-larj-inference 200 5 10 num-objects obs classes)])
+        (display (list 'larj (mean larj-scores)))
+        'done))))
+
+(main)
