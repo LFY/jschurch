@@ -1,0 +1,2 @@
+cp jschurch /usr/local/bin/
+echo "Further instruction: Set JSCHURCH_ROOT environment variable to" `pwd`
