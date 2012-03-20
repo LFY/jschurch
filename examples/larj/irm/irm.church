@@ -49,6 +49,16 @@
           [classes (map object->class objects)])
       (list matrix classes))))
 
+(define (generate-extreme-irm-data num-objects)
+  (let* ([object->class (lambda (object) (if (> object (/ num-objects 2)) 'class1 'class2))]
+         [classes->parameters (mem (lambda (class1 class2) (if (eq? class1 class2) .95 .05)))]
+         [related (lambda (obj1 obj2) (flip (classes->parameters (object->class obj1)
+                                                            (object->class obj2))))]
+         [objects (iota num-objects)])
+    (let ([matrix (generate-square-matrix related objects)]
+          [classes (map object->class objects)])
+      (list matrix classes))))
+
 (define data->matrix first)
 
 (define data->classes second)
