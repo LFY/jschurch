@@ -71,7 +71,7 @@
                             (load "factor-preamble.church")
                             (load "mcmc-preamble.church")
                             ,@top-list))
-          (ds-sexpr (remove-dead (de-sugar-all church-sexpr))) ;;desugar and remove unused defs.
+          (ds-sexpr (de-sugar-all church-sexpr)) ;;desugar and remove unused defs.
           (ds-sexpr (if (eq? #t lazy)
                         (add-forcing ds-sexpr) ;;this supports lazy evaluation, by adding force at applications, etc.
                         ds-sexpr))
@@ -304,7 +304,7 @@
                          ,(addr-prov (lambda-body sexpr) (lset-union equal? re-init (list new-re-init))))))]
         [(mem? sexpr) 
          `((lambda (mem-address store proc)
-             (prov-init (lambda (address store . args) (apply-fn+prov (cons args mem-address) store proc args))))
+             (prov-init (lambda (address store . args) (apply-fn+prov (cons (extract-vals args) mem-address) store proc args))))
            address
            store
            ,(re-addr-prov (second sexpr)))]

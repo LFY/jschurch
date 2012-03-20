@@ -1,0 +1,26 @@
+
+(define mentions
+  (tr-list 1 2 3 4 5 6 7 8 9 10))
+
+(define num-mentions (length mentions))
+
+(define (sample-entity) (list (gensym) (sample-integer 2)))
+
+
+(define mention-entity-factor
+  (make-factor (lambda (m e) (if (= (modulo m 2) (cadr e)) 0.0 (log 0.01)))))
+
+(begin
+  (enable-prov-debug)
+(for-each display (larj-mh-query-proposal-count 50 1 3
+;;(for-each display (mh-query 50 1
+          (define entity-distr (DPmemS 1.0 sample-entity))
+          (define mention->entity
+            (mem (lambda (m) (entity-distr))))
+          (define state-scores
+            (tr-map (lambda (mention)
+                      (let* ([entity (mention->entity mention)]
+                             [score (mention-entity-factor mention entity)])
+                        (list mention entity score)))
+                    mentions))
+          (tr-list->list state-scores) true)))

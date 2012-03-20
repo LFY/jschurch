@@ -1,0 +1,48 @@
+(define F1 (make-factor (lambda (i) (if i (log .5) (log 1.0)))))
+(define F2 (make-factor (lambda (i j) (if (equal? i j) (log 1.0) (log .3333)))))
+
+(define (frac xs)
+  (/ (length (filter (lambda (x) x) xs))
+     (exact->inexact (length xs))))
+
+(define rejection-estimate
+  (begin
+    (display 'rejection)
+    (frac
+     (repeat 10000
+             (lambda ()
+               (factor-rejection-query
+                (define x (flip))
+                (define y (flip .8))
+                (define factors (list (F1 x)
+                                      (F2 x y)))
+                x
+                true))))))
+
+(define mh-estimate
+  (begin
+    (display 'mh)
+    (frac
+     (mh-query 1000 500
+               (define x (flip))
+               (define y (flip .8))
+               (define factors (list (F1 x)
+                                     (F2 x y)))
+               x
+               true))))
+
+(define larj-estimate
+  (begin
+    (display 'larj)
+    (frac
+     (larj-mh-query 1000 500 3
+                    (define x (flipS))
+                    (define y (flipS .8))
+                    (define factors (list (F1 x)
+                                          (F2 x y)))
+                    x
+                    true))))
+
+(list rejection-estimate
+      mh-estimate
+      larj-estimate)

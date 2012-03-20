@@ -1,0 +1,5 @@
+(define f
+  (mem (lambda (x)
+         (sample-integer 100))))
+
+(list (f (flip)) (f (flip)) (f (flip)) (f (flip)) (f (flip)))
