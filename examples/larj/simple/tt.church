@@ -1,6 +1,7 @@
+(load "tt-common.church")
+
 ;; Running "tempered transitions" as a larj-mcmc kernel.
 
-(define argv (command-line))
 
 ;; The model ===================================================================
 
@@ -28,6 +29,8 @@
 
 ;; Parsing arguments and printing===============================================
 
+(define argv (command-line))
+
 (define alg (if (> (length argv) 2)
               (cond [(equal? "larj" (list-ref argv 2)) larj-run]
                   [(equal? "mh" (list-ref argv 2)) mh-run]
@@ -35,12 +38,6 @@
               larj-run))
 
 (define states (alg))
-
-(define (print-state smp-score)
-  (let* ([smp (number->string (first smp-score))]
-         [score (number->string (second smp-score))])
-    (string-append
-      "state " smp " score " score)))
 
 (begin
   (for-each display (map print-state states)))
