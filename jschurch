@@ -194,8 +194,6 @@ def build(file, timeit=False, debug=False, inspect=False, params="", verbose=Fal
     """
     parameters = parse_params(params)
 
-    print(parameters)
-
     all_church_prog_filenames = []
     for (i, (param_key, param_value)) in enumerate(parameters):
 
