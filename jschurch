@@ -185,8 +185,8 @@ def vprint(s, verbose):
     if verbose:
         print
         print(s)
-    
-def run(file, timeit=False, debug=False, inspect=False, params="", verbose=False, concurrent=True):
+
+def build(file, timeit=False, debug=False, inspect=False, params="", verbose=False, concurrent=True):
     """
     Given a Church file, compiles it to Scheme using the [Church
     compiler in JS], then compiles it to Javascript using scheme2js
@@ -194,6 +194,9 @@ def run(file, timeit=False, debug=False, inspect=False, params="", verbose=False
     """
     parameters = parse_params(params)
 
+    print(parameters)
+
+    all_church_prog_filenames = []
     for (i, (param_key, param_value)) in enumerate(parameters):
 
         vprint("Reading Church code...", verbose)
@@ -211,7 +214,7 @@ def run(file, timeit=False, debug=False, inspect=False, params="", verbose=False
         if not concurrent:
             church_pre_filename = rooted("compiled/church-prog-pre.tmp.js") 
         else:
-            non_church_ext = os.path.splitext(file)[0]
+            non_church_ext = os.path.splitext(file)[0]+"-"+param_key+"-"+param_value if param_value else os.path.splitext(file)[0]
             church_pre_filename = abspath("%s-prog-pre.tmp.js" % non_church_ext)
             church_pre_dir = dirname(church_pre_filename)
 
@@ -267,7 +270,21 @@ def run(file, timeit=False, debug=False, inspect=False, params="", verbose=False
 
         combine_files([rooted(lib_path) for lib_path in libs],
                       church_prog_filename)
+
+        all_church_prog_filenames.append(church_prog_filename)
+
+    return all_church_prog_filenames 
+    
+def run(file, timeit=False, debug=False, inspect=False, params="", verbose=False, concurrent=True):
+    """
+    Given a Church file, compiles it to Scheme using the [Church
+    compiler in JS], then compiles it to Javascript using scheme2js
+    and runs it.
+    """
             
+    all_church_prog_filenames = build(file, timeit, debug, inspect, params, verbose, concurrent)        
+
+    for church_prog_filename in all_church_prog_filenames:
         vprint("Running js in node...", verbose)
         timing_cmd = "time" if timeit else ""
         debug_cmd = ""
@@ -280,4 +297,4 @@ def run(file, timeit=False, debug=False, inspect=False, params="", verbose=False
         call(cmd)
     
 if __name__ == "__main__":
-    optfunc.run([make, run, webservice, makecustom])
+    optfunc.run([make, run, webservice, makecustom, build])
