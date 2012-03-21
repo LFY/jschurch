@@ -70,6 +70,7 @@
 
 (define scheme-gensym gensym)
 
+
 (define true #t)
 (define false #f)
 
@@ -95,6 +96,9 @@
 ;; (define (min a b) (if (< a b) a b)) ;;FIXME: proper dmin?
 ;; (define (continuous? x) (and (real? x) (not (fixnum? x))))
 (define continuous? real?)
+
+;; Other utilities
+(define command-line command_line)
 
 ;;;the program, defining the church-main function, will be spliced in here:
 {churchprogram}
