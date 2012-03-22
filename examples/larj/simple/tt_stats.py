@@ -1,6 +1,5 @@
 # Read in 2d sample points from a file
 
-
 import numpy as np
 import scipy.stats as stats
 from matplotlib.pyplot import imshow
@@ -36,7 +35,8 @@ def kde_2d(rvs, out_fn):
     z = z.reshape(128,128)
 
     plt.scatter(rvs[:,0],rvs[:,1],alpha=0.5,color='white')
-    plt.imshow(z,aspect=x_flat.ptp()/y_flat.ptp(),origin='lower',extent=(rvs[:,0].min(),rvs[:,0].max(),rvs[:,1].min(),rvs[:,1].max()))
+    plt.imshow(z,aspect=x_flat.ptp()/y_flat.ptp(),origin='lower',
+            extent=(rvs[:,0].min(),rvs[:,0].max(),rvs[:,1].min(),rvs[:,1].max()))
 
     plt.savefig(out_fn)
 

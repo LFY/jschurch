@@ -19,13 +19,13 @@
 
 ;; Inference algorithms=========================================================
 
-(define (larj-run)
-  (larj-mh-query-proposal-count 10000 1 100 (define x (sample-distr)) x true))
+(define (larj-run num-props anneal-steps)
+  (larj-mh-query-proposal-count num-props 1 anneal-steps (define x (sample-distr)) x true))
 
-(define (mh-run)
-  (mh-query 10000 1 (define x (sample-distr)) x true))
+(define (mh-run num-props)
+  (mh-query num-props 1 (define x (sample-distr)) x true))
 
-;; Parsing arguments and printing===============================================
+;; Parsing arguments============================================================
 
 (define argv (command-line))
 
@@ -35,7 +35,11 @@
                   [else larj-run])
               larj-run))
 
-(define states (alg))
+(define num-props (if (> (length argv) 3) (string->number (list-ref argv 3)) 10000))
+(define anneal-steps (if (> (length argv) 4) (string->number (list-ref argv 4)) 100))
+
+(define states (alg num-props anneal-steps))
 
 (begin
   (for-each display (map print-state states)))
+
