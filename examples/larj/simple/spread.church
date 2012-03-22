@@ -1,3 +1,7 @@
+(load "tt-common.church")
+
+;; The model====================================================================
+
 (define soft-eq
   (make-factor (lambda (x y)
     (norm-eq-log x y 0.1))))
@@ -11,21 +15,32 @@
              (list
                (soft-eq -1.8 (first pts))
                (soft-eq -1.8 (second pts))))])
-    (list (length pts) pts (apply + constr))))
+    (list pts (apply + constr))))
 
-(define (larj-run)
-  (larj-mh-query-proposal-count 10000 1 10
+(define (larj-run props steps)
+  (larj-mh-query-proposal-count props 1 steps
                                 (define res (run-distr))    
                                 res
                                 true))
-(define (mh-run)
-  (mh-query 10000 1
-            (define res (run-distr))    
-            res
-            true))
+(define (mh-run props steps)
+  (mh-query props 1 (define res (run-distr)) res true)) 
 
-(define results (larj-run))
-;;(define results (mh-run))
-;;(for-each display results)
+;; Parsing arguments============================================================
 
-(length (filter (lambda (xy) (not (eq? (first xy) (second xy)))) (bi-gram (map car results))))
+(define argv (command-line))
+
+(define alg (if (> (length argv) 2)
+              (cond [(equal? "larj" (list-ref argv 2)) larj-run]
+                  [(equal? "mh" (list-ref argv 2)) mh-run]
+                  [else larj-run])
+              larj-run))
+
+(define num-props (if (> (length argv) 3) (string->number (list-ref argv 3)) 10000))
+(define anneal-steps (if (> (length argv) 4) (string->number (list-ref argv 4)) 100))
+
+(define states (alg num-props anneal-steps))
+
+(begin
+  (for-each display (map print-state states)))
+
+
