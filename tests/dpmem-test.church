@@ -1,6 +1,10 @@
-(define d (DPmemS 1.0 gensym))
+(define d (DPmem 1.0 gensym))
 
-(define smps (repeat 20 d))
+
 (begin
-  (display (delete-duplicates smps))
+  (enable-prov-debug)
+  (larj-mh-query 2 1 3
+                 ;;(define smps (repeat 20 flip))
+                 (define smps (repeat 20 d))
+                 smps true)
   smps)
