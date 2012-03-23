@@ -272,6 +272,7 @@ def build_with_scm_template(file, scm_template, timeit=False, debug=False, inspe
         vprint("Adding libraries...", verbose)
         libs = ["external/scheme2js/runtime.js",
                 "scheme-compilers/javascript/math-functions.js",
+                "scheme-compilers/javascript/util.js",
                 "scheme-compilers/javascript/random/MRG32k3a.js",
                 "scheme-compilers/javascript/random/Mash.js",
                 "compiled/church-prog-core.tmp.js"]
@@ -288,15 +289,14 @@ def build_with_scm_template(file, scm_template, timeit=False, debug=False, inspe
 
     return all_church_prog_filenames 
     
-def run(file, timeit=False, debug=False, inspect=False, params="", verbose=False, concurrent=True):
+def run(file, argv=[], timeit=False, debug=False, inspect=False, params="", verbose=False, concurrent=True):
     """
     Given a Church file, compiles it to Scheme using the [Church
     compiler in JS], then compiles it to Javascript using scheme2js
     and runs it.
     """
-            
-    all_church_prog_filenames = build(file, timeit, debug, inspect, params, verbose, concurrent)        
 
+    all_church_prog_filenames = build(file, timeit, debug, inspect, params, verbose, concurrent)        
     for church_prog_filename in all_church_prog_filenames:
         vprint("Running js in node...", verbose)
         timing_cmd = "time" if timeit else ""
@@ -305,7 +305,7 @@ def run(file, timeit=False, debug=False, inspect=False, params="", verbose=False
             debug_cmd = "--debug"
         if inspect:
             debug_cmd = "--debug-brk"
-        cmd = "%s node --max-stack-size=1111265536 %s %s" % (timing_cmd, debug_cmd, church_prog_filename)
+        cmd = "%s node --max-stack-size=1111265536 %s %s %s" % (timing_cmd, debug_cmd, church_prog_filename, argv)
         vprint(cmd, verbose)
         call(cmd)
     

@@ -1,0 +1,1 @@
+node --max-stack-size=1111265536 "$@"
