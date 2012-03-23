@@ -135,7 +135,12 @@
 (define (foldl1 f xs)
   (foldl f (car xs) (cdr xs)))
 
-(define (reduce f xs) (foldl1 f xs))
+(define (reduce f xs) 
+  (begin 
+    (display 'calling-reduce)
+      (foldl1 f xs)
+      )
+  )
 
 ; @desc
 ; Returns the reverse of a list.

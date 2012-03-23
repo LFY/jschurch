@@ -549,6 +549,91 @@
     (define (update-addbox addbox address fn) (trie-update addbox (reverse address) fn))
 
 ;; helper functions for LARJ-MCMC===============================================
+;;
+(define (nested->flat-list input)
+  (let loop ((curr-list input)
+             (r '()))
+    (if (null? curr-list)
+      r
+      (begin
+        ;;(display 'car-curr-list)
+        ;;(display (car curr-list))
+        ;;(display 'is-procedure?)
+        ;;(display (procedure? (car curr-list)))
+        ;;(display 'is-symbol)
+        ;;(display (symbol? (car curr-list)))
+        ;;(display 'is-string)
+        ;;(display (string? (car curr-list)))
+        ;;(display 'is-number)
+        ;;(display (number? (car curr-list)))
+      (if (list? (car curr-list))
+        (loop (cdr curr-list) (append r (loop (car curr-list) '())))
+        (let* ((curr-elem (car curr-list))
+              (curr-elem-string 
+                (if (null? curr-elem)
+                  ""
+                  (symbol->string curr-elem)))
+              )
+          (display 'hello-curr-list)
+          (display (car curr-list))
+          (display 'r)
+          (display r)
+          (display 'symbol->string-curr-list)
+          (display (symbol->string (car curr-list)))
+          (display 'curr-elem-string)
+          (display curr-elem-string)
+          (display 'append-r-curr-elem)
+          (display (append r curr-elem))
+          (display (append r (list curr-elem)))
+          (loop (cdr curr-list) (append r (list curr-elem-string)))
+          )
+        
+        )
+      
+      )
+      )))
+
+;;yt: these are duplicated from standard-preamble.church.
+;;FIXME!
+(define (myfoldl f z xs)
+  (if (null? xs) z
+    (myfoldl f (f z (car xs)) (cdr xs))))
+
+(define (myfoldl1 f xs)
+  (myfoldl f (car xs) (cdr xs)))
+
+(define (myreduce f xs) 
+      (myfoldl1 f xs))
+
+(define (flat-list->word line-list)
+  (begin
+    ;;(display 'line-list)
+    ;;(display line-list)
+    ;;(display 'dd-line-list)
+    (if (null? line-list) 
+      0
+      (begin
+        ;;(display (string? (first line-list)))
+        ;;(display (string? (second line-list)))
+        ;;(display (string? (third line-list)))
+        ;;(display (string? (fourth line-list)))
+        ;;(display (string? (fifth line-list)))
+        ;;(display (string? (sixth line-list)))
+        (myreduce (lambda (x y) (string-append x y))
+                line-list)
+        ))))
+
+(define (list->word input)
+  (let ((flattend-list (nested->flat-list input)))
+    (display 'original-list)
+    (display input)
+    (display 'flattend-list)
+    (display flattend-list)
+    (display 'flat-list->word-of-flattened-list)
+    (display (flat-list->word flattend-list))
+    (flat-list->word (nested->flat-list input))
+    )
+  )
 
 (define make-extended-state list)
 (define extended-state->before first)
@@ -688,7 +773,7 @@
                                              [v (if DEBUG-DEP
                                                   (begin
                                                     (display (list 'factor-addr address))
-                                                    (display (list 'prov-before (prov->list previous-prov)))
+                                                    (display (list 'prov-before (list->word (prov->list previous-prov))))
                                                     (display (list 'prov-after (prov->list new-provenance)))
                                                     (display (list 'structure-change? structure-change?))))]
                                              [auto-should-anneal (if (eq? trienone factor-instance) ;; Definitely anneal, will suffice to AUTO-ANNEAL this
