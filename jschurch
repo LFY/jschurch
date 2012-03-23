@@ -186,7 +186,23 @@ def vprint(s, verbose):
         print
         print(s)
 
+def buildwebpage(file, html_filename, timeit=False, debug=False, inspect=False, params="", verbose=False, concurrent=True):
+    non_church_ext = os.path.splitext(file)[0]
+    jschurch_filename = non_church_ext+".js"
+    html_out_filename = non_church_ext+".html"
+
+    html_src = open(html_filename).read() % {"jsfilename": jschurch_filename}
+    fn = open(html_out_filename, 'w')
+    fn.write(html_src)
+
+    scm_template_webpage = inline("scheme-compilers/scheme2js-webpage-template.sc",
+                          [rooted("."), rooted("./church/")])
+    return build_with_scm_template(file, scm_template_webpage, timeit, debug, inspect, params, verbose, concurrent)
+
 def build(file, timeit=False, debug=False, inspect=False, params="", verbose=False, concurrent=True):
+    return build_with_scm_template(file, SCM_TEMPLATE, timeit, debug, inspect, params, verbose, concurrent)
+
+def build_with_scm_template(file, scm_template, timeit=False, debug=False, inspect=False, params="", verbose=False, concurrent=True):
     """
     Given a Church file, compiles it to Scheme using the [Church
     compiler in JS], then compiles it to Javascript using scheme2js
@@ -214,7 +230,6 @@ def build(file, timeit=False, debug=False, inspect=False, params="", verbose=Fal
         else:
             non_church_ext = os.path.splitext(file)[0]+"-"+param_key+"-"+param_value if param_value else os.path.splitext(file)[0]
             church_pre_filename = abspath("%s-prog-pre.tmp.js" % non_church_ext)
-            church_pre_dir = dirname(church_pre_filename)
 
         church_pre = open(church_pre_filename, "w")
         church_pre.write(JS_TEMPLATE % { "church_prog" : js_escape(church_input_src) })
@@ -239,7 +254,7 @@ def build(file, timeit=False, debug=False, inspect=False, params="", verbose=Fal
         vprint("Wrapping Scheme code in template...", verbose)
         scm_src = open(scm_src_filename).read()
         scm_src_file = open(scm_src_filename, "w")
-        scm_src_file.write(SCM_TEMPLATE.replace("{churchprogram}", scm_src))
+        scm_src_file.write(scm_template.replace("{churchprogram}", scm_src))
         scm_src_file.close()
             
         vprint("Compiling Scheme code to js using scheme2js...", verbose)
@@ -295,4 +310,4 @@ def run(file, timeit=False, debug=False, inspect=False, params="", verbose=False
         call(cmd)
     
 if __name__ == "__main__":
-    optfunc.run([make, run, webservice, makecustom, build])
+    optfunc.run([make, run, webservice, makecustom, build, buildwebpage])
