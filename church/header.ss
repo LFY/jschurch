@@ -74,7 +74,7 @@
 (define (generate-special)
   `(
 
-    (load "util.ss")
+    (load "church-primitives.ss")
 
     (load "provenance.ss")
 
@@ -84,8 +84,10 @@
     (load "trie.ss")
 
     (load "store.ss")
+
     (load "xrp.ss")
     (load "factor.ss")
+    (load "mcmc-state.ss")
 
 
     (load "larjmcmc-util.ss")
