@@ -6,12 +6,6 @@
 (define store->xrp-draws first)
 (define set-store-xrp-draws! set-car!)
 
-(define (set-list-elt! lst elt n)
-  (let loop ([curr lst]
-             [i 0])
-    (if (= i n)
-      (set-car! curr elt)
-      (loop (cdr curr) (+ i 1)))))
 
 (define (set-store-factors! store new-factors)
   (set-list-elt! store new-factors 5))

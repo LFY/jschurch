@@ -36,6 +36,23 @@
       (loop (lambda (x) 
               (acc ((car rest) x))) (cdr rest)))))
 
-;; functional primitives
 (define (fsts xs) (map car xs))
 (define (snds xs) (map cadr xs))
+
+(define (my-last xs)
+  (cond [(null? (cdr xs)) (car xs)]
+        [else (my-last (cdr xs))]))
+
+(define (my-take xs n)
+  (define (loop acc n xs)
+    (cond [(= n 0) (reverse acc)]
+          [else
+            (loop (cons (car xs) acc) (- n 1) (cdr xs))]))
+  (loop '() n xs))
+
+(define (set-list-elt! lst elt n)
+  (let loop ([curr lst]
+             [i 0])
+    (if (= i n)
+      (set-car! curr elt)
+      (loop (cdr curr) (+ i 1)))))

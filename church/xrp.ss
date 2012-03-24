@@ -13,6 +13,9 @@
 (define xrp-draw-support seventh)
 (define xrp-draw-structural? eighth)
 
+(define (print-single-xrp xrp)
+  (display (list (xrp-draw-address xrp) (xrp-draw-value xrp))))
+
 ;; We'd like to update the structural? field of each xrp draw according to structural-addrs in interv-store. This can probably be a separate function.
 (define (xrp-draw-set-structural draw new-str)
   (make-xrp-draw
@@ -268,5 +271,3 @@
                    (begin 
                      (list new-val (merge-provs (addr->prov address) hyperprovs (merge-list-provs provs)))))))))
 
-(define (print-single-xrp xrp)
-  (display (list (xrp-draw-address xrp) (xrp-draw-value xrp))))
