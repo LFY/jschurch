@@ -4,7 +4,7 @@
 
 (define num-mentions (length mentions))
 
-(define (sample-entity) (list (gensym) (sample-integer 2)))
+(define (sample-entity) (list (gensym) (sample-integerS 2)))
 
 
 (define mention-entity-factor

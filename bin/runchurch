@@ -1,0 +1,6 @@
+#!/usr/bin/env python
+
+import subprocess as sp
+import sys
+
+sp.call("jschurch run %s --argv \"%s\"" % (sys.argv[1], reduce(lambda x, y: x + " " + y, sys.argv[2:], "")), shell = True)

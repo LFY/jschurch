@@ -54,4 +54,9 @@ def kde_1d(rvs, out_fn, pad = 1.0):
 
     fig.savefig(out_fn)
 
-kde_1d(np.array(map(lambda x: x[0], rvs)), "current.png")
+def print_dim_changes(rvs):
+    print "Num dimension changes:", len(filter(lambda (x, y): len(x) != len(y), zip(rvs, rvs[1:])))
+
+print_dim_changes(rvs)
+kde_1d(np.array(map(lambda x: x[0], filter(lambda x: len(x) == 1, rvs))), "current-1d.png")
+kde_2d(np.array(filter(lambda x: len(x) == 2, rvs)), "current-2d.png")

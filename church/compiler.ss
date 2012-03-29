@@ -27,9 +27,9 @@
 
 (load "desugar.ss")
 
-(load "header.ss")
+(load "header.ss") ;; generic header
 
-(load "mcmc-preamble.ss")
+(load "mcmc-preamble.ss") ;; mcmc functions
 
 (define infinity (/ 0.0))
 
