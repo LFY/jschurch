@@ -56,3 +56,39 @@
     (if (= i n)
       (set-car! curr elt)
       (loop (cdr curr) (+ i 1)))))
+
+
+;; Formatting
+
+
+(define (flatten-list xss)
+  (define (loop acc xss)
+    (cond [(null? xss) acc]
+          [(list? (car xss))
+           (loop (append acc (loop '() (car xss)))
+                 (cdr xss))]
+          [else
+            (loop (append acc (list (car xss)))
+                  (cdr xss))]))
+  (loop '() xss))
+
+(define empty-str (list->string '()))
+
+(define space (list->string (list #\space)))
+
+(define (delimit c xs)
+  (if (null? xs) 
+    empty-str
+    (string-append (car xs) c (delimit c (cdr xs)))))
+
+(define (convert-string x)
+  (cond [(number? x) (number->string x)]
+        [(symbol? x) (symbol->string x)]
+        [(string? x) x]
+        [(null? x) "null"]
+        [else x]))
+
+(define (address->string addr)
+  (let* ([flattened-address (flatten-list addr)]
+         [strings (map convert-string flattened-address)])
+    (delimit space strings)))

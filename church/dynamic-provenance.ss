@@ -214,7 +214,9 @@
                     make-factor 
                     make-factor-annealed
                     make-factor-frozen
-                    make-initial-mcmc-state)))
+                    make-initial-mcmc-state
+                    
+                    fg->json)))
 
   ;; lifting a -> b (defined in header.ss)
   (define (threaded-primitive-libfunc? s)
