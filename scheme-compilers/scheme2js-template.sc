@@ -104,4 +104,4 @@
 {churchprogram}
 
 ;;go...
-(display (church-main '(top) (make-empty-store)))
+(church-main '(top) (make-empty-store))
