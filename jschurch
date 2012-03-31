@@ -157,6 +157,7 @@ def webservice():
                 "external/jquery-1.7.min.js",
                 "scheme-compilers/javascript/md5.js",
                 "scheme-compilers/javascript/sc2json.js",
+                "scheme-compilers/javascript/factor.js",
                 "scheme-compilers/javascript/random/MRG32k3a.js",
                 "scheme-compilers/javascript/random/Mash.js",
                 "compiled/scheme2js-template.js",
@@ -275,6 +276,7 @@ def build_with_scm_template(file, scm_template, timeit=False, debug=False, inspe
                 "scheme-compilers/javascript/math-functions.js",
                 "scheme-compilers/javascript/util.js",
                 "scheme-compilers/javascript/sc2json.js",
+                "scheme-compilers/javascript/factor.js",
                 "scheme-compilers/javascript/random/MRG32k3a.js",
                 "scheme-compilers/javascript/random/Mash.js",
                 "compiled/church-prog-core.tmp.js"]

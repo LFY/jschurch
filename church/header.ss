@@ -96,4 +96,6 @@
 
     (load "counterfactual-update.ss")
 
+    (load "json.ss")
+
     ) )
