@@ -40,6 +40,26 @@
              (for-each display (map factor-address (car fs-l)))))
          (zip2 (list f+ f- fc) '(f+ f- fc)))))
 
+;; addr may be nested, and contain other arguments (if we are using mem)
+
+;; For debugging / displaying the graph
+
+(define (church-fg->json+provenance address store)
+  (let* ([factors (addbox->values (store->factors store))]
+         [factor-id->scopes 
+           (list (list 'factors
+                 (cons 'list
+                       (map (lambda (f)
+                              (list
+                                (list 'factor
+                                      (list 
+                                        (list 'address (address->string (factor-address f)))
+                                        (list 'scope (cons 'list 
+                                                           (map address->string
+                                                                (factor-provenance f))))))))
+                            factors))))])
+    (prov-init (json factor-id->scopes))))
+
 (define (church-make-factor-generic address store factor-function should-anneal)
   (lambda (address store . args)
     (define new-val '())
