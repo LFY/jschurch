@@ -13,3 +13,10 @@ function jsf_norm_gauss_log(mean, val, variance){
 function jsf_box_width(w, target_width, variance){
     return jsf_norm_gauss_log(0, (w-target_width), variance);
 }
+
+function jsf_box_box_overlap(x1, y1, w1, h1, x2, y2, w2, h2, target_overlap_area, variance){
+    var box1geom = box2jsts_bbox(x1, y1, w1, h1);
+    var box2geom = box2jsts_bbox(x2, y2, w2, h2);
+    var overlap_area = jsts_overlap_conservative(box1geom, box2geom);
+    return jsf_norm_gauss_log(overlap_area, target_overlap_area, variance);
+}
