@@ -1,0 +1,16 @@
+
+(displayJSON
+  (json
+    (make-json-kvs 'samples 
+                   (apply make-json-list 
+                          (mh-query 1 1
+                                    (define xs (tr-repeat 5 flip))
+                                    (begin
+                                      (tr-map (lambda (xy)
+                                                (softeq (tr-first xy)
+                                                        (tr-second xy)))
+                                              (tr-bigram xs))
+                                      (tr-map (lambda (x) (softeq x #t))
+                                              xs)
+                                      (fg->dict))
+                                    true)))))

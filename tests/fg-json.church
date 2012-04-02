@@ -1,0 +1,9 @@
+(mh-query 10 10
+          (define xs (tr-repeat 5 flip))
+          (begin
+            (tr-map (lambda (xy)
+                   (softeq (tr-first xy)
+                            (tr-second xy)))
+                    (tr-pairs xs))
+            (list (displayJSON (fg->json)) xs))
+          true)

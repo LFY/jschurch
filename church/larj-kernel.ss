@@ -377,6 +377,11 @@
       (lambda (state) (larj-proposal-distribution state nfqp num-temps power static-proposal))
       default-scorer)))
 
+(define (larj-kernel-proposal-count+select-proposable proposable? num-temps steps power nfqp)
+  (let ((static-proposal (lambda (state1state2) (extended-state-space-proposal-distribution state1state2 nfqp))))
+    (make-larj-kernel
+      (lambda (state) (larj-selective-proposal-distribution state nfqp proposable? num-temps power static-proposal))
+      default-scorer)))
 
 ;; Queries: LA-Church ==========================================================
 
@@ -407,7 +412,12 @@
 
 (define (larj-mh-query-generic*
           proposable? num-proposals-to-make power
-          lag num-temps normal-form-proc)
+          num-temps normal-form-proc)
   (repeated-mcmc-query-core-proposal-count (lambda () (rejection-initializer normal-form-proc))  ;; initializer
-                                           (larj-kernel-proposal-count+nonstructural num-temps lag 1 normal-form-proc)     ;; kernel
+                                           (larj-kernel-proposal-count+select-proposable 
+                                             (cond [(equal? 'all proposable?) (lambda (x) true)]
+                                                   [(equal? 'struct proposable?)
+                                                    xrp-draw-structural?]
+                                                   [else xrp-draw-structural?])
+                                             num-temps 1 power normal-form-proc)     ;; kernel
                                            num-proposals-to-make))

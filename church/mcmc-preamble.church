@@ -39,3 +39,6 @@
 
 (define (larj-mh-query-proposal-count num-proposals-to-make lag num-temps normal-form-proc)
   (larj-mh-query-proposal-count* num-proposals-to-make lag num-temps normal-form-proc))
+
+(define (larj-mh-query-generic proposable? num-proposals-to-make power num-temps normal-form-proc)
+  (larj-mh-query-generic* proposable? num-proposals-to-make power num-temps normal-form-proc))

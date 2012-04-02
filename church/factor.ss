@@ -44,21 +44,19 @@
 
 ;; For debugging / displaying the graph
 
-(define (church-fg->json+provenance address store)
+(define (church-fg->dict+provenance address store)
   (let* ([factors (addbox->values (store->factors store))]
          [factor-id->scopes 
            (list (list 'factors
                  (cons 'list
                        (map (lambda (f)
-                              (list
-                                (list 'factor
                                       (list 
                                         (list 'address (address->string (factor-address f)))
                                         (list 'scope (cons 'list 
                                                            (map address->string
-                                                                (factor-provenance f))))))))
+                                                                (factor-provenance f))))))
                             factors))))])
-    (prov-init (json factor-id->scopes))))
+    (prov-init factor-id->scopes)))
 
 (define (church-make-factor-generic address store factor-function should-anneal)
   (lambda (address store . args)

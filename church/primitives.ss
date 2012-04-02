@@ -82,9 +82,9 @@
     (string-append (car xs) c (delimit c (cdr xs)))))
 
 (define (convert-string x)
-  (cond [(number? x) (number->string x)]
+  (cond [(number? x) (string-append "n" (number->string x))]
         [(symbol? x) (symbol->string x)]
-        [(string? x) x]
+        [(string? x) (string-append "v" x)]
         [(null? x) "null"]
         [else x]))
 
@@ -92,3 +92,4 @@
   (let* ([flattened-address (flatten-list addr)]
          [strings (map convert-string flattened-address)])
     (delimit space strings)))
+
