@@ -1,6 +1,6 @@
 function jsf_gauss_log(mean, val, variance){
     var log2 = Math.log(2);
-    var logpi = Math.log(pi);
+    var logpi = Math.log(Math.PI);
     var diff = val - mean;
     return -diff * diff / (2.0 * variance) - 0.5 * (log2 + logpi + Math.log(variance));
 }
