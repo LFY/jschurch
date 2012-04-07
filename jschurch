@@ -167,14 +167,15 @@ def webservice():
                 "compiled/scheme2js-template.js",
                 "scheme-compilers/javascript/math-functions.js",
                 "scheme-compilers/javascript/jschurch-webservice.js"]
+    compiled_loc = "./jschurch-all.js"
     combine_files([rooted(path) for path in js_paths],
-                  rooted("compiled/jschurch-all.js"))
+                  compiled_loc)
     print("Wrapping code with isolator...")
-    f = open(rooted("compiled/jschurch-all.js"))
+    f = open(compiled_loc)
     combined_code = f.read()
     f.close()
     isolated_code = JS_ISOLATOR % { "code" : combined_code}
-    f = open(rooted("compiled/jschurch-all.js"), "w")
+    f = open(compiled_loc, "w")
     f.write(isolated_code)
     f.close()
     print("Combining files done.")
