@@ -80,6 +80,19 @@ var jsChurch = (
 var evalChurchCode = jsChurch.eval;
 """
 
+JS_ISOLATOR = """
+var jsChurch = (
+  function(){
+    %(code)s
+    return {
+      "eval" : evalChurchCode,
+      "evalsave" : evalChurchCodeSaveResult
+    };
+  })();
+var evalChurchCode = jsChurch.eval;
+var evalChurchCodeSaveResult = jsChurch.evalsave;
+"""
+
 SCM_TEMPLATE = inline("scheme-compilers/scheme2js-template.sc",
                       [rooted("."), rooted("./church/")])
 
