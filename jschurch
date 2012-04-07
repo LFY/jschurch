@@ -153,13 +153,14 @@ def webservice():
     f.close()
     print("Combining js files...")
     js_paths = ["external/scheme2js/runtime.js",
-                "external/jsts/javascript.util.js",
+                "external/jsts/javascript.util_webservice.js",
                 "external/jsts/jsts.js",
                 "compiled/church-compiler.js",
                 "external/jquery-1.7.min.js",
                 "scheme-compilers/javascript/md5.js",
                 "scheme-compilers/javascript/sc2json.js",
                 "scheme-compilers/javascript/factor.js",
+                "scheme-compilers/javascript/util.js",
                 "scheme-compilers/javascript/jsts_util.js",
                 "scheme-compilers/javascript/random/MRG32k3a.js",
                 "scheme-compilers/javascript/random/Mash.js",
@@ -264,9 +265,9 @@ def build_with_scm_template(file, scm_template, timeit=False, debug=False, inspe
             
         vprint("Compiling Scheme code to js using scheme2js...", verbose)
         church_prog_core_filename = rooted("compiled/church-prog-core.tmp.js")    
-        call("java -jar %s -o %s %s" % (
-            os.path.join(JSCHURCH_ROOT,"external/scheme2js/scheme2js.jar"),
-            church_prog_core_filename, scm_src_filename))
+        scheme2js_call = "java -jar %s -o %s %s" % ( os.path.join(JSCHURCH_ROOT,"external/scheme2js/scheme2js.jar"), church_prog_core_filename, scm_src_filename)
+        print(scheme2js_call)
+        call(scheme2js_call)
             
         vprint("Setting output ports...", verbose)
         church_prog_core_src = open(church_prog_core_filename).read()

@@ -13,9 +13,7 @@ var safeDelayedEval = function(jsCode, errHandler, delay){
 
 
 var scheme2jsURL = function(schemeExpr){
-  return "http://focusedattention.org/scheme2js/scheme2js.php?scheme=" +
-    encodeURIComponent(schemeExpr) +
-    "&callback=?";
+  return "http://mcpr.stanford.edu/scheme2js/scheme2js.php?code=" + encodeURIComponent(schemeExpr);
 };
 
 
@@ -24,6 +22,7 @@ var setScheme2jsPorts = function(outHandler){
   SC_ERROR_OUT = SC_DEFAULT_OUT;
 };
 
+var scheme2jsPOSTURL = "http://mcpr.stanford.edu/scheme2js/scheme2js.php";
 
 var evalChurchCode = function(churchCode, returnValueHandler){
 
@@ -55,13 +54,22 @@ var evalChurchCode = function(churchCode, returnValueHandler){
     }
 
     console.log("submitting to scheme2js server");
-    jQuery.getJSON(
-      scheme2jsURL(wrappedSchemeExpr),
-      null,
-      function(compiledCode){
-        __codeCache[key] = compiledCode;
-        setScheme2jsPorts(returnValueHandler);
-        safeDelayedEval(compiledCode, returnValueHandler, 0);
-      });
+    jQuery.post( scheme2jsPOSTURL, { "code" : wrappedSchemeExpr },
+            function(compiledCode) {
+                console.log(compiledCode);
+                __codeCache[key] = compiledCode;
+                setScheme2jsPorts(returnValueHandler);
+                safeDelayedEval(compiledCode, returnValueHandler, 0);
+            });
+
+
+   //  jQuery.getJSON(
+   //    scheme2jsURL(wrappedSchemeExpr),
+   //    null,
+   //    function(compiledCode){
+   //      __codeCache[key] = compiledCode;
+   //      setScheme2jsPorts(returnValueHandler);
+   //      safeDelayedEval(compiledCode, returnValueHandler, 0);
+   //    });
   }
 };
