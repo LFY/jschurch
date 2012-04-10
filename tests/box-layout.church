@@ -1,0 +1,58 @@
+;; Box layout demonstrating JSON output=========================================
+
+;; JSON primitive: make-json-kvs
+;; (make-json-kvs k1 v1 k2 v2 ... ) === { k1 : v1, k2: v2, ... }
+(define (make-box vpos vwidth vheight vtype)
+  (make-json-kvs 'pos vpos 'width vwidth 'height vheight 'type vtype))
+
+(define (sample-box)
+  (let* ((posx (uniform 10 60))
+         (posy (uniform 20 70))
+         (width (uniform 10 30))
+         (height (uniform 10 30))
+         (type (+ 1 (sample-integer 3)))
+         )
+    (list posx posy width height type)))
+
+(define (box2coords box) (drop-last box))
+
+(define width-factor
+  (make-factor (lambda (box) (jsf_box_width (third box) 10 1))))
+
+(define nonoverlap-factor
+  (make-factor (lambda (box1 box2) (apply jsf_box_box_overlap (append (box2coords box1) (box2coords box2) (list 0.0 0.1))))))
+
+(define results
+          (mh-query 100 100
+                    (define x
+                      (let* 
+                        ((num-boxes 4)
+                        (boxes (repeat num-boxes sample-box))
+                        (width-factors (map width-factor boxes))
+                        (nonoverlap-factors (map (lambda (box12) (nonoverlap-factor (first box12) (second box12))) (pairs boxes)))
+                        )
+                      boxes
+                      ))
+                    x
+                    true))
+
+;; JSON primitive: make-json-list
+;; (make-json-list x1 x2 x3 ...) = [x1, x2, x3, ...]
+(define (make-single-json-box b)
+  (make-box (make-json-list (first b) (second b)) (third b) (fourth b) (fifth b)))
+
+(define (make-json-boxes list-of-boxes)
+  (make-json-kvs 'boxes (apply make-json-list
+                          (map make-single-json-box list-of-boxes)))) 
+(define samples-list (apply make-json-list (map make-json-boxes results)))
+
+;; JSON primitive: json
+;; turns the assoc-list representation from make-json-kvs, make-json-list
+;; into an actual JSON object
+(define samples-json
+  (json (make-json-kvs 'samples samples-list)))
+
+;; JSON primitive: displayJSON
+;; prints the JSON object to the console
+(displayJSON samples-json)
+
