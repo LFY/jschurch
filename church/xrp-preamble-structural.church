@@ -128,14 +128,14 @@
 (define gaussianS (make-stateless-structural-xrp
                     'gaussianS
                     (lambda args (sample-gaussian (first args) (second args)))
-                    (lambda (args val) (log (gaussian-pdf val (first args) (second args))))
-                    (lambda (ops old-val)
-                      (let* ([mean (first ops)]
-                             [var (second ops)]
-                             [new-val (+ old-val (sample-gaussian 0 var))]
-                             [correction (log (gaussian-pdf new-val old-val var))])
-                        (list new-val correction correction)))
-                    ))
+                    (lambda (args val) (gaussian-lnpdf val (first args) (second args)))))
+                    ;; (lambda (ops old-val)
+                    ;;   (let* ([mean (first ops)]
+                    ;;          [var (second ops)]
+                    ;;          [new-val (+ old-val (sample-gaussian 0 var))]
+                    ;;          [correction (log (gaussian-pdf new-val old-val var))])
+                    ;;     (list new-val correction correction)))
+                    
 
 (define gensymS (make-stateless-structural-xrp
                  'gensymS
