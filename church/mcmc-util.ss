@@ -32,9 +32,9 @@
 (define (proposable-xrps state proposable?)
   (filter proposable? (addbox->values (mcmc-state->xrp-draws state))))
 
-(define (rejection-initializer normal-form-proc)
+(define (rejection-initializer init-store normal-form-proc)
   (let loop ()
-    (let* ([init-state (church-make-initial-mcmc-state '(TOP) (make-empty-store))]
+    (let* ([init-state (church-make-initial-mcmc-state '(TOP) init-store)]
            [res-cu (counterfactual-update init-state normal-form-proc)]
            (rejectioninit-proposal-state (first res-cu))
            )

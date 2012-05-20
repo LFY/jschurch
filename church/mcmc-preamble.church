@@ -17,7 +17,7 @@
 ;; MH
 
 (define (mh-query samples lag normal-form-proc)
-  (mh-query* samples lag normal-form-proc))
+  (mh-query* (get-current-store) samples lag normal-form-proc))
 
 (define (mh-query/annealed-init temps samples lag rej-steps temps->nfqp)
   (mh-query* temps samples lag rej-steps temps->nfqp))

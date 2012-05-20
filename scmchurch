@@ -1,0 +1,347 @@
+#!/usr/bin/python
+from __future__ import print_function
+import sys
+import re
+import os
+from subprocess import Popen
+from external import optfunc
+from os.path import abspath, dirname, exists, join
+
+#working = os.getcwd()
+
+JSCHURCH_ROOT = os.environ["JSCHURCH_ROOT"]
+#os.chdir(JSCHURCH_ROOT)
+
+LOAD_PATTERN = r"(\(load\s+\"([^\"]+)\"\s*\))"
+
+def inline(fn, paths):
+    """
+    Recursively inline all occurrences of (load "filename") in the
+    file named "fn", searching all paths in the variable "paths", and
+    return the inlined file contents.
+    """
+    for path in paths:
+        fp = join(path, fn)
+        if exists(fp):
+            s = open(fp).read()
+            break
+    for (sexp, fn2) in re.findall(LOAD_PATTERN, s):
+        paths2 = [abspath(dirname(fn2))] + paths
+        s = s.replace(sexp, inline(fn2, paths2))
+    return s
+
+def call(cmd, verbose=False, allow_fail=False):
+    """
+    Run cmd in shell.
+    """
+    if verbose:
+        print(cmd)
+    p = Popen(cmd, shell=True)
+    p.communicate()
+    status = p.returncode
+    if status != 0 and not allow_fail:
+        print("command failed:\n%s" % cmd)
+        exit()
+    else:
+        return status
+
+def combine_files(input_files, output_filename, sep="\n\n"):
+    strs = [open(f).read() for f in input_files]
+    output_file = open(output_filename, "w")
+    output_file.write(sep.join(strs))
+    output_file.close()
+
+def js_escape(code):
+    return re.sub("\"", "\\\"", re.sub("\n", "\\\\n", code))
+
+def rooted(path):
+    return os.path.join(JSCHURCH_ROOT, path)
+    #root = abspath(dirname(sys.argv[0]))
+    #return os.path.join(root, path)
+
+S2JS_PORTS = """
+    SC_DEFAULT_OUT = new sc_GenericOutputPort(console.log);
+    SC_ERROR_OUT = SC_DEFAULT_OUT;
+"""
+
+JS_TEMPLATE = S2JS_PORTS + """
+    scmExpr = sc_read(new sc_StringInputPort("(" + "%(church_prog)s" + "\\n)"));
+    sc_forEach(sc_print, compile(scmExpr, null));
+"""
+
+JS_ISOLATOR = """
+var jsChurch = (
+  function(){
+    %(code)s
+    return {
+      "eval" : evalChurchCode
+    };
+  })();
+var evalChurchCode = jsChurch.eval;
+"""
+
+JS_ISOLATOR = """
+var jsChurch = (
+  function(){
+    %(code)s
+    return {
+      "eval" : evalChurchCode,
+      "evalsave" : evalChurchCodeSaveResult
+    };
+  })();
+var evalChurchCode = jsChurch.eval;
+var evalChurchCodeSaveResult = jsChurch.evalsave;
+"""
+
+# SCM_TEMPLATE = inline("scheme-compilers/scheme2js-template.sc",
+SCM_TEMPLATE = inline("scheme-compilers/church2scm-template.sc",
+                      [rooted("."), rooted("./church/")])
+
+SCM_TEMPLATE_JSWRAPPER = """if (!String.prototype.supplant) {
+  String.prototype.supplant = function (o) {
+    return this.replace(/{([^{}]*)}/g,
+                        function (a, b) {
+                          var r = o[b];
+                          return typeof r === 'string' || typeof r === 'number' ? r : a;
+                        }
+                       );
+  };
+}
+
+var scheme2jsTemplate = "%(scheme2js_template)s";
+"""
+
+
+#def compile_church(out_file, in_file):
+#    call("java -jar %s -o %s %s" % (
+#        os.path.join(JSCHURCH_ROOT, "external/scheme2js/scheme2js.jar"),
+#        out_file, in_file))
+
+def compile_church(out_file, in_file):
+    call("cp %s %s" % (in_file, out_file))
+
+# build church using custom compiler.
+def make_with_compiler(compiler_fn):
+    """ Builds the Church compiler in Javascript using scheme2js. """
+
+    print("Combining Church compiler code into single file...")
+    inlined_compiler_src = inline(rooted("church/" + compiler_fn),
+                                  [JSCHURCH_ROOT, rooted("church/")])
+    church_compiler_scm_filename = rooted("compiled/church-compiler.tmp.ss")
+    f = open(church_compiler_scm_filename, "w")
+    f.write(inlined_compiler_src)
+    f.close()
+
+    print("Compiling to Javascript...")
+    church_compiler_filename = rooted("compiled/church-compiler.js")
+
+    compile_church(church_compiler_filename, church_compiler_scm_filename)
+
+
+    print("Building JS compiler done.")
+
+DEFAULT_COMPILER_CFG = "default_compiler"
+
+def read_default_compiler(fn):
+    if exists(fn):
+        return open(fn).read().strip()
+    else:
+        return "compiler.ss"
+
+def setdefault(fn):
+    fh = open(DEFAULT_COMPILER_CFG, 'w')
+    fh.write(fn)
+    fh.close()
+
+def make():
+    make_with_compiler(read_default_compiler("default_compiler"))
+
+def makecustom(file):
+    setdefault(file)
+    make_with_compiler(file)
+
+def webservice():
+    """
+    Build the Church compiler in Javascript, then combine all
+    Javascript files necessary for use of webservice into single file.
+    """
+    make()
+    print("Generating scheme2js-template.js...")
+    s2js_tpl = SCM_TEMPLATE.replace('"', '\\"')
+    s2js_tpl = s2js_tpl.replace("\n", "\\n\\\n")
+    s2js_tpl = SCM_TEMPLATE_JSWRAPPER % { "scheme2js_template" : s2js_tpl}
+    s2js_tpl = s2js_tpl.replace("%(churchprogram)s", "{churchprogram}")
+    f = open(rooted("compiled/scheme2js-template.js"), "w")
+    f.write(s2js_tpl)
+    f.close()
+    print("Combining js files...")
+    js_paths = ["external/scheme2js/runtime.js",
+                "external/jsts/javascript.util_webservice.js",
+                "external/jsts/jsts.js",
+                "compiled/church-compiler.js",
+                "external/jquery-1.7.min.js",
+                "scheme-compilers/javascript/md5.js",
+                "scheme-compilers/javascript/sc2json.js",
+                "scheme-compilers/javascript/factor.js",
+                "scheme-compilers/javascript/util.js",
+                "scheme-compilers/javascript/jsts_util.js",
+                "scheme-compilers/javascript/random/MRG32k3a.js",
+                "scheme-compilers/javascript/random/Mash.js",
+                "compiled/scheme2js-template.js",
+                "scheme-compilers/javascript/math-functions.js",
+                "scheme-compilers/javascript/jschurch-webservice.js"]
+    compiled_loc = "./jschurch-all.js"
+    combine_files([rooted(path) for path in js_paths],
+                  compiled_loc)
+    print("Wrapping code with isolator...")
+    f = open(compiled_loc)
+    combined_code = f.read()
+    f.close()
+    isolated_code = JS_ISOLATOR % { "code" : combined_code}
+    f = open(compiled_loc, "w")
+    f.write(isolated_code)
+    f.close()
+    print("Combining files done.")
+
+
+def parse_params(params):
+    if params == "":
+        return [(None, None)]
+    else:
+        key, vals = params.split(":")
+        return [(key, val) for val in vals.split(",")]
+
+def vprint(s, verbose):
+    if verbose:
+        print
+        print(s)
+
+def buildwebpage(file, html_filename, timeit=False, debug=False, inspect=False, params="", verbose=False, concurrent=True):
+    non_church_ext = os.path.splitext(file)[0]
+    jschurch_filename = non_church_ext+".js"
+    html_out_filename = non_church_ext+".html"
+
+    html_src = open(html_filename).read() % {"jsfilename": jschurch_filename}
+    fn = open(html_out_filename, 'w')
+    fn.write(html_src)
+
+    scm_template_webpage = inline("scheme-compilers/scheme2js-webpage-template.sc",
+                          [rooted("."), rooted("./church/")])
+    return build_with_scm_template(file, scm_template_webpage, timeit, debug, inspect, params, verbose, concurrent)
+
+def build(file, timeit=False, debug=False, inspect=False, params="", verbose=False, concurrent=True):
+    return build_with_scm_template(file, SCM_TEMPLATE, timeit, debug, inspect, params, verbose, concurrent)
+
+def build_with_scm_template(file, scm_template, timeit=False, debug=False, inspect=False, params="", verbose=False, concurrent=True):
+    """
+    Given a Church file, compiles it to Scheme using the [Church
+    compiler in JS], then compiles it to Javascript using scheme2js
+    and runs it.
+    """
+    parameters = parse_params(params)
+
+    all_church_prog_filenames = []
+    for (i, (param_key, param_value)) in enumerate(parameters):
+
+        vprint("Reading Church code...", verbose)
+        church_input_src = open(file).read() % { param_key : param_value }
+
+        for (s, fn) in re.findall(LOAD_PATTERN, church_input_src):
+            to_load = os.path.join(abspath(dirname(file)), fn)
+            fh = open(to_load)
+            church_input_src = church_input_src.replace(s, fh.read())
+            fh.close()
+
+        vprint("Combining wrapped code and libraries into single file...", verbose)
+
+
+        if not concurrent:
+            church_pre_filename = rooted("compiled/church-prog-pre.tmp.js") 
+        else:
+            non_church_ext = os.path.splitext(file)[0]+"-"+param_key+"-"+param_value if param_value else os.path.splitext(file)[0]
+            church_pre_filename = abspath("%s-prog-pre.tmp.js" % non_church_ext)
+
+        church_pre = open(church_pre_filename, "w")
+        church_pre.write(JS_TEMPLATE % { "church_prog" : js_escape(church_input_src) })
+        church_pre.close()
+
+        church_with_compiler_filename = rooted("compiled/church-with-compiler.tmp.js")
+
+        combine_files([rooted("external/scheme2js/runtime.js"),
+                       rooted("compiled/church-compiler.js"),
+                       church_pre_filename],
+                      church_with_compiler_filename)
+            
+        vprint("Compiling Church code to Scheme...", verbose)
+
+        if not concurrent:
+            scm_src_filename = rooted("compiled/church-prog.tmp.ss")
+        else:
+            scm_src_filename = abspath("%s-prog.tmp.ss" % non_church_ext)
+
+        call("node %s > %s" % (church_with_compiler_filename, scm_src_filename))
+            
+        vprint("Wrapping Scheme code in template...", verbose)
+        scm_src = open(scm_src_filename).read()
+        scm_src_file = open(scm_src_filename, "w")
+        scm_src_file.write(scm_template.replace("{churchprogram}", scm_src))
+        scm_src_file.close()
+            
+        vprint("Compiling Scheme code to js using scheme2js...", verbose)
+        church_prog_core_filename = rooted("compiled/church-prog-core.tmp.js")    
+        compile_church(church_prog_core_filename, scm_src_filename)
+            
+        # vprint("Setting output ports...", verbose)
+        # church_prog_core_src = open(church_prog_core_filename).read()
+        # church_prog_core_file = open(church_prog_core_filename, "w")
+        # church_prog_core_file.write(S2JS_PORTS + "\n\n" + church_prog_core_src)
+        # church_prog_core_file.close()
+            
+        vprint("Adding libraries...", verbose)
+        libs = [
+                #"external/scheme2js/runtime.js",
+                #"external/jsts/javascript.util.js",
+                #"external/jsts/jsts.js",
+                #"scheme-compilers/javascript/math-functions.js",
+                #"scheme-compilers/javascript/util.js",
+                #"scheme-compilers/javascript/sc2json.js",
+                #"scheme-compilers/javascript/factor.js",
+                #"scheme-compilers/javascript/jsts_util.js",
+                #"scheme-compilers/javascript/random/MRG32k3a.js",
+                #"scheme-compilers/javascript/random/Mash.js",
+                "compiled/church-prog-core.tmp.js"]
+
+        if not concurrent:
+            church_prog_filename = rooted("compiled/church-prog.js")
+        else:
+            church_prog_filename = abspath("%s.js" % non_church_ext)
+
+        combine_files([rooted(lib_path) for lib_path in libs],
+                      church_prog_filename)
+
+        all_church_prog_filenames.append(church_prog_filename)
+
+    return all_church_prog_filenames 
+    
+def run(file, argv=[], timeit=False, debug=False, inspect=False, params="", verbose=False, concurrent=True):
+    """
+    Given a Church file, compiles it to Scheme using the [Church
+    compiler in JS], then compiles it to Javascript using scheme2js
+    and runs it.
+    """
+
+    all_church_prog_filenames = build(file, timeit, debug, inspect, params, verbose, concurrent)        
+    for church_prog_filename in all_church_prog_filenames:
+        vprint("Running js in node...", verbose)
+        timing_cmd = "time" if timeit else ""
+        debug_cmd = ""
+        if debug:
+            debug_cmd = "--debug"
+        if inspect:
+            debug_cmd = "--debug-brk"
+        cmd = "%s node --max-stack-size=1111265536 %s %s %s" % (timing_cmd, debug_cmd, church_prog_filename, argv)
+        vprint(cmd, verbose)
+        call(cmd)
+    
+if __name__ == "__main__":
+    optfunc.run([make, run, webservice, makecustom, build, buildwebpage])

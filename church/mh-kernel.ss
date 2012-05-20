@@ -51,8 +51,8 @@
                                        default-scorer)))
 ;; Queries: Church-MH ==========================================================
 
-(define (mh-query* samples lag normal-form-proc)
-  (repeated-mcmc-query-core (lambda () (rejection-initializer normal-form-proc))
+(define (mh-query* init-store samples lag normal-form-proc)
+  (repeated-mcmc-query-core (lambda () (rejection-initializer init-store normal-form-proc))
                             (basic-repeat-kernel lag normal-form-proc)
                             samples))
 

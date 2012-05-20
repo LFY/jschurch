@@ -19,4 +19,6 @@
 (define (display-prov+provenance x+)
   (display (list 'val (erase x+) 'prov (prov->list (prov x+)))))
 
+;; Returning the store
 
+(define (church-get-current-store address store) store)
