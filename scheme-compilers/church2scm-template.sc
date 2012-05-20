@@ -1,4 +1,4 @@
-(import (scheme-tools math))
+(import (shred-random))
 
 (define infinity +inf.0)
 (define minus-infinity -inf.0)
