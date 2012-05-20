@@ -13,12 +13,17 @@
            (if which-distr
              (list (soft-eq 0.0 (first pts)))
              (list
-               (soft-eq -1.8 (first pts))
-               (soft-eq -1.8 (second pts))))])
+               (soft-eq 2.5 (first pts))
+               (soft-eq -2.5 (second pts))))])
     (list pts (apply + constr))))
 
+;; Inference algorithms=========================================================
+
 (define (larj-run props steps)
-  (larj-mh-query-proposal-count props 1 steps
+  (larj-mh-query-generic 'structural
+                         props 
+                         1
+                         steps
                                 (define res (run-distr))    
                                 res
                                 true))

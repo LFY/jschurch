@@ -61,6 +61,8 @@
             (loop start (rest lst))
             (+ 1 (loop (first lst) (rest lst)))))))
 (define results 
+  (begin
+    (enable-prov-debug)
   (larj-mh-query-proposal-count PROPOSALS 1 ANNEAL-STEPS
     (define result
       (let* ([randpts (tr-repeat (+ 3 (sample-integer 10)) 
@@ -83,7 +85,7 @@
         ans
         ))
     result
-    true))
+    true)))
 
 (begin
   (for-each display results)

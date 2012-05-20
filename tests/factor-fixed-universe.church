@@ -16,7 +16,7 @@
     (loop '() xs)))
 
 (for-each display 
-          (mh-query 10 1000
+          (mh-query 10 10000
                     (define x
                       (let* ([num-vals 5]
                              [vals (repeat num-vals (lambda () (if (flip) 1 0)))]
