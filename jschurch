@@ -3,6 +3,8 @@ from __future__ import print_function
 import sys
 import re
 import os
+import platform
+
 from subprocess import Popen
 from external import optfunc
 from os.path import abspath, dirname, exists, join
@@ -13,6 +15,14 @@ JSCHURCH_ROOT = os.environ["JSCHURCH_ROOT"]
 #os.chdir(JSCHURCH_ROOT)
 
 LOAD_PATTERN = r"(\(load\s+\"([^\"]+)\"\s*\))"
+
+print(platform.system())
+
+def mk_path(*dirs):
+    if platform.system().startswith("CYGWIN"):
+        return "`cygpath -m %s`" % os.path.join(*dirs)
+    else:
+        return os.path.join(*dirs)
 
 def inline(fn, paths):
     """
@@ -125,8 +135,8 @@ def make_with_compiler(compiler_fn):
     print("Compiling to Javascript...")
     church_compiler_filename = rooted("compiled/church-compiler.js")
     call("java -jar %s -o %s %s" % (
-        os.path.join(JSCHURCH_ROOT, "external/scheme2js/scheme2js.jar"),
-        church_compiler_filename, church_compiler_scm_filename))
+        mk_path(JSCHURCH_ROOT, "external/scheme2js/scheme2js.jar"),
+        mk_path(church_compiler_filename), mk_path(church_compiler_scm_filename)))
 
     print("Building JS compiler done.")
 
@@ -269,7 +279,7 @@ def build_with_scm_template(file, scm_template, timeit=False, debug=False, inspe
         else:
             scm_src_filename = abspath("%s-prog.tmp.ss" % non_church_ext)
 
-        call("node %s > %s" % (church_with_compiler_filename, scm_src_filename))
+        call("node %s > %s" % (mk_path(church_with_compiler_filename), scm_src_filename))
             
         vprint("Wrapping Scheme code in template...", verbose)
         scm_src = open(scm_src_filename).read()
@@ -279,7 +289,7 @@ def build_with_scm_template(file, scm_template, timeit=False, debug=False, inspe
             
         vprint("Compiling Scheme code to js using scheme2js...", verbose)
         church_prog_core_filename = rooted("compiled/church-prog-core.tmp.js")    
-        scheme2js_call = "java -jar %s -o %s %s" % ( os.path.join(JSCHURCH_ROOT,"external/scheme2js/scheme2js.jar"), church_prog_core_filename, scm_src_filename)
+        scheme2js_call = "java -jar %s -o %s %s" % ( mk_path(JSCHURCH_ROOT,"external/scheme2js/scheme2js.jar"), mk_path(church_prog_core_filename), mk_path(scm_src_filename))
         print(scheme2js_call)
         call(scheme2js_call)
             
@@ -330,7 +340,7 @@ def run(file, argv=[], timeit=False, debug=False, inspect=False, params="", verb
             debug_cmd = "--debug"
         if inspect:
             debug_cmd = "--debug-brk"
-        cmd = "%s node --max-stack-size=1111265536 %s %s %s" % (timing_cmd, debug_cmd, church_prog_filename, argv)
+        cmd = "%s node --max-stack-size=1111265536 %s %s %s" % (timing_cmd, debug_cmd, mk_path(church_prog_filename), argv)
         vprint(cmd, verbose)
         call(cmd)
     
