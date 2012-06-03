@@ -32,13 +32,13 @@
   (larj-mh-query+power* samples lag num-temps power normal-form-proc))
 
 (define (larj-mh-query samples lag num-temps normal-form-proc)
-  (larj-mh-query* samples lag num-temps normal-form-proc))
+  (larj-mh-query* (get-current-store) samples lag num-temps normal-form-proc))
 
 (define (larj-mh-query-proposal-count+power num-proposals-to-make lag num-temps power normal-form-proc)
   (larj-mh-query-proposal-count+power* num-proposals-to-make lag num-temps power normal-form-proc))
 
 (define (larj-mh-query-proposal-count num-proposals-to-make lag num-temps normal-form-proc)
-  (larj-mh-query-proposal-count* num-proposals-to-make lag num-temps normal-form-proc))
+  (larj-mh-query-proposal-count* (get-current-store) num-proposals-to-make lag num-temps normal-form-proc))
 
 (define (larj-mh-query-generic proposable? num-proposals-to-make power num-temps normal-form-proc)
   (larj-mh-query-generic* proposable? num-proposals-to-make power num-temps normal-form-proc))

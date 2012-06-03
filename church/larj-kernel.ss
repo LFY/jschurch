@@ -315,21 +315,22 @@
              (display-larj-stats 'EARLY-REJECTION)
              (list (extended-state->after curr-state) total-correction (- num-temps (length temp-list))))]
           [else
-            (let* ([void (display-larj 'one-anneal-step)]
+            (let* (
+                   ;; [void (display 'one-anneal-step)]
                    (bw/fw-and-next-state (static-proposal curr-state))
                    (bw/fw (first bw/fw-and-next-state))
                    (next-state (second bw/fw-and-next-state))
                    (curr-score (get-larj-score curr-state (car temp-list) (car up-down-temp-list)))
-                   [void (display-larj (list 'current-annealed-score curr-score))]
+                   ;; [void (display (list 'current-annealed-score curr-score))]
                    (next-score (get-larj-score next-state (car temp-list) (car up-down-temp-list)))
-                   [void (display-larj (list 'next-annealed-score next-score))]
+                   ;; [void (display (list 'next-annealed-score next-score))]
                    (local-alpha (- next-score curr-score))
                    (accept (log-flip* (min 0.0 (+ local-alpha bw/fw))))
-                   (void (display-larj (list 'curr-before (mcmc-state->query-value-generic (extended-state->before curr-state)))))
-                   (void (display-larj (list 'curr-after (mcmc-state->query-value-generic (extended-state->after curr-state)))))
-                   (void (display-larj (list 'next-before (mcmc-state->query-value-generic (extended-state->before next-state)))))
-                   (void (display-larj (list 'next-after (mcmc-state->query-value-generic (extended-state->after next-state)))))
-                   (void (display-larj (list 'temp (car temp-list) 'local-alpha local-alpha 'accept accept 'total-correction-to-accumulate total-correction)))
+                   ;; (void (display (list 'curr-before (mcmc-state->query-value-generic (extended-state->before curr-state)))))
+                   ;; (void (display (list 'curr-after (mcmc-state->query-value-generic (extended-state->after curr-state)))))
+                   ;; (void (display (list 'next-before (mcmc-state->query-value-generic (extended-state->before next-state)))))
+                   ;; (void (display (list 'next-after (mcmc-state->query-value-generic (extended-state->after next-state)))))
+                   ;; (void (display (list 'temp (car temp-list) 'local-alpha local-alpha 'accept accept 'total-correction-to-accumulate total-correction)))
                    )
               ;;(display 'one-anneal-step)
               (if accept
@@ -395,8 +396,8 @@
                             (larj-kernel num-temps lag power normal-form-proc)     ;; kernel
                             samples))                                        ;; num samples to show
 
-(define (larj-mh-query* samples lag num-temps normal-form-proc)
-  (repeated-mcmc-query-core (lambda () (rejection-initializer normal-form-proc))  ;; initializer
+(define (larj-mh-query* init-store samples lag num-temps normal-form-proc)
+  (repeated-mcmc-query-core (lambda () (rejection-initializer init-store normal-form-proc))  ;; initializer
                             (larj-kernel num-temps lag 1 normal-form-proc)     ;; kernel
                             samples))
 
@@ -405,8 +406,8 @@
                                            (larj-kernel-proposal-count num-temps lag power normal-form-proc)     ;; kernel
                                            num-proposals-to-make))                                        ;; num samples to show
 
-(define (larj-mh-query-proposal-count* num-proposals-to-make lag num-temps normal-form-proc)
-  (repeated-mcmc-query-core-proposal-count (lambda () (rejection-initializer normal-form-proc))  ;; initializer
+(define (larj-mh-query-proposal-count* init-store num-proposals-to-make lag num-temps normal-form-proc)
+  (repeated-mcmc-query-core-proposal-count (lambda () (rejection-initializer init-store normal-form-proc))  ;; initializer
                                            (larj-kernel-proposal-count num-temps lag 1 normal-form-proc)     ;; kernel
                                            num-proposals-to-make))
 
