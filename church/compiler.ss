@@ -48,7 +48,8 @@
            make-initial-mcmc-state 
            
            make-initial-enumeration-state
-           get-current-store))
+           get-current-store
+           get-current-score))
 
 ;; list of the primitive routines that not only need access to address and store, but the provenance information as well.
 ;; the syntactic transformation will add +provenance onto the end, much like how appending church- to the front will make them use the header.ss definitions.

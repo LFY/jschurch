@@ -22,3 +22,7 @@
 ;; Returning the store
 
 (define (church-get-current-store address store) store)
+
+;; Returning the score
+
+(define (church-get-current-score address store) (store->score store))
