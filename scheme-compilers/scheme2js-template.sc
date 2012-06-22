@@ -99,6 +99,10 @@
 
 ;; Other utilities
 (define command-line command_line)
+(define param-exists? param_exists)
+(define argv-exists? argv_exists)
+(define param-lookup param_lookup)
+(define argv-lookup argv_lookup)
 
 ;;;the program, defining the church-main function, will be spliced in here:
 {churchprogram}

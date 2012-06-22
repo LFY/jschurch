@@ -167,6 +167,21 @@
           ,@(cddr expr))
         '(void)))
 
+(define (defparameter? expr) (and (tagged-list? expr 'defparameter)))
+(define (desugar-defparameter expr)
+  (if (defparameter? expr)
+    (let* ([var (second expr)]
+           [body (third expr)])
+
+      ;; 2 ways to give the parameter:
+      ;; 1. give it to the function 
+      ;; 2. give it as a command line parameter
+      `(define ,var 
+         (let* ([var-str (symbol->string (quote ,var))])
+           (if (param-exists? var-str) (param-lookup var-str)
+             (if (argv-exists? var-str) (argv-lookup var-str) ,body)))))
+    expr))
+
  ;;define sugar: (define (foo x y) ...)
  (define (define-fn? expr) (and (tagged-list? expr 'define) (not (symbol? (second expr)))))
  (define (desugar-define-fn expr)
@@ -191,7 +206,8 @@
  (define (begin-defines? sexpr)
    (and (tagged-list? sexpr 'begin) (not (null? (filter (lambda (e) (tagged-list? e 'define)) sexpr)))))
  (define (desugar-begin-defines sexpr)
-   (let* ((defines (map desugar-define-fn (filter (lambda (e) (tagged-list? e 'define)) (rest sexpr))));;de-sugar here is to make defines be in standard form.
+   (let* ((defines (map desugar-define-fn (filter (lambda (e) (tagged-list? e 'define)) 
+                                                  (rest sexpr))));;de-sugar here is to make defines be in standard form.
           (non-defines (filter (lambda (e) (not (tagged-list? e 'define))) (rest sexpr))))
      `(letrec ,(map rest defines) ,(begin-wrap non-defines))))
 
@@ -322,6 +338,7 @@
  (register-sugar! cond? desugar-cond)
  (register-sugar! begin-defines? desugar-begin-defines)
  (register-sugar! define-fn? desugar-define-fn)
+ (register-sugar! defparameter? desugar-defparameter)
  (register-sugar! seq-with-load? expand-loads)
  (register-sugar! when? desugar-when)
 
