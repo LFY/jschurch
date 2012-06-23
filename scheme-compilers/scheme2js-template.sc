@@ -103,9 +103,13 @@
 (define argv-exists? argv_exists)
 (define param-lookup param_lookup)
 (define argv-lookup argv_lookup)
+(define in-node in_node)
 
 ;;;the program, defining the church-main function, will be spliced in here:
 {churchprogram}
 
 ;;go...
-(church-main '(top) (make-empty-store))
+
+(if (in-node)
+ (church-main '(top) (make-empty-store))
+ '())

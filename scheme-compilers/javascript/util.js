@@ -10,8 +10,14 @@ var command_line = function () {
 
 var church_params = {};
 
-function inNode() {
-    return !(window !== undefined && this == window);
+function in_node() {
+    if((typeof window) == 'undefined') {
+        return true;
+    } else if (window !== undefined && this == window) {
+        return false;
+    } else {
+        return true;
+    }
 }
 
 function param_exists(p) {
@@ -34,4 +40,15 @@ function argv_exists(p) {
 
 function argv_lookup(p) {
     return process.argv[argv_dict[p]];
+}
+
+function run_church_main() {
+    return BgL_churchzd2mainzd2(new sc_Pair("\uEBACtop", null), BgL_makezd2emptyzd2storez00());
+}
+
+if(in_node()) {
+    module.exports = {
+        run_church_main : run_church_main,
+        church_params : church_params
+    };
 }
