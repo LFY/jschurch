@@ -476,7 +476,7 @@
 
 (for-each display
           ;;(mh-query 100 10
-                    (larj-mh-query-proposal-count 10000 1 100
+                    (larj-mh-query-proposal-count 100 1 10
                     ;; maybe have paper id be structural
                      (define paper-id-distribution (DPmemS 0.8 gensym))
                      (define citation->paper-id-mem

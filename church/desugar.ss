@@ -206,7 +206,12 @@
  (define (begin-defines? sexpr)
    (and (tagged-list? sexpr 'begin) (not (null? (filter (lambda (e) (tagged-list? e 'define)) sexpr)))))
  (define (desugar-begin-defines sexpr)
-   (let* ((defines (map desugar-define-fn (filter (lambda (e) (tagged-list? e 'define)) 
+   (let* (
+          (defines (map (lambda (e) (
+                                     if (tagged-list? e 'define)
+                                     (desugar-define-fn e)
+                                     (desugar-defparameter e))) 
+                        (filter (lambda (e) (or (tagged-list? e 'define) (tagged-list? e 'defparameter))) 
                                                   (rest sexpr))));;de-sugar here is to make defines be in standard form.
           (non-defines (filter (lambda (e) (not (tagged-list? e 'define))) (rest sexpr))))
      `(letrec ,(map rest defines) ,(begin-wrap non-defines))))
@@ -336,9 +341,9 @@
  (register-sugar! named-let? named-let->letrec)
  (register-sugar! case? desugar-case)
  (register-sugar! cond? desugar-cond)
+ (register-sugar! defparameter? desugar-defparameter)
  (register-sugar! begin-defines? desugar-begin-defines)
  (register-sugar! define-fn? desugar-define-fn)
- (register-sugar! defparameter? desugar-defparameter)
  (register-sugar! seq-with-load? expand-loads)
  (register-sugar! when? desugar-when)
 

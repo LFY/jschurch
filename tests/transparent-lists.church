@@ -61,5 +61,7 @@
               (display-prov (tr-list-ref xy 1))
               (my-eq (tr-list-ref xy 0)
                      (tr-list-ref xy 1)))) (tr-bigram (tr-repeat 5 flip)))
+  (display '(Test assoc))
+  (tr-assoc 1 (tr-list (tr-list 1 2) (tr-list 2 5)))
   'done)
 
