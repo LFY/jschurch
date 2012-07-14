@@ -50,6 +50,10 @@ function run_church_main() {
     return BgL_churchzd2mainzd2(new sc_Pair("\uEBACtop", null), BgL_makezd2emptyzd2storez00());
 }
 
+function is_main_module() {
+    return in_node() && !module.parent;
+}
+
 if(in_node()) {
     module.exports = {
         run_church_main : run_church_main,
