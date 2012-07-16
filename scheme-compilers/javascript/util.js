@@ -32,10 +32,14 @@ var argv_idx = 2;
 var argv_dict = {};
 
 function argv_exists(p) {
-   var res = argv_idx < process.argv.length;
-   argv_dict[p] = argv_idx;
-   argv_idx += 1;
-   return res;
+    if (in_node()){
+        var res = argv_idx < process.argv.length;
+        argv_dict[p] = argv_idx;
+        argv_idx += 1;
+        return res;
+    }else{
+        return false;
+    }
 }
 
 function argv_lookup(p) {
