@@ -179,7 +179,7 @@
       `(define ,var 
          (let* ([var-str (symbol->string (quote ,var))])
            (if (param-exists? var-str) (param-lookup var-str)
-             (if (argv-exists? var-str) (argv-lookup var-str) ,body)))))
+             (if (and (is-main-module) (argv-exists? var-str)) (argv-lookup var-str) ,body)))))
     expr))
 
  ;;define sugar: (define (foo x y) ...)
