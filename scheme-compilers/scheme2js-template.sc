@@ -76,6 +76,7 @@
 
 (define first car)
 (define rest cdr)
+
 (define pair cons)
 (define (second lst) (cadr lst))
 (define (third lst) (caddr lst))
@@ -105,6 +106,14 @@
 (define argv-lookup argv_lookup)
 (define in-node in_node)
 (define is-main-module is_main_module)
+(define lookup-param lookup_param)
+
+;; scm2js stuff
+(define js-nil js_nil)
+(define js-cons js_cons)
+(define js-alist->js-dict js_alist2js_dict)
+
+
 
 ;;;the program, defining the church-main function, will be spliced in here:
 {churchprogram}

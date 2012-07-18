@@ -37,7 +37,7 @@ function argv_exists(p) {
         argv_dict[p] = argv_idx;
         argv_idx += 1;
         return res;
-    }else{
+    } else {
         return false;
     }
 }
@@ -47,11 +47,40 @@ function argv_lookup(p) {
 }
 
 function run_church_main() {
-    return BgL_churchzd2mainzd2(new sc_Pair("\uEBACtop", null), BgL_makezd2emptyzd2storez00());
+    return BgL_scmzd2ze3jsonz31(BgL_churchzd2mainzd2(new sc_Pair("\uEBACtop", null), BgL_makezd2emptyzd2storez00()));
 }
+
 
 function is_main_module() {
     return in_node() && !module.parent;
+}
+
+var param_type_map = {
+    "int" : function (val) { if (val instanceof Number) { return val; } else { return parseInt(val) ; } },
+    "float" : function (val) { if (val instanceof Number) { return val; } else { return parseFloat(val) ; } },
+    "string" : function (val) { if (not (val instanceof String)) { return val.toString; } else { return val; } },
+}
+
+function lookup_param(typename, name, default_value) {
+    var desired_type = sc_symbol2jsstring(typename);
+
+    var res = undefined;
+    if (is_main_module()) {
+        var exists = argv_idx < process.argv.length;
+        if (exists) {
+            res = process.argv[argv_idx];
+        } else {
+            res = default_value;
+        }
+        argv_idx += 1;
+    } else {
+        if(church_params[name] === undefined) {
+            res = default_value;
+        } else {
+            res = church_params[name];
+        }
+    }
+    return param_type_map[desired_type](res);
 }
 
 if(in_node()) {
@@ -59,4 +88,23 @@ if(in_node()) {
         run_church_main : run_church_main,
         church_params : church_params
     };
+
 }
+
+
+var js_nil = [];
+var js_cons = function (a, b) {
+    return [a].concat(b);
+}
+
+function js_alist2js_dict(alist) {
+    var res = {};
+    for(var i = 0; i < alist.length; i++) {
+        var curr_k = alist[i].car;
+        var curr_v = alist[i].cdr;
+        res[curr_k] = curr_v;
+    }
+    return res;
+}
+
+

@@ -207,10 +207,10 @@
    (and (tagged-list? sexpr 'begin) (not (null? (filter (lambda (e) (tagged-list? e 'define)) sexpr)))))
  (define (desugar-begin-defines sexpr)
    (let* (
-          (defines (map (lambda (e) (
-                                     if (tagged-list? e 'define)
+          (defines (map (lambda (e) (if (tagged-list? e 'define)
                                      (desugar-define-fn e)
-                                     (desugar-defparameter e))) 
+                                     (desugar-defparameter e)
+                                     )) 
                         (filter (lambda (e) (or (tagged-list? e 'define) (tagged-list? e 'defparameter))) 
                                                   (rest sexpr))));;de-sugar here is to make defines be in standard form.
           (non-defines (filter (lambda (e) (not (tagged-list? e 'define))) (rest sexpr))))
