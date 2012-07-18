@@ -1,0 +1,5 @@
+
+(defparameter x (list 3 4))
+(defparameter y 2)
+
+(list x y)
