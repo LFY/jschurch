@@ -107,4 +107,5 @@ function js_alist2js_dict(alist) {
     return res;
 }
 
-
+var ss_print = function (x) { console.log(sc_toDisplayString(x)); }
+var js_print = function (x) { console.log(x); }

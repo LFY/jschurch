@@ -112,6 +112,8 @@
 (define js-nil js_nil)
 (define js-cons js_cons)
 (define js-alist->js-dict js_alist2js_dict)
+(define ss-print ss_print)
+(define js-print js_print)
 
 
 

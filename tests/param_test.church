@@ -16,4 +16,5 @@
                     xs
                     true))
 
+(for-each ss-print sampled-results)
 sampled-results
