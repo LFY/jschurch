@@ -58,7 +58,26 @@ function is_main_module() {
 var param_type_map = {
     "int" : function (val) { if (val instanceof Number) { return val; } else { return parseInt(val) ; } },
     "float" : function (val) { if (val instanceof Number) { return val; } else { return parseFloat(val) ; } },
-    "string" : function (val) { if (not (val instanceof String)) { return val.toString; } else { return val; } },
+    "string" : function (val) { if (!(val instanceof String)) { return val.toString; } else { return val; } },
+    "bool" : function (val) { 
+        if (!(val instanceof Boolean)) { 
+            if (val instanceof Number) {
+                return val ? true : false;
+            } else if (val instanceof String) {
+                if (val == "true") {
+                    return true;
+                } else if (val == "false") {
+                    return false;
+                } else {
+                    return true;
+                }
+            } else {
+                return true;
+            }
+        } else {
+            return val;
+        }
+    }
 }
 
 function lookup_param(typename, name, default_value) {
