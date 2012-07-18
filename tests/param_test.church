@@ -1,0 +1,19 @@
+
+(define num-vars (lookup-param 'int "num-vars" 5))
+(define min-val (lookup-param 'int "min-val" 1))
+(define max-val (lookup-param 'int "max-val" 3))
+(define penalty (lookup-param 'float "penalty" 0.1))
+
+(define eq (make-factor (lambda (x y) (if (= x y) 0.0 (log penalty)))))
+
+(define sampled-results
+          (mh-query 10 100
+                    (define xs 
+                      (let*
+                        ([samples (repeat num-vars (lambda () (+ min-val (sample-integer (+ 1 (- max-val min-val))))))]
+                         [constraints (map (lambda (xy) (eq (car xy) (cadr xy))) (bi-gram samples))])
+                        samples))
+                    xs
+                    true))
+
+sampled-results
